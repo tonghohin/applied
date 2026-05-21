@@ -1,0 +1,34 @@
+# Dependencies
+node_modules
+
+# Build outputs
+dist
+out
+.next
+.turbo
+*.tsbuildinfo
+
+# Environment
+.env
+.env.local
+.env*.local
+
+# Database migrations output (keep the drizzle folder but ignore generated SQL if desired)
+# drizzle/
+
+# Vercel
+.vercel
+
+# OS
+.DS_Store
+*.pem
+
+# Editor
+.vscode
+.idea
+
+# Next.js generated
+next-env.d.ts
+
+# pnpm
+.pnpm-store

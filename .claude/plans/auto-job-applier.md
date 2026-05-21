@@ -40,21 +40,21 @@
 
 ### Phase 0: Monorepo Scaffold
 
-#### 0.1. Init Turborepo + pnpm workspace
+#### 0.1. [x] Init Turborepo + pnpm workspace
 - **What:** Bootstrap the monorepo root with `pnpm dlx create-turbo@latest`, configure `pnpm-workspace.yaml`, root `tsconfig.json` (base config extended by all packages), and `turbo.json` with `build`, `typecheck`, `lint`, `format`, `test`, `dev` tasks. Set `"packageManager": "pnpm@9"` in root `package.json`. Install `@biomejs/biome` as a root devDependency and add `biome.json` at the repo root. `lint` script: `biome check .`; `format` script: `biome format --write .` (CI uses `biome format --check .`).- **Files:** `pnpm-workspace.yaml`, `turbo.json`, `tsconfig.json`, `package.json`, `biome.json`
 - **Verify:** `pnpm install` succeeds from root; `turbo build` exits cleanly with no packages yet; `biome check .` exits 0
 
-#### 0.2. Create package skeletons
+#### 0.2. [x] Create package skeletons
 - **What:** Scaffold four packages (`packages/db`, `packages/api`, `packages/automation`, `packages/ai`) each with a `package.json` (name `@repo/db` etc., `"main": "src/index.ts"`), a `tsconfig.json` extending root, and an empty `src/index.ts`. No implementation yet.
 - **Files:** `packages/db/package.json`, `packages/api/package.json`, `packages/automation/package.json`, `packages/ai/package.json` + matching `tsconfig.json` and `src/index.ts`
 - **Verify:** `pnpm install` resolves all workspace packages; `tsc --noEmit` passes from each package
 
-#### 0.3. Bootstrap Next.js app
+#### 0.3. [x] Bootstrap Next.js app
 - **What:** Run `pnpm create next-app@16 apps/web --ts --tailwind --no-eslint --app --no-src-dir --turbopack`. Then run `pnpm dlx shadcn@latest init` inside `apps/web` (New York style, zinc base color). Add `@repo/db`, `@repo/api` as `workspace:*` dependencies in `apps/web/package.json`.
 - **Files:** `apps/web/` (entire Next.js scaffold), `apps/web/components.json`
 - **Verify:** `pnpm --filter web dev` starts on port 3000 with the default Next.js page
 
-#### 0.4. Docker Compose for PostgreSQL
+#### 0.4. [x] Docker Compose for PostgreSQL
 - **What:** Add `docker-compose.yml` at repo root with a `postgres:16` service (port 5432, named volume `pgdata`, env vars `POSTGRES_USER`, `POSTGRES_PASSWORD`, `POSTGRES_DB`). Add `.env.example` with `DATABASE_URL`, `BETTER_AUTH_SECRET`, `BETTER_AUTH_URL`, `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `GOOGLE_GENERATIVE_AI_API_KEY`, `LINKEDIN_ENCRYPTION_KEY`.
 - **Files:** `docker-compose.yml`, `.env.example`, `.gitignore` (add `.env`)
 - **Verify:** `docker compose up -d` starts postgres; `psql $DATABASE_URL -c "\l"` lists databases
