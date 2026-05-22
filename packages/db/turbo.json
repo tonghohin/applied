@@ -2,10 +2,10 @@
   "extends": ["//"],
   "tasks": {
     "generate": {
-      "env": ["DATABASE_URL"]
+      "passThroughEnv": ["DATABASE_URL"]
     },
     "migrate": {
-      "env": ["DATABASE_URL"]
+      "passThroughEnv": ["DATABASE_URL"]
     }
   }
 }

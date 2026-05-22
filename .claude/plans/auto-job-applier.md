@@ -36,10 +36,12 @@
   - `zod`, `vitest`
   - `react-hook-form`, `@hookform/resolvers` (in `apps/web`)
 - **Env vars:**
-  - `apps/server/.env`: `DATABASE_URL`, `BETTER_AUTH_SECRET`, `BETTER_AUTH_URL` (=`http://localhost:3001`), `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `ALLOWED_ORIGIN`, `GEMINI_API_KEY`, `LINKEDIN_ENCRYPTION_KEY`
-  - `apps/web/.env.local`: `NEXT_PUBLIC_API_URL` (=`http://localhost:3001`)
-  - `packages/db/.env`: `DATABASE_URL` (for drizzle-kit `generate`/`migrate` commands)
+  - `apps/server/.env`: all server-side vars — `DATABASE_URL`, `BETTER_AUTH_SECRET`, `BETTER_AUTH_URL` (=`http://localhost:3001`), `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `ALLOWED_ORIGIN`, `GEMINI_API_KEY`, `LINKEDIN_ENCRYPTION_KEY`; loaded via `tsx --env-file .env`
+  - `apps/web/.env.local`: `NEXT_PUBLIC_API_URL` (=`http://localhost:3001`); loaded by Next.js automatically
+  - `packages/db/.env`: `DATABASE_URL`; loaded by drizzle-kit automatically for `generate`/`migrate`
   - Root `.env`: no longer exists — Docker Compose uses built-in `:-applied` defaults
+- **Env validation pattern:** each package's `src/env.ts` validates only the vars its own code uses (`packages/db` → `DATABASE_URL`, `packages/api` → auth + LinkedIn vars, `packages/ai` → `GEMINI_API_KEY`, `apps/server` → `ALLOWED_ORIGIN` + auth vars). Loading is handled by the entry point (`tsx --env-file`, Next.js, drizzle-kit), not by the packages themselves.
+- **Turborepo env keys:** runtime secrets use `passThroughEnv` (available to task, not hashed — changing them doesn't invalidate the build cache). `NEXT_PUBLIC_*` vars in `apps/web` are auto-inferred by Turbo's Next.js framework detection.
 - **Risks/Considerations:**
   - LinkedIn ToS: Playwright scraping violates LinkedIn ToS; user accepts this risk
   - LinkedIn anti-bot: expect CAPTCHAs and rate limits in production; MVP known limitation
@@ -166,7 +168,7 @@
 
 ### Phase 4: Profile Feature
 
-#### 4.1. Profile tRPC router
+#### 4.1. [x] Profile tRPC router
 - **What:** Create `packages/api/src/routers/profile.ts` with three `protectedProcedure`s:
   - `getProfile` — fetch profile + job criteria for current user
   - `upsertProfile` — insert-or-update `profiles` row; Zod-validated; encrypts LinkedIn credentials
@@ -174,17 +176,17 @@
 - **Files:** `packages/api/src/routers/profile.ts`
 - **Verify:** `tsc --noEmit` passes; Zod schemas reject invalid inputs
 
-#### 4.2. Encryption utility
+#### 4.2. [x] Encryption utility
 - **What:** `packages/api/src/lib/encrypt.ts` with AES-256-GCM `encrypt`/`decrypt`. Key from `LINKEDIN_ENCRYPTION_KEY` env var. Format: `iv:authTag:ciphertext` hex.
 - **Files:** `packages/api/src/lib/encrypt.ts`
 - **Verify:** Round-trip `decrypt(encrypt("hello")) === "hello"`; wrong key throws
 
-#### 4.3. Profile setup UI
+#### 4.3. [x] Profile setup UI
 - **What:** `apps/web/app/(dashboard)/profile/page.tsx` — multi-tab form: Personal details, Resume, Cover Letter, Job Criteria, LinkedIn Credentials. Calls `trpc.profile.upsertProfile.useMutation` and `trpc.profile.upsertCriteria.useMutation`.
 - **Files:** `apps/web/app/(dashboard)/profile/page.tsx`, `apps/web/components/profile/profile-form.tsx`, `apps/web/components/profile/criteria-form.tsx`
 - **Verify:** Form pre-populates from `getProfile`; saving persists to DB
 
-#### 4.4. Profile tests
+#### 4.4. [x] Profile tests
 - **What:** Vitest unit tests for profile router and encrypt utility.
 - **Files:** `packages/api/src/routers/profile.test.ts`, `packages/api/src/lib/encrypt.test.ts`
 - **Verify:** `pnpm --filter @repo/api test` passes
@@ -322,4 +324,4 @@
 
 - **2026-05-22 — Revision:** Swapped backend from Next.js route handlers to a separate Hono server (`apps/server`, port 3001). Added task 0.5 (Hono scaffold), replaced task 2.2 (Next.js auth route → cleanup + new Hono auth task), added task 2.4 (auth client update). Task 3.3 now mounts tRPC on Hono instead of Next.js. `apps/web` is frontend-only.
 
-- **2026-05-22 — Env architecture:** Each package owns its own `.env`. `apps/server/.env` holds all server runtime vars. `packages/db/.env` holds `DATABASE_URL` for drizzle-kit. `apps/web/.env.local` holds `NEXT_PUBLIC_API_URL`. Root `.env` deleted — Docker Compose relies on `:-applied` defaults. `dotenv-cli` removed from root `package.json`; root scripts now call `turbo run <task>` directly. Per-package `turbo.json` files in `apps/server` and `packages/db` declare task-level env vars instead of a root `globalEnv`.
+- **2026-05-22 — Env architecture:** Each package owns its own `.env`. `apps/server/.env` holds all server runtime vars (loaded via `tsx --env-file .env`). `packages/db/.env` holds `DATABASE_URL` (auto-loaded by drizzle-kit). `apps/web/.env.local` holds `NEXT_PUBLIC_API_URL` (auto-loaded by Next.js). Root `.env` deleted. Each package's `src/env.ts` validates only what its own code uses; `packages/ai/src/env.ts` validates `GEMINI_API_KEY`. Per-package `turbo.json` files use `passThroughEnv` for runtime secrets (not hashed into cache key). `NEXT_PUBLIC_*` in `apps/web` auto-inferred by Turbo.

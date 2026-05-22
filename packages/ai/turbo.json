@@ -1,0 +1,8 @@
+{
+  "extends": ["//"],
+  "tasks": {
+    "build": {
+      "passThroughEnv": ["GEMINI_API_KEY"]
+    }
+  }
+}

@@ -12,6 +12,10 @@
     "test": "vitest run"
   },
   "devDependencies": {
+    "@types/node": "^20",
     "typescript": "^5.8.3"
+  },
+  "dependencies": {
+    "zod": "^4.4.3"
   }
 }

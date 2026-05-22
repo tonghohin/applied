@@ -7,6 +7,7 @@ const envSchema = z.object({
   GOOGLE_CLIENT_ID: z.string().min(1, "GOOGLE_CLIENT_ID is required"),
   GOOGLE_CLIENT_SECRET: z.string().min(1, "GOOGLE_CLIENT_SECRET is required"),
   ALLOWED_ORIGIN: z.url("ALLOWED_ORIGIN must be a valid URL"),
+  LINKEDIN_ENCRYPTION_KEY: z.string().length(64, "LINKEDIN_ENCRYPTION_KEY must be 64 hex chars (32 bytes)"),
 });
 
 export const env = envSchema.parse(process.env);
