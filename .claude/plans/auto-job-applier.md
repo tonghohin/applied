@@ -36,8 +36,10 @@
   - `zod`, `vitest`
   - `react-hook-form`, `@hookform/resolvers` (in `apps/web`)
 - **Env vars:**
-  - Root `.env` + `apps/server/.env.local`: `DATABASE_URL`, `BETTER_AUTH_SECRET`, `BETTER_AUTH_URL` (=`http://localhost:3001`), `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `GOOGLE_GENERATIVE_AI_API_KEY`, `LINKEDIN_ENCRYPTION_KEY`
+  - `apps/server/.env`: `DATABASE_URL`, `BETTER_AUTH_SECRET`, `BETTER_AUTH_URL` (=`http://localhost:3001`), `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `ALLOWED_ORIGIN`, `GEMINI_API_KEY`, `LINKEDIN_ENCRYPTION_KEY`
   - `apps/web/.env.local`: `NEXT_PUBLIC_API_URL` (=`http://localhost:3001`)
+  - `packages/db/.env`: `DATABASE_URL` (for drizzle-kit `generate`/`migrate` commands)
+  - Root `.env`: no longer exists — Docker Compose uses built-in `:-applied` defaults
 - **Risks/Considerations:**
   - LinkedIn ToS: Playwright scraping violates LinkedIn ToS; user accepts this risk
   - LinkedIn anti-bot: expect CAPTCHAs and rate limits in production; MVP known limitation
@@ -67,8 +69,8 @@
 - **Verify:** `pnpm --filter web dev` starts on port 3000
 
 #### 0.4. [x] Docker Compose for PostgreSQL
-- **What:** `docker-compose.yml` with `postgres:16` on port 5432. `.env` with all required vars.
-- **Files:** `docker-compose.yml`, `.env.example`
+- **What:** `docker-compose.yml` with `postgres:16` on port 5432. Uses `:-applied` defaults so no root `.env` is needed.
+- **Files:** `docker-compose.yml`
 - **Verify:** `docker compose up -d` starts postgres
 
 #### 0.5. [x] Bootstrap Hono server
@@ -140,22 +142,22 @@
 
 ### Phase 3: tRPC Infrastructure
 
-#### 3.1. tRPC init + context
+#### 3.1. [x] tRPC init + context
 - **What:** Install `@trpc/server`, `zod` in `packages/api`. Create `packages/api/src/trpc.ts` with `initTRPC.context<Context>().create()`, exporting `router`, `publicProcedure`, `protectedProcedure` (throws `UNAUTHORIZED` if no session). Create `packages/api/src/context.ts` exporting `createContext(req: Request)` which reads the Better Auth session and attaches `db` and `session`.
 - **Files:** `packages/api/src/trpc.ts`, `packages/api/src/context.ts`
 - **Verify:** `tsc --noEmit` passes; context type includes `db` and `session | null`
 
-#### 3.2. Root router
+#### 3.2. [x] Root router
 - **What:** Create `packages/api/src/router.ts` composing all sub-routers into `appRouter` with a `health` stub (`publicProcedure.query(() => "ok")`). Export `AppRouter` type. Re-export from `packages/api/src/index.ts`.
 - **Files:** `packages/api/src/router.ts`, `packages/api/src/index.ts`
 - **Verify:** `tsc --noEmit` passes; `AppRouter` type is importable
 
-#### 3.3. tRPC HTTP handler on Hono
+#### 3.3. [x] tRPC HTTP handler on Hono
 - **What:** In `apps/server/src/index.ts`, mount tRPC via `fetchRequestHandler` from `@trpc/server/adapters/fetch`: `app.all("/trpc/*", (c) => fetchRequestHandler({ endpoint: "/trpc", req: c.req.raw, router: appRouter, createContext: () => createContext(c.req.raw) }))`. Install `@trpc/server` in `apps/server`.
 - **Files:** `apps/server/src/index.ts`, `apps/server/package.json`
 - **Verify:** `curl "http://localhost:3001/trpc/health"` returns `{"result":{"data":"ok"}}`
 
-#### 3.4. tRPC client + React Query provider
+#### 3.4. [x] tRPC client + React Query provider
 - **What:** Install `@trpc/client`, `@trpc/react-query`, `@tanstack/react-query` in `apps/web`. Create `apps/web/lib/trpc.ts` with `createTRPCReact<AppRouter>()` — use `import type { AppRouter }` from `@repo/api` (type-only, no DB bundled). HTTP link points to `env.NEXT_PUBLIC_API_URL + "/trpc"`. Create `TRPCProvider` client component wrapping `QueryClientProvider` + `trpc.Provider`. Mount in `apps/web/app/layout.tsx`.
 - **Files:** `apps/web/lib/trpc.ts`, `apps/web/app/layout.tsx`
 - **Verify:** No TypeScript errors; client components can import `trpc` and see typed procedures
@@ -320,4 +322,4 @@
 
 - **2026-05-22 — Revision:** Swapped backend from Next.js route handlers to a separate Hono server (`apps/server`, port 3001). Added task 0.5 (Hono scaffold), replaced task 2.2 (Next.js auth route → cleanup + new Hono auth task), added task 2.4 (auth client update). Task 3.3 now mounts tRPC on Hono instead of Next.js. `apps/web` is frontend-only.
 
-- **2026-05-22 — Env architecture:** All `env.ts` files are pure Zod validation (no `dotenv` side effects). Root `.env` is the single source of truth. All scripts must run via `pnpm turbo <task> --filter=<pkg>` so Turborepo loads root `.env` automatically. `apps/web/.env.local` is the only app-level env file (Next.js requires it). `dotenv` is removed from all packages — only `packages/db/drizzle.config.ts` used it (also removed). `ALLOWED_ORIGIN` added to server env for CORS.
+- **2026-05-22 — Env architecture:** Each package owns its own `.env`. `apps/server/.env` holds all server runtime vars. `packages/db/.env` holds `DATABASE_URL` for drizzle-kit. `apps/web/.env.local` holds `NEXT_PUBLIC_API_URL`. Root `.env` deleted — Docker Compose relies on `:-applied` defaults. `dotenv-cli` removed from root `package.json`; root scripts now call `turbo run <task>` directly. Per-package `turbo.json` files in `apps/server` and `packages/db` declare task-level env vars instead of a root `globalEnv`.

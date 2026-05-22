@@ -1,0 +1,11 @@
+{
+  "extends": ["//"],
+  "tasks": {
+    "generate": {
+      "env": ["DATABASE_URL"]
+    },
+    "migrate": {
+      "env": ["DATABASE_URL"]
+    }
+  }
+}

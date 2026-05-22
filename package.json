@@ -3,12 +3,14 @@
   "private": true,
   "packageManager": "pnpm@9.0.0",
   "scripts": {
-    "build": "turbo build",
-    "dev": "turbo dev",
-    "test": "turbo test",
-    "typecheck": "turbo typecheck",
-    "lint": "turbo lint",
-    "format": "turbo format"
+    "build": "turbo run build",
+    "dev": "turbo run dev",
+    "test": "turbo run test",
+    "typecheck": "turbo run typecheck",
+    "lint": "turbo run lint",
+    "format": "turbo run format",
+    "generate": "turbo run generate",
+    "migrate": "turbo run migrate"
   },
   "devDependencies": {
     "@biomejs/biome": "^1.9.4",

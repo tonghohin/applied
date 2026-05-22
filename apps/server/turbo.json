@@ -1,0 +1,29 @@
+{
+  "extends": ["//"],
+  "tasks": {
+    "build": {
+      "env": [
+        "DATABASE_URL",
+        "BETTER_AUTH_SECRET",
+        "BETTER_AUTH_URL",
+        "GOOGLE_CLIENT_ID",
+        "GOOGLE_CLIENT_SECRET",
+        "ALLOWED_ORIGIN",
+        "GEMINI_API_KEY",
+        "LINKEDIN_ENCRYPTION_KEY"
+      ]
+    },
+    "dev": {
+      "env": [
+        "DATABASE_URL",
+        "BETTER_AUTH_SECRET",
+        "BETTER_AUTH_URL",
+        "GOOGLE_CLIENT_ID",
+        "GOOGLE_CLIENT_SECRET",
+        "ALLOWED_ORIGIN",
+        "GEMINI_API_KEY",
+        "LINKEDIN_ENCRYPTION_KEY"
+      ]
+    }
+  }
+}

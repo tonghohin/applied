@@ -3,8 +3,7 @@
   "tasks": {
     "build": {
       "dependsOn": ["^build"],
-      "outputs": [".next/**", "!.next/cache/**", "dist/**"],
-      "env": ["NEXT_PUBLIC_API_URL"]
+      "outputs": [".next/**", "!.next/cache/**", "dist/**"]
     },
     "typecheck": {
       "dependsOn": ["^build"]
@@ -16,26 +15,17 @@
       "cache": false
     },
     "test": {
-      "dependsOn": ["^build"],
-      "env": [
-        "DATABASE_URL",
-        "BETTER_AUTH_SECRET",
-        "BETTER_AUTH_URL",
-        "GOOGLE_CLIENT_ID",
-        "GOOGLE_CLIENT_SECRET"
-      ]
+      "dependsOn": ["^build"]
     },
     "dev": {
       "cache": false,
       "persistent": true
     },
     "generate": {
-      "cache": false,
-      "env": ["DATABASE_URL"]
+      "cache": false
     },
     "migrate": {
-      "cache": false,
-      "env": ["DATABASE_URL"]
+      "cache": false
     }
   }
 }
