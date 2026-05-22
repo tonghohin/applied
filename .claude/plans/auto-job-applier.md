@@ -63,17 +63,17 @@
 
 ### Phase 1: Database Schema
 
-#### 1.1. Drizzle config + connection
+#### 1.1. [x] Drizzle config + connection
 - **What:** Install `drizzle-orm`, `drizzle-kit`, `pg`, `@types/pg`, `dotenv` in `packages/db`. Create `drizzle.config.ts` pointing at `src/schema/index.ts` and `./drizzle` migrations folder. Create `src/db.ts` exporting a `pg.Pool`-based `db` instance using `DATABASE_URL`.
 - **Files:** `packages/db/drizzle.config.ts`, `packages/db/src/db.ts`, `packages/db/package.json`
 - **Verify:** `pnpm --filter @repo/db exec tsc --noEmit` passes
 
-#### 1.2. Better Auth tables schema
+#### 1.2. [x] Better Auth tables schema
 - **What:** Run `npx auth@latest generate` (or manually write) the Better Auth required tables: `users`, `sessions`, `accounts`, `verifications`. Export them from `packages/db/src/schema/auth.ts`. These must match Better Auth's expected column names exactly.
 - **Files:** `packages/db/src/schema/auth.ts`
 - **Verify:** Schema file compiles; column names match Better Auth Drizzle adapter expectations (cross-check against `better-auth` generated output)
 
-#### 1.3. App tables schema
+#### 1.3. [x] App tables schema
 - **What:** Write three Drizzle table definitions in `packages/db/src/schema/`:
   - `profiles` — `id uuid PK`, `userId text FK→users.id unique`, `firstName`, `lastName`, `phone`, `location`, `linkedinUrl`, `githubUrl`, `websiteUrl`, `resumeMarkdown text`, `coverLetterMarkdown text`, `linkedinEmailEncrypted text`, `linkedinPasswordEncrypted text`, `createdAt`, `updatedAt`
   - `jobCriteria` — `id uuid PK`, `userId text FK→users.id unique`, `jobTitles text[]`, `skills text[]`, `locations text[]`, `remote boolean`, `seniority text[]`, `minSalary integer nullable`
@@ -81,7 +81,7 @@
 - **Files:** `packages/db/src/schema/profiles.ts`, `packages/db/src/schema/job-criteria.ts`, `packages/db/src/schema/jobs.ts`, `packages/db/src/schema/index.ts` (re-exports all)
 - **Verify:** `tsc --noEmit` passes; `pnpm --filter @repo/db exec drizzle-kit generate` produces valid SQL migration files
 
-#### 1.4. Run initial migration
+#### 1.4. [x] Run initial migration
 - **What:** Add `migrate` script to `packages/db/package.json` using `drizzle-kit migrate`. Run it against the local Docker Postgres to create all tables.
 - **Files:** `packages/db/package.json` (scripts), `packages/db/drizzle/` (migration SQL files)
 - **Verify:** `pnpm --filter @repo/db migrate` exits 0; `psql $DATABASE_URL -c "\dt"` shows all tables
@@ -91,9 +91,9 @@
 ### Phase 2: Authentication
 
 #### 2.1. Better Auth server config
-- **What:** Install `better-auth`, `@better-auth/drizzle-adapter` in `packages/api`. Create `packages/api/src/auth.ts` configuring `betterAuth` with the Drizzle adapter (importing `db` from `@repo/db`), `emailAndPassword: { enabled: true }`, Google OAuth social provider, and `accountLinking`. Export `auth` and `toNextJsHandler(auth)`.
+- **What:** Install `better-auth`, `@better-auth/drizzle-adapter` in `packages/api`. Create `packages/api/src/auth.ts` configuring `betterAuth` with the Drizzle adapter (importing `db` from `@repo/db`), `emailAndPassword: { enabled: true }`, Google OAuth social provider, and `accountLinking`. Export `auth` and `toNextJsHandler(auth)`. After creating `auth.ts`, run `pnpm dlx auth@latest generate` and verify its output matches the hand-written schema in `packages/db/src/schema/auth.ts` — if columns differ, update the schema and re-run the migration.
 - **Files:** `packages/api/src/auth.ts`, `packages/api/package.json`
-- **Verify:** `tsc --noEmit` passes in `packages/api`
+- **Verify:** `tsc --noEmit` passes in `packages/api`; `auth@latest generate` output matches existing schema
 
 #### 2.2. Auth route handler in Next.js
 - **What:** Create `apps/web/app/api/auth/[...all]/route.ts` that imports `toNextJsHandler` from `packages/api` and exports `GET` and `POST`. Add `BETTER_AUTH_SECRET`, `BETTER_AUTH_URL`, `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` to `apps/web/.env.local`.
