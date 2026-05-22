@@ -195,32 +195,32 @@
 
 ### Phase 5: Job Search + Matching
 
-#### 5.1. Playwright browser manager
+#### 5.1. [x] Playwright browser manager
 - **What:** `packages/automation/src/browser.ts` — `BrowserManager` singleton with lazy headless Chromium launch.
 - **Files:** `packages/automation/src/browser.ts`, `packages/automation/package.json`
 - **Verify:** Launches and closes Chromium without error
 
-#### 5.2. LinkedIn login helper
+#### 5.2. [x] LinkedIn login helper
 - **What:** `packages/automation/src/linkedin/login.ts` — `loginToLinkedIn(page, email, password)`. Navigates to LinkedIn login, fills credentials, waits for `/feed`. Throws on CAPTCHA.
 - **Files:** `packages/automation/src/linkedin/login.ts`
 - **Verify:** With valid credentials, lands on feed; wrong password throws
 
-#### 5.3. LinkedIn job scraper
+#### 5.3. [x] LinkedIn job scraper
 - **What:** `packages/automation/src/linkedin/scraper.ts` — `scrapeLinkedInJobs(page, criteria)`. Paginates up to 3 pages, extracts title/company/location/url/description. 1–2s delay between navigations.
 - **Files:** `packages/automation/src/linkedin/scraper.ts`, `packages/automation/src/types.ts`
 - **Verify:** Returns array with non-empty `title`, `company`, `url`, `description`
 
-#### 5.4. Rule-based job scorer
+#### 5.4. [x] Rule-based job scorer
 - **What:** `packages/automation/src/scorer.ts` — `scoreJob(job, criteria): FitTier`. Thresholds: ≥7 strong, 3–6 potential, <3 weak.
 - **Files:** `packages/automation/src/scorer.ts`
 - **Verify:** Unit tests confirm all three tiers and edge cases
 
-#### 5.5. Search tRPC procedure
+#### 5.5. [x] Search tRPC procedure
 - **What:** `packages/api/src/routers/jobs.ts` — `search` mutation: fetch criteria, decrypt creds, scrape, score, bulk-insert, return `{ queued: true }` immediately (fire-and-forget).
 - **Files:** `packages/api/src/routers/jobs.ts`
 - **Verify:** Returns `{ queued: true }` immediately; rows appear after async scrape
 
-#### 5.6. Job search + scorer tests
+#### 5.6. [x] Job search + scorer tests
 - **What:** Vitest unit tests for scorer and jobs.search router (mocked browser/scraper).
 - **Files:** `packages/automation/src/scorer.test.ts`, `packages/api/src/routers/jobs.test.ts`
 - **Verify:** `pnpm test` passes for both packages
@@ -229,22 +229,22 @@
 
 ### Phase 6: Job Dashboard UI
 
-#### 6.1. Jobs list tRPC procedures
+#### 6.1. [x] Jobs list tRPC procedures
 - **What:** Add `list` query and `updateStatus` mutation to `packages/api/src/routers/jobs.ts`.
 - **Files:** `packages/api/src/routers/jobs.ts`
 - **Verify:** `list` returns typed array; wrong status on `updateStatus` throws `BAD_REQUEST`
 
-#### 6.2. Jobs dashboard layout
+#### 6.2. [x] Jobs dashboard layout
 - **What:** `apps/web/app/(dashboard)/jobs/page.tsx` — shadcn `Tabs` (Pending/Applied/Failed/Skipped) with "Search Jobs" button.
 - **Files:** `apps/web/app/(dashboard)/jobs/page.tsx`, `apps/web/components/jobs/job-tabs.tsx`
 - **Verify:** Tabs render; Search Jobs triggers mutation; pending jobs appear
 
-#### 6.3. Job card component
+#### 6.3. [x] Job card component
 - **What:** `apps/web/components/jobs/job-card.tsx` — company, title, location, platform badge, fitTier badge, Apply/Skip buttons.
 - **Files:** `apps/web/components/jobs/job-card.tsx`
 - **Verify:** fitTier badge correct color; Skip updates status
 
-#### 6.4. Apply selection + trigger
+#### 6.4. [x] Apply selection + trigger
 - **What:** Multi-select checkboxes on Pending tab, "Apply to Selected (N)" button calling `trpc.jobs.apply.useMutation`.
 - **Files:** `apps/web/app/(dashboard)/jobs/page.tsx`, `apps/web/components/jobs/job-tabs.tsx`
 - **Verify:** Correct `jobIds` sent; toast appears
@@ -269,7 +269,7 @@
 - **Verify:** Prompt detects "Easy Apply" at runtime via `browser_snapshot`
 
 #### 7.4. Apply tRPC procedure wiring
-- **What:** Add `apply` mutation to `packages/api/src/routers/jobs.ts`. Validates ownership + `pending_review` status, returns `{ queued: true }`, async-updates status after `applyToJob`.
+- **What:** Add `apply` mutation to `packages/api/src/routers/jobs.ts`. Validates ownership + `pending_review` status, returns `{ queued: true }`, async-updates status after `applyToJob`. Service layer already in place (`packages/api/src/services/`) — add logic to `jobs.service.ts`.
 - **Files:** `packages/api/src/routers/jobs.ts`
 - **Verify:** Returns `{ queued: true }`; foreign jobIds throw `FORBIDDEN`
 

@@ -12,6 +12,12 @@
     "test": "vitest run"
   },
   "devDependencies": {
-    "typescript": "^5.8.3"
+    "@types/node": "^20",
+    "typescript": "^5.8.3",
+    "vitest": "^4.1.7"
+  },
+  "dependencies": {
+    "@repo/db": "workspace:*",
+    "playwright": "^1.60.0"
   }
 }

@@ -110,7 +110,7 @@ describe("profile.upsertProfile", () => {
       linkedinPassword: "secret",
     });
 
-    const stored = chain.values.mock.calls[0][0];
+    const stored = chain.values.mock.calls.at(0)?.at(0) as { linkedinEmailEncrypted: string; linkedinPasswordEncrypted: string }
     expect(decrypt(stored.linkedinEmailEncrypted)).toBe("jane@example.com");
     expect(decrypt(stored.linkedinPasswordEncrypted)).toBe("secret");
   });
@@ -133,7 +133,7 @@ describe("profile.upsertProfile", () => {
       coverLetterMarkdown: "Dear...",
     });
 
-    const stored = chain.values.mock.calls[0][0];
+    const stored = chain.values.mock.calls.at(0)?.at(0) as { linkedinEmailEncrypted: string; linkedinPasswordEncrypted: string }
     expect(stored.linkedinEmailEncrypted).toBeNull();
     expect(stored.linkedinPasswordEncrypted).toBeNull();
   });
