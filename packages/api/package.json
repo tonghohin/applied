@@ -12,6 +12,14 @@
     "test": "vitest run"
   },
   "devDependencies": {
-    "typescript": "^5.8.3"
+    "@vitest/coverage-v8": "^4.1.7",
+    "typescript": "^5.8.3",
+    "vitest": "^4.1.7"
+  },
+  "dependencies": {
+    "@better-auth/drizzle-adapter": "^1.6.11",
+    "@repo/db": "workspace:*",
+    "better-auth": "^1.6.11",
+    "zod": "^4.4.3"
   }
 }
