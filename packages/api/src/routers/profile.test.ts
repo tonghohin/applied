@@ -29,9 +29,9 @@ vi.mock("@repo/db", () => ({
   jobCriteria: { userId: "userId_col" },
 }));
 
-import { profileRouter } from "./profile.js";
-import { decrypt } from "../lib/encrypt.js";
 import type { Context } from "../context.js";
+import { decrypt } from "../lib/encrypt.js";
+import { profileRouter } from "./profile.js";
 
 function makeCtx(userId = "user_1") {
   return {
@@ -65,8 +65,14 @@ describe("profile.getProfile", () => {
     const fakeProfile = { id: "p1", userId: "user_1", firstName: "Jane" };
     const fakeCriteria = { id: "c1", userId: "user_1", jobTitles: ["SWE"] };
 
-    const selectChain1 = { from: vi.fn().mockReturnThis(), where: vi.fn().mockResolvedValue([fakeProfile]) };
-    const selectChain2 = { from: vi.fn().mockReturnThis(), where: vi.fn().mockResolvedValue([fakeCriteria]) };
+    const selectChain1 = {
+      from: vi.fn().mockReturnThis(),
+      where: vi.fn().mockResolvedValue([fakeProfile]),
+    };
+    const selectChain2 = {
+      from: vi.fn().mockReturnThis(),
+      where: vi.fn().mockResolvedValue([fakeCriteria]),
+    };
     mockDb.select.mockReturnValueOnce(selectChain1).mockReturnValueOnce(selectChain2);
 
     const caller = profileRouter.createCaller(makeCtx());
@@ -110,7 +116,10 @@ describe("profile.upsertProfile", () => {
       linkedinPassword: "secret",
     });
 
-    const stored = chain.values.mock.calls.at(0)?.at(0) as { linkedinEmailEncrypted: string; linkedinPasswordEncrypted: string }
+    const stored = chain.values.mock.calls.at(0)?.at(0) as {
+      linkedinEmailEncrypted: string;
+      linkedinPasswordEncrypted: string;
+    };
     expect(decrypt(stored.linkedinEmailEncrypted)).toBe("jane@example.com");
     expect(decrypt(stored.linkedinPasswordEncrypted)).toBe("secret");
   });
@@ -133,7 +142,10 @@ describe("profile.upsertProfile", () => {
       coverLetterMarkdown: "Dear...",
     });
 
-    const stored = chain.values.mock.calls.at(0)?.at(0) as { linkedinEmailEncrypted: string; linkedinPasswordEncrypted: string }
+    const stored = chain.values.mock.calls.at(0)?.at(0) as {
+      linkedinEmailEncrypted: string;
+      linkedinPasswordEncrypted: string;
+    };
     expect(stored.linkedinEmailEncrypted).toBeNull();
     expect(stored.linkedinPasswordEncrypted).toBeNull();
   });

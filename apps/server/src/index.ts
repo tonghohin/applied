@@ -14,7 +14,7 @@ app.use(
     allowHeaders: ["Content-Type", "Authorization"],
     allowMethods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     credentials: true,
-  }),
+  })
 );
 
 app.get("/health", (c) => c.json({ status: "ok" }));
@@ -27,7 +27,7 @@ app.all("/trpc/*", (c) =>
     req: c.req.raw,
     router: appRouter,
     createContext: () => createContext(c.req.raw),
-  }),
+  })
 );
 
 serve({ fetch: app.fetch, port: 3001 }, (info) => {

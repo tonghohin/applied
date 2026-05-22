@@ -1,9 +1,21 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
+
+vi.mock("@repo/db", () => ({
+  fitTierEnum: { enumValues: ["strong", "potential", "weak"] },
+  platformEnum: { enumValues: ["linkedin"] },
+}));
 import { scoreJob } from "./scorer.js";
 import type { ScrapedJob } from "./types.js";
 
 function makeJob(title: string, description: string): ScrapedJob {
-  return { title, description, company: "ACME", location: "Remote", url: "https://example.com", platform: "linkedin" };
+  return {
+    title,
+    description,
+    company: "ACME",
+    location: "Remote",
+    url: "https://example.com",
+    platform: "linkedin",
+  };
 }
 
 const criteria = {
@@ -16,7 +28,7 @@ describe("scoreJob", () => {
     // title match = 2pts, 5 skill matches = 5pts → score 7
     const job = makeJob(
       "Senior Software Engineer",
-      "We use TypeScript, React, Node.js, GraphQL, and PostgreSQL every day.",
+      "We use TypeScript, React, Node.js, GraphQL, and PostgreSQL every day."
     );
     expect(scoreJob(job, criteria)).toBe("strong");
   });
@@ -28,7 +40,10 @@ describe("scoreJob", () => {
   });
 
   it("returns weak when no title or skill match (score 0)", () => {
-    const job = makeJob("Marketing Manager", "Drive brand awareness and lead generation campaigns.");
+    const job = makeJob(
+      "Marketing Manager",
+      "Drive brand awareness and lead generation campaigns."
+    );
     expect(scoreJob(job, criteria)).toBe("weak");
   });
 
@@ -40,7 +55,7 @@ describe("scoreJob", () => {
   it("caps score at strong tier regardless of many matches", () => {
     const job = makeJob(
       "Software Engineer Frontend Developer",
-      "TypeScript React Node.js GraphQL PostgreSQL Docker TypeScript React",
+      "TypeScript React Node.js GraphQL PostgreSQL Docker TypeScript React"
     );
     expect(scoreJob(job, criteria)).toBe("strong");
   });

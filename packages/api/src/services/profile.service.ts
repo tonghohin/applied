@@ -1,8 +1,8 @@
-import { profiles, jobCriteria } from "@repo/db";
+import { jobCriteria, profiles } from "@repo/db";
 import { eq } from "drizzle-orm";
 import { z } from "zod";
-import { encrypt } from "../lib/encrypt.js";
 import type { Context } from "../context.js";
+import { encrypt } from "../lib/encrypt.js";
 
 type Db = Context["db"];
 
@@ -34,8 +34,16 @@ export type UpsertCriteriaInput = z.infer<typeof upsertCriteriaSchema>;
 
 export async function getProfile(db: Db, userId: string) {
   const [profile, criteria] = await Promise.all([
-    db.select().from(profiles).where(eq(profiles.userId, userId)).then((r) => r[0] ?? null),
-    db.select().from(jobCriteria).where(eq(jobCriteria.userId, userId)).then((r) => r[0] ?? null),
+    db
+      .select()
+      .from(profiles)
+      .where(eq(profiles.userId, userId))
+      .then((r) => r[0] ?? null),
+    db
+      .select()
+      .from(jobCriteria)
+      .where(eq(jobCriteria.userId, userId))
+      .then((r) => r[0] ?? null),
   ]);
   return { profile, criteria };
 }

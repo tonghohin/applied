@@ -18,6 +18,7 @@
   },
   "dependencies": {
     "@better-auth/drizzle-adapter": "^1.6.11",
+    "@repo/ai": "workspace:*",
     "@repo/automation": "workspace:^",
     "@repo/db": "workspace:*",
     "@trpc/server": "^11.17.0",

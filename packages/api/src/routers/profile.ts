@@ -1,16 +1,20 @@
-import { getProfile, upsertProfile, upsertCriteria, upsertProfileSchema, upsertCriteriaSchema } from "../services/profile.service.js";
+import {
+  getProfile,
+  upsertCriteria,
+  upsertCriteriaSchema,
+  upsertProfile,
+  upsertProfileSchema,
+} from "../services/profile.service.js";
 import { protectedProcedure, router } from "../trpc.js";
 
 export const profileRouter = router({
-  getProfile: protectedProcedure.query(({ ctx }) =>
-    getProfile(ctx.db, ctx.session.user.id),
-  ),
+  getProfile: protectedProcedure.query(({ ctx }) => getProfile(ctx.db, ctx.session.user.id)),
 
-  upsertProfile: protectedProcedure.input(upsertProfileSchema).mutation(({ ctx, input }) =>
-    upsertProfile(ctx.db, ctx.session.user.id, input),
-  ),
+  upsertProfile: protectedProcedure
+    .input(upsertProfileSchema)
+    .mutation(({ ctx, input }) => upsertProfile(ctx.db, ctx.session.user.id, input)),
 
-  upsertCriteria: protectedProcedure.input(upsertCriteriaSchema).mutation(({ ctx, input }) =>
-    upsertCriteria(ctx.db, ctx.session.user.id, input),
-  ),
+  upsertCriteria: protectedProcedure
+    .input(upsertCriteriaSchema)
+    .mutation(({ ctx, input }) => upsertCriteria(ctx.db, ctx.session.user.id, input)),
 });

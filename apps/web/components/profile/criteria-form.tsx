@@ -1,12 +1,12 @@
 "use client";
 
-import { zodResolver } from "@hookform/resolvers/zod";
-import { useForm } from "react-hook-form";
-import { z } from "zod";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { trpc } from "@/lib/trpc";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useForm } from "react-hook-form";
+import { z } from "zod";
 
 const schema = z.object({
   jobTitles: z.string(),
@@ -81,7 +81,11 @@ export function CriteriaForm({ initial }: Props) {
     <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-4">
       <div className="flex flex-col gap-1.5">
         <Label htmlFor="jobTitles">Job titles (comma-separated)</Label>
-        <Input id="jobTitles" placeholder="Software Engineer, Frontend Developer" {...register("jobTitles")} />
+        <Input
+          id="jobTitles"
+          placeholder="Software Engineer, Frontend Developer"
+          {...register("jobTitles")}
+        />
       </div>
       <div className="flex flex-col gap-1.5">
         <Label htmlFor="skills">Skills (comma-separated)</Label>

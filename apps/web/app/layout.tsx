@@ -1,6 +1,7 @@
+import { TRPCProvider } from "@/lib/trpc";
+import { TooltipProvider } from "@/components/ui/tooltip";
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
-import { TRPCProvider } from "@/lib/trpc";
 import "./globals.css";
 
 const geistSans = Geist({ variable: "--font-sans", subsets: ["latin"] });
@@ -15,7 +16,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="en" className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}>
       <body className="min-h-full flex flex-col">
-        <TRPCProvider>{children}</TRPCProvider>
+        <TRPCProvider>
+          <TooltipProvider>{children}</TooltipProvider>
+        </TRPCProvider>
       </body>
     </html>
   );

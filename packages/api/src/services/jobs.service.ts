@@ -1,17 +1,26 @@
-import { jobs, jobCriteria, profiles, jobStatusEnum } from "@repo/db";
-import { browserManager, loginToLinkedIn, scrapeLinkedInJobs, scoreJob } from "@repo/automation";
-import { and, eq } from "drizzle-orm";
+import { applyToJob } from "@repo/ai";
+import { browserManager, loginToLinkedIn, scoreJob, scrapeLinkedInJobs } from "@repo/automation";
+import { jobCriteria, jobStatusEnum, jobs, profiles } from "@repo/db";
 import { TRPCError } from "@trpc/server";
+import { and, eq, inArray } from "drizzle-orm";
 import { z } from "zod";
-import { decrypt } from "../lib/encrypt.js";
 import type { Context } from "../context.js";
+import { decrypt } from "../lib/encrypt.js";
 
 type Db = Context["db"];
 
 export async function runSearch(db: Db, userId: string) {
   const [criteriaRow, profileRow] = await Promise.all([
-    db.select().from(jobCriteria).where(eq(jobCriteria.userId, userId)).then((r) => r[0]),
-    db.select().from(profiles).where(eq(profiles.userId, userId)).then((r) => r[0]),
+    db
+      .select()
+      .from(jobCriteria)
+      .where(eq(jobCriteria.userId, userId))
+      .then((r) => r[0]),
+    db
+      .select()
+      .from(profiles)
+      .where(eq(profiles.userId, userId))
+      .then((r) => r[0]),
   ]);
 
   if (!criteriaRow) throw new Error("No job criteria found");
@@ -83,4 +92,53 @@ export async function updateJobStatus(db: Db, userId: string, input: UpdateStatu
     .returning();
 
   return row;
+}
+
+export async function applyJobs(db: Db, userId: string, jobIds: string[]) {
+  const owned = await db
+    .select()
+    .from(jobs)
+    .where(and(inArray(jobs.id, jobIds), eq(jobs.userId, userId)));
+
+  if (owned.length !== jobIds.length) {
+    throw new TRPCError({ code: "FORBIDDEN", message: "One or more jobs not found" });
+  }
+
+  const pending = owned.filter((j) => j.status === "pending_review");
+  if (pending.length === 0) return { queued: true };
+
+  const profileRow = await db
+    .select()
+    .from(profiles)
+    .where(eq(profiles.userId, userId))
+    .then((r) => r[0]);
+
+  if (!profileRow) throw new TRPCError({ code: "BAD_REQUEST", message: "Profile not set up" });
+
+  for (const job of pending) {
+    applyToJob(job, profileRow)
+      .then(async (result) => {
+        if (result.success) {
+          await db
+            .update(jobs)
+            .set({ status: "applied", appliedAt: new Date(), updatedAt: new Date() })
+            .where(eq(jobs.id, job.id));
+        } else {
+          await db
+            .update(jobs)
+            .set({ status: "failed", failureReason: result.reason, updatedAt: new Date() })
+            .where(eq(jobs.id, job.id));
+        }
+      })
+      .catch(async (err: unknown) => {
+        const reason = err instanceof Error ? err.message : "Unknown error";
+        console.error(`[applyJobs] error for job ${job.id}:`, err);
+        await db
+          .update(jobs)
+          .set({ status: "failed", failureReason: reason, updatedAt: new Date() })
+          .where(eq(jobs.id, job.id));
+      });
+  }
+
+  return { queued: true };
 }

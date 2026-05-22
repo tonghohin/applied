@@ -1,10 +1,10 @@
 "use client";
 
+import type { AppRouter } from "@repo/api";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { createTRPCReact, httpBatchLink } from "@trpc/react-query";
-import superjson from "superjson";
 import { useState } from "react";
-import type { AppRouter } from "@repo/api";
+import superjson from "superjson";
 import { env } from "./env";
 
 export const trpc = createTRPCReact<AppRouter>();
@@ -19,7 +19,7 @@ export function TRPCProvider({ children }: { children: React.ReactNode }) {
           transformer: superjson,
         }),
       ],
-    }),
+    })
   );
 
   return (

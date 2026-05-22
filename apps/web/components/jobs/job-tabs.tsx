@@ -1,12 +1,12 @@
 "use client";
 
-import { useState } from "react";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
-import { JobCard } from "./job-card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { trpc } from "@/lib/trpc";
 import { jobStatusEnum } from "@repo/db";
 import type { Job } from "@repo/db";
+import { useState } from "react";
+import { JobCard } from "./job-card";
 
 const TAB_LABELS: Record<(typeof jobStatusEnum.enumValues)[number], string> = {
   pending_review: "Pending",
@@ -66,9 +66,7 @@ export function JobTabs({ jobs }: JobTabsProps) {
               disabled={applyMutation.isPending}
               onClick={() => applyMutation.mutate({ jobIds: Array.from(selectedIds) })}
             >
-              {applyMutation.isPending
-                ? "Applying…"
-                : `Apply to Selected (${selectedIds.size})`}
+              {applyMutation.isPending ? "Applying…" : `Apply to Selected (${selectedIds.size})`}
             </Button>
           </div>
         )}
@@ -90,9 +88,11 @@ export function JobTabs({ jobs }: JobTabsProps) {
       {TABS.filter((t) => t.value !== "pending_review").map((tab) => (
         <TabsContent key={tab.value} value={tab.value} className="mt-4">
           <div className="flex flex-col gap-3">
-            {jobs.filter((j) => j.status === tab.value).map((job) => (
-              <JobCard key={job.id} job={job} />
-            ))}
+            {jobs
+              .filter((j) => j.status === tab.value)
+              .map((job) => (
+                <JobCard key={job.id} job={job} />
+              ))}
             {jobs.filter((j) => j.status === tab.value).length === 0 && (
               <p className="text-sm text-muted-foreground py-8 text-center">No jobs here yet.</p>
             )}

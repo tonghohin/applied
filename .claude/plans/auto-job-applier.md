@@ -253,27 +253,27 @@
 
 ### Phase 7: Auto Apply Agent
 
-#### 7.1. Gemini + Playwright MCP setup
+#### 7.1. [x] Gemini + Playwright MCP setup
 - **What:** `packages/ai/src/gemini.ts` (Gemini 2.5 Flash model) and `packages/ai/src/mcp.ts` (`createPlaywrightMCPClient()` via `experimental_createMCPClient` + `Experimental_StdioMCPTransport`).
 - **Files:** `packages/ai/src/gemini.ts`, `packages/ai/src/mcp.ts`, `packages/ai/package.json`
 - **Verify:** `client.tools()` returns non-empty object with `browser_navigate` and `browser_snapshot`
 
-#### 7.2. Apply agent orchestrator
+#### 7.2. [x] Apply agent orchestrator
 - **What:** `packages/ai/src/agents/apply-agent.ts` — `applyToJob(job, profile)`. Spawns MCP client, calls `generateText` (maxSteps: 30), parses `SUCCESS`/`FAILURE:<reason>` sentinel, always closes client.
 - **Files:** `packages/ai/src/agents/apply-agent.ts`, `packages/ai/src/index.ts`
 - **Verify:** `tsc --noEmit` passes; `client.close()` called on error
 
-#### 7.3. LinkedIn Easy Apply flow guidance
+#### 7.3. [x] LinkedIn Easy Apply flow guidance
 - **What:** Extend `apply-agent.ts` system prompt with Easy Apply detection and multi-step modal navigation instructions.
 - **Files:** `packages/ai/src/agents/apply-agent.ts`
 - **Verify:** Prompt detects "Easy Apply" at runtime via `browser_snapshot`
 
-#### 7.4. Apply tRPC procedure wiring
+#### 7.4. [x] Apply tRPC procedure wiring
 - **What:** Add `apply` mutation to `packages/api/src/routers/jobs.ts`. Validates ownership + `pending_review` status, returns `{ queued: true }`, async-updates status after `applyToJob`. Service layer already in place (`packages/api/src/services/`) — add logic to `jobs.service.ts`.
 - **Files:** `packages/api/src/routers/jobs.ts`
 - **Verify:** Returns `{ queued: true }`; foreign jobIds throw `FORBIDDEN`
 
-#### 7.5. Apply agent tests
+#### 7.5. [x] Apply agent tests
 - **What:** Vitest tests for apply-agent and jobs.apply router.
 - **Files:** `packages/ai/src/agents/apply-agent.test.ts`, `packages/api/src/routers/jobs.test.ts`
 - **Verify:** `pnpm test` passes across all packages
@@ -282,25 +282,67 @@
 
 ### Phase 8: Polish + Integration
 
-#### 8.1. Navigation shell
+#### 8.1. [x] Navigation shell
 - **What:** `apps/web/app/(dashboard)/layout.tsx` — sidebar with nav links, user avatar, sign-out.
 - **Files:** `apps/web/app/(dashboard)/layout.tsx`, `apps/web/components/nav/sidebar.tsx`
 - **Verify:** Sidebar renders; sign-out redirects to `/sign-in`
 
-#### 8.2. Loading + empty states
+#### 8.2. [x] Loading + empty states
 - **What:** Skeleton loaders and empty state components for the jobs list.
 - **Files:** `apps/web/components/jobs/job-list-skeleton.tsx`, `apps/web/components/jobs/empty-state.tsx`
 - **Verify:** Skeleton renders while loading
 
-#### 8.3. Status polling
+#### 8.3. [x] Status polling
 - **What:** `refetchInterval: 3000` on `jobs.list` while processing is in flight.
 - **Files:** `apps/web/app/(dashboard)/jobs/page.tsx`
 - **Verify:** Job statuses update without manual refresh
 
-#### 8.4. CLAUDE.md
+#### 8.4. [x] CLAUDE.md
 - **What:** Run `/init` to generate `CLAUDE.md` documenting monorepo structure, how to run both servers locally, env vars, migration workflow.
 - **Files:** `CLAUDE.md`
 - **Verify:** File accurately describes the project
+
+---
+
+## Completed
+
+- **Date:** 2026-05-22
+- **All tasks executed successfully:** yes
+- **Files changed:**
+  - `packages/db/src/schema/jobs.ts` — added `Job` type export
+  - `packages/db/src/schema/profiles.ts` — added `Profile` type export
+  - `packages/automation/src/types.ts` — `Platform` derived from `platformEnum`
+  - `packages/automation/src/scorer.ts` — `FitTier` derived from `fitTierEnum`; returns enum values at runtime
+  - `packages/automation/src/scorer.test.ts` — mock `@repo/db` to avoid DB env validation
+  - `packages/api/src/services/jobs.service.ts` — `listJobs`, `updateJobStatus`, `applyJobs` service functions
+  - `packages/api/src/routers/jobs.ts` — `list`, `updateStatus`, `applyJobs` procedures
+  - `packages/api/src/routers/jobs.test.ts` — `applyJobs` tests
+  - `packages/ai/src/gemini.ts` — Gemini 2.5 Flash model
+  - `packages/ai/src/mcp.ts` — `createPlaywrightMCPClient()` via `@ai-sdk/mcp`
+  - `packages/ai/src/agents/apply-agent.ts` — `applyToJob()` with full LinkedIn Easy Apply prompt
+  - `packages/ai/src/agents/apply-agent.test.ts` — 4 tests
+  - `packages/ai/src/index.ts` — exports all public AI APIs
+  - `apps/web/app/(dashboard)/layout.tsx` — dashboard layout with sidebar
+  - `apps/web/app/(dashboard)/jobs/page.tsx` — jobs page with skeleton, empty state, polling
+  - `apps/web/app/(dashboard)/jobs/page.tsx` — Search Jobs button
+  - `apps/web/components/nav/sidebar.tsx` — nav links + sign-out
+  - `apps/web/components/jobs/job-tabs.tsx` — 4-tab layout with selection state
+  - `apps/web/components/jobs/job-card.tsx` — fitTier badge, Skip, checkbox
+  - `apps/web/components/jobs/job-list-skeleton.tsx` — loading skeleton
+  - `apps/web/components/jobs/empty-state.tsx` — empty state component
+  - `apps/web/lib/trpc.tsx` — superjson transformer added
+  - `CLAUDE.md` — project documentation
+- **How to test:**
+  1. `docker compose up -d`
+  2. Copy `apps/server/.env.example` → `.env`, fill in real values
+  3. `pnpm --filter @repo/db migrate`
+  4. `pnpm turbo dev --filter=server` + `pnpm turbo dev --filter=web`
+  5. Visit http://localhost:3000, sign up, fill in Profile, click Search Jobs
+- **Follow-up items:**
+  - LinkedIn ToS: scraping and auto-apply violate LinkedIn's Terms of Service (known risk)
+  - Fire-and-forget async ops need a proper queue (pg-boss) before hosting
+  - Gemini free tier: 15 RPM — serialize apply calls in production
+  - LinkedIn CAPTCHA: expect blocks in real usage; MVP limitation
 
 ---
 

@@ -13,7 +13,10 @@ function countMatches(haystack: string, needles: string[]): number {
   return needles.filter((n) => haystack.includes(normalize(n))).length;
 }
 
-export function scoreJob(job: ScrapedJob, criteria: Pick<SearchCriteria, "jobTitles"> & { skills?: string[] }): FitTier {
+export function scoreJob(
+  job: ScrapedJob,
+  criteria: Pick<SearchCriteria, "jobTitles"> & { skills?: string[] }
+): FitTier {
   const text = normalize(`${job.title} ${job.description}`);
   let score = 0;
 

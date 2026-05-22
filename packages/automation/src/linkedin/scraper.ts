@@ -1,3 +1,4 @@
+/// <reference lib="dom" />
 import type { Page } from "playwright";
 import type { ScrapedJob, SearchCriteria } from "../types.js";
 
@@ -15,21 +16,25 @@ function buildSearchUrl(jobTitle: string, location: string, remote: boolean): st
 async function scrapeJobsPage(page: Page): Promise<ScrapedJob[]> {
   return page.evaluate(() => {
     const cards = Array.from(document.querySelectorAll(".jobs-search-results__list-item"));
-    return cards.map((card) => {
-      const titleEl = card.querySelector(".job-card-list__title, .job-card-container__link");
-      const companyEl = card.querySelector(".job-card-container__primary-description, .artdeco-entity-lockup__subtitle");
-      const locationEl = card.querySelector(".job-card-container__metadata-item");
-      const linkEl = card.querySelector("a[href*='/jobs/view/']");
+    return cards
+      .map((card) => {
+        const titleEl = card.querySelector(".job-card-list__title, .job-card-container__link");
+        const companyEl = card.querySelector(
+          ".job-card-container__primary-description, .artdeco-entity-lockup__subtitle"
+        );
+        const locationEl = card.querySelector(".job-card-container__metadata-item");
+        const linkEl = card.querySelector("a[href*='/jobs/view/']");
 
-      return {
-        title: titleEl?.textContent?.trim() ?? "",
-        company: companyEl?.textContent?.trim() ?? "",
-        location: locationEl?.textContent?.trim() ?? "",
-        url: linkEl instanceof HTMLAnchorElement ? linkEl.href : "",
-        description: "",
-        platform: "linkedin" as const,
-      };
-    }).filter((j) => j.title && j.url);
+        return {
+          title: titleEl?.textContent?.trim() ?? "",
+          company: companyEl?.textContent?.trim() ?? "",
+          location: locationEl?.textContent?.trim() ?? "",
+          url: linkEl instanceof HTMLAnchorElement ? linkEl.href : "",
+          description: "",
+          platform: "linkedin" as const,
+        };
+      })
+      .filter((j) => j.title && j.url);
   });
 }
 
@@ -42,7 +47,10 @@ async function fetchDescription(page: Page, url: string): Promise<string> {
   });
 }
 
-export async function scrapeLinkedInJobs(page: Page, criteria: SearchCriteria): Promise<ScrapedJob[]> {
+export async function scrapeLinkedInJobs(
+  page: Page,
+  criteria: SearchCriteria
+): Promise<ScrapedJob[]> {
   const results: ScrapedJob[] = [];
   const seen = new Set<string>();
 

@@ -1,9 +1,9 @@
 "use client";
 
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { CriteriaForm } from "@/components/profile/criteria-form";
 import { ProfileForm } from "@/components/profile/profile-form";
 import { ProfileSkeleton } from "@/components/profile/profile-skeleton";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { trpc } from "@/lib/trpc";
 
 export default function ProfilePage() {

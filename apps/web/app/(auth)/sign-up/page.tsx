@@ -1,14 +1,21 @@
 "use client";
 
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { authClient } from "@/lib/auth-client";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { authClient } from "@/lib/auth-client";
 
 const schema = z.object({
   name: z.string().min(1, "Name is required"),
@@ -57,8 +64,15 @@ export default function SignUpPage() {
             </div>
             <div className="flex flex-col gap-1.5">
               <Label htmlFor="password">Password</Label>
-              <Input id="password" type="password" placeholder="••••••••" {...register("password")} />
-              {errors.password && <p className="text-sm text-destructive">{errors.password.message}</p>}
+              <Input
+                id="password"
+                type="password"
+                placeholder="••••••••"
+                {...register("password")}
+              />
+              {errors.password && (
+                <p className="text-sm text-destructive">{errors.password.message}</p>
+              )}
             </div>
             {errors.root && <p className="text-sm text-destructive">{errors.root.message}</p>}
             <Button type="submit" disabled={isSubmitting} className="w-full">

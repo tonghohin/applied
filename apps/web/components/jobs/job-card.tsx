@@ -23,7 +23,9 @@ export function JobCard({ job, selected, onToggleSelect }: JobCardProps) {
   });
 
   return (
-    <div className={`rounded-lg border p-4 flex items-start justify-between gap-4 ${selected ? "border-primary bg-primary/5" : ""}`}>
+    <div
+      className={`rounded-lg border p-4 flex items-start justify-between gap-4 ${selected ? "border-primary bg-primary/5" : ""}`}
+    >
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2 mb-1">
           <a
@@ -34,7 +36,9 @@ export function JobCard({ job, selected, onToggleSelect }: JobCardProps) {
           >
             {job.title}
           </a>
-          <span className={`shrink-0 rounded-full px-2 py-0.5 text-xs font-medium ${FIT_TIER_STYLES[job.fitTier]}`}>
+          <span
+            className={`shrink-0 rounded-full px-2 py-0.5 text-xs font-medium ${FIT_TIER_STYLES[job.fitTier]}`}
+          >
             {job.fitTier}
           </span>
         </div>

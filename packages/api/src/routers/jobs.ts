@@ -1,6 +1,12 @@
-import { runSearch, listJobs, updateJobStatus, updateStatusSchema } from "../services/jobs.service.js";
-import { protectedProcedure, router } from "../trpc.js";
 import { z } from "zod";
+import {
+  applyJobs,
+  listJobs,
+  runSearch,
+  updateJobStatus,
+  updateStatusSchema,
+} from "../services/jobs.service.js";
+import { protectedProcedure, router } from "../trpc.js";
 
 export const jobsRouter = router({
   search: protectedProcedure.mutation(({ ctx }) => {
@@ -13,15 +19,13 @@ export const jobsRouter = router({
     return { queued: true };
   }),
 
-  list: protectedProcedure.query(({ ctx }) =>
-    listJobs(ctx.db, ctx.session.user.id),
-  ),
+  list: protectedProcedure.query(({ ctx }) => listJobs(ctx.db, ctx.session.user.id)),
 
-  updateStatus: protectedProcedure.input(updateStatusSchema).mutation(({ ctx, input }) =>
-    updateJobStatus(ctx.db, ctx.session.user.id, input),
-  ),
+  updateStatus: protectedProcedure
+    .input(updateStatusSchema)
+    .mutation(({ ctx, input }) => updateJobStatus(ctx.db, ctx.session.user.id, input)),
 
   applyJobs: protectedProcedure
     .input(z.object({ jobIds: z.array(z.uuid()) }))
-    .mutation(() => ({ queued: true })),
+    .mutation(({ ctx, input }) => applyJobs(ctx.db, ctx.session.user.id, input.jobIds)),
 });

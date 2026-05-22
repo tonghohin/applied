@@ -1,6 +1,6 @@
-import { publicProcedure, router } from "./trpc.js";
-import { profileRouter } from "./routers/profile.js";
 import { jobsRouter } from "./routers/jobs.js";
+import { profileRouter } from "./routers/profile.js";
+import { publicProcedure, router } from "./trpc.js";
 
 export const appRouter = router({
   health: publicProcedure.query(() => "ok"),

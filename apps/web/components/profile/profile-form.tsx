@@ -1,13 +1,13 @@
 "use client";
 
-import { zodResolver } from "@hookform/resolvers/zod";
-import { useForm } from "react-hook-form";
-import { z } from "zod";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { trpc } from "@/lib/trpc";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useForm } from "react-hook-form";
+import { z } from "zod";
 
 const schema = z.object({
   firstName: z.string().min(1, "Required"),
@@ -86,12 +86,16 @@ export function ProfileForm({ tab, initial }: Props) {
             <div className="flex flex-col gap-1.5">
               <Label htmlFor="firstName">First name</Label>
               <Input id="firstName" {...register("firstName")} />
-              {errors.firstName && <p className="text-sm text-destructive">{errors.firstName.message}</p>}
+              {errors.firstName && (
+                <p className="text-sm text-destructive">{errors.firstName.message}</p>
+              )}
             </div>
             <div className="flex flex-col gap-1.5">
               <Label htmlFor="lastName">Last name</Label>
               <Input id="lastName" {...register("lastName")} />
-              {errors.lastName && <p className="text-sm text-destructive">{errors.lastName.message}</p>}
+              {errors.lastName && (
+                <p className="text-sm text-destructive">{errors.lastName.message}</p>
+              )}
             </div>
           </div>
           <div className="flex flex-col gap-1.5">
@@ -106,15 +110,30 @@ export function ProfileForm({ tab, initial }: Props) {
           </div>
           <div className="flex flex-col gap-1.5">
             <Label htmlFor="linkedinUrl">LinkedIn URL</Label>
-            <Input id="linkedinUrl" type="url" placeholder="https://linkedin.com/in/you" {...register("linkedinUrl")} />
+            <Input
+              id="linkedinUrl"
+              type="url"
+              placeholder="https://linkedin.com/in/you"
+              {...register("linkedinUrl")}
+            />
           </div>
           <div className="flex flex-col gap-1.5">
             <Label htmlFor="githubUrl">GitHub URL</Label>
-            <Input id="githubUrl" type="url" placeholder="https://github.com/you" {...register("githubUrl")} />
+            <Input
+              id="githubUrl"
+              type="url"
+              placeholder="https://github.com/you"
+              {...register("githubUrl")}
+            />
           </div>
           <div className="flex flex-col gap-1.5">
             <Label htmlFor="websiteUrl">Website URL</Label>
-            <Input id="websiteUrl" type="url" placeholder="https://yoursite.com" {...register("websiteUrl")} />
+            <Input
+              id="websiteUrl"
+              type="url"
+              placeholder="https://yoursite.com"
+              {...register("websiteUrl")}
+            />
           </div>
         </>
       )}
@@ -122,15 +141,27 @@ export function ProfileForm({ tab, initial }: Props) {
       {tab === "resume" && (
         <div className="flex flex-col gap-1.5">
           <Label htmlFor="resumeMarkdown">Resume (Markdown)</Label>
-          <Textarea id="resumeMarkdown" rows={20} placeholder="# Your Name&#10;&#10;## Experience..." {...register("resumeMarkdown")} />
-          {errors.resumeMarkdown && <p className="text-sm text-destructive">{errors.resumeMarkdown.message}</p>}
+          <Textarea
+            id="resumeMarkdown"
+            rows={20}
+            placeholder="# Your Name&#10;&#10;## Experience..."
+            {...register("resumeMarkdown")}
+          />
+          {errors.resumeMarkdown && (
+            <p className="text-sm text-destructive">{errors.resumeMarkdown.message}</p>
+          )}
         </div>
       )}
 
       {tab === "cover-letter" && (
         <div className="flex flex-col gap-1.5">
           <Label htmlFor="coverLetterMarkdown">Cover letter template (Markdown)</Label>
-          <Textarea id="coverLetterMarkdown" rows={20} placeholder="Dear Hiring Manager,..." {...register("coverLetterMarkdown")} />
+          <Textarea
+            id="coverLetterMarkdown"
+            rows={20}
+            placeholder="Dear Hiring Manager,..."
+            {...register("coverLetterMarkdown")}
+          />
           {errors.coverLetterMarkdown && (
             <p className="text-sm text-destructive">{errors.coverLetterMarkdown.message}</p>
           )}

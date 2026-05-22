@@ -18,5 +18,7 @@ export function decrypt(token: string): string {
   if (!ivHex || !authTagHex || !ciphertextHex) throw new Error("Invalid encrypted token format");
   const decipher = createDecipheriv("aes-256-gcm", getKey(), Buffer.from(ivHex, "hex"));
   decipher.setAuthTag(Buffer.from(authTagHex, "hex"));
-  return decipher.update(Buffer.from(ciphertextHex, "hex")).toString("utf8") + decipher.final("utf8");
+  return (
+    decipher.update(Buffer.from(ciphertextHex, "hex")).toString("utf8") + decipher.final("utf8")
+  );
 }
