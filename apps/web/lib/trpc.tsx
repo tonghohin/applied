@@ -1,11 +1,15 @@
 "use client";
 
-import type { AppRouter } from "@repo/api";
+import type { AppRouter, RouterOutputs } from "@repo/api";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { createTRPCReact, httpBatchLink } from "@trpc/react-query";
 import { useState } from "react";
 import superjson from "superjson";
 import { env } from "./env";
+
+export type Job = RouterOutputs["jobs"]["list"][number];
+export type JobStatus = Job["status"];
+export type FitTier = Job["fitTier"];
 
 export const trpc = createTRPCReact<AppRouter>();
 

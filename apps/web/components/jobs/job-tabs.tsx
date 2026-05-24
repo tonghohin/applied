@@ -3,28 +3,29 @@
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { trpc } from "@/lib/trpc";
-import { jobStatusEnum } from "@repo/db";
-import type { Job } from "@repo/db";
+import type { Job, JobStatus } from "@/lib/trpc";
 import { useState } from "react";
 import { JobCard } from "./job-card";
 
-const TAB_LABELS: Record<(typeof jobStatusEnum.enumValues)[number], string> = {
+const JOB_STATUSES = ["pending_review", "applied", "failed", "skipped"] satisfies JobStatus[];
+
+const TAB_LABELS: Record<JobStatus, string> = {
   pending_review: "Pending",
   applied: "Applied",
   failed: "Failed",
   skipped: "Skipped",
 };
 
-const TABS = jobStatusEnum.enumValues.map((value) => ({
+const TABS = JOB_STATUSES.map((value) => ({
   value,
   label: TAB_LABELS[value],
 }));
 
-interface JobTabsProps {
+export function JobTabs({
+  jobs,
+}: {
   jobs: Job[];
-}
-
-export function JobTabs({ jobs }: JobTabsProps) {
+}) {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const utils = trpc.useUtils();
   const applyMutation = trpc.jobs.applyJobs.useMutation({

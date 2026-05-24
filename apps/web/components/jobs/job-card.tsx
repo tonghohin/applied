@@ -2,7 +2,7 @@
 
 import { Button } from "@/components/ui/button";
 import { trpc } from "@/lib/trpc";
-import type { Job } from "@repo/db";
+import type { Job } from "@/lib/trpc";
 
 const FIT_TIER_STYLES: Record<Job["fitTier"], string> = {
   strong: "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400",
