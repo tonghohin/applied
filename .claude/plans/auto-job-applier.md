@@ -4,13 +4,12 @@
 
 ## Research Summary
 
-- **Stack:** Next.js 16.2.6 App Router (frontend only), Hono 4.x + `@hono/node-server` (backend, port 3001), TypeScript, tRPC v11.17, Drizzle ORM 0.45.2, PostgreSQL (Docker Compose), Better Auth 1.6.11, Vercel AI SDK 6.x + `@ai-sdk/google` 3.x (Gemini 2.5 Flash), Playwright 1.60, `@playwright/mcp` 0.0.75, Vitest 4.x, Zod 4.x, pnpm monorepo with Turborepo 2.9, shadcn 4.x
+- **Stack:** Next.js 16.2.6 App Router (frontend + API routes), TypeScript, tRPC v11.17, Drizzle ORM 0.45.2, PostgreSQL + Redis (Docker Compose), Better Auth 1.6.11, Vercel AI SDK 6.x + `@ai-sdk/google` 3.x (Gemini 2.5 Flash), Playwright 1.60, `@playwright/mcp` 0.0.75, BullMQ, Vitest 4.x, Zod 4.x, pnpm monorepo with Turborepo 2.9, shadcn 4.x
 - **Relevant patterns:**
-  - **Better Auth on Hono:** `app.on(["POST","GET"], "/api/auth/*", (c) => auth.handler(c.req.raw))` — no special adapter; Better Auth uses web-standard Request/Response which Hono passes via `c.req.raw`
-  - **tRPC on Hono:** `app.all("/trpc/*", (c) => fetchRequestHandler({ endpoint: "/trpc", req: c.req.raw, router: appRouter, createContext: () => createContext(c.req.raw) }))` — same fetch adapter as before
-  - **CORS:** `hono/cors` middleware added to Hono server; allows `NEXT_PUBLIC_API_URL` origin
-  - **Auth client baseURL:** points to `NEXT_PUBLIC_API_URL` (the Hono server), not the Next.js app
-  - **tRPC client:** uses `NEXT_PUBLIC_API_URL + "/trpc"` as the endpoint; `import type { AppRouter }` from `@repo/api` (type-only — no DB connection in the web process)
+  - **Better Auth on Next.js App Router:** `apps/web/app/api/auth/[...all]/route.ts` exports `export const GET = auth.handler` and `export const POST = auth.handler` directly — no adapter needed; `auth.handler` accepts web-standard `Request` and returns `Response`, which Next.js App Router passes through unchanged
+  - **tRPC on Next.js App Router:** `apps/web/app/api/trpc/[trpc]/route.ts` uses `fetchRequestHandler({ endpoint: "/api/trpc", req, router: appRouter, createContext: () => createContext(req) })`. Export `GET` and `POST`. tRPC client uses relative `/api/trpc` endpoint — no env var needed
+  - **BullMQ queues:** Queue instances (`searchQueue`, `applyQueue`) and TypeScript job data types (`SearchJobData`, `ApplyJobData`) defined in `packages/api/src/queues/index.ts` — single source of truth imported by both the tRPC routers (enqueue) and `apps/worker` (consume). Redis connection string from `REDIS_URL` env var
+  - **tRPC client:** uses `/api/trpc` as `httpBatchLink` endpoint (relative, same-origin — no `NEXT_PUBLIC_API_URL` needed); `import type { AppRouter }` from `@repo/api` (type-only — no DB connection in the web process)
   - tRPC v11 client uses TanStack Query v5 with `trpc.x.queryOptions()` syntax
   - **Forms:** `react-hook-form` + `@hookform/resolvers/zod` — `useForm<T>({ resolver: zodResolver(schema) })`; field errors via `errors.x.message`; server errors via `setError("root", ...)`; loading state via `isSubmitting`
   - Better Auth Drizzle adapter: `drizzleAdapter(db, { provider: "pg", usePlural: true })`
@@ -20,33 +19,32 @@
   - **Next.js 16:** `proxy.ts` for edge route protection; caching opt-in via `use cache`; all async APIs
   - Turborepo one-way dependency: apps depend on packages, packages never depend on apps
 - **Key files:**
-  - `apps/web/` — Next.js frontend only (no API route handlers for auth or tRPC)
-  - `apps/server/` — Hono server: Better Auth + tRPC, port 3001
-  - `packages/api/` — all tRPC routers + business logic + Better Auth config
+  - `apps/web/` — Next.js frontend + API routes (`/api/auth/*`, `/api/trpc/*`)
+  - `apps/worker/` — BullMQ worker app consuming search and apply queues
+  - `packages/api/` — all tRPC routers + business logic + Better Auth config + BullMQ queue definitions
   - `packages/db/` — Drizzle schema, migrations, db connection
   - `packages/automation/` — Playwright LinkedIn scraper
   - `packages/ai/` — Gemini agent (form analysis + field mapping)
 - **New dependencies:**
-  - `hono`, `@hono/node-server` (in `apps/server`)
   - `better-auth`, `@better-auth/drizzle-adapter`
   - `drizzle-orm` 0.45.2, `drizzle-kit` 0.31.10, `pg`, `@types/pg`
   - `@trpc/server`, `@trpc/client`, `@trpc/react-query`, `@tanstack/react-query`
   - `ai`, `@ai-sdk/google`
   - `playwright`, `@playwright/mcp`
+  - `bullmq` (in `packages/api` and `apps/worker`)
   - `zod`, `vitest`
   - `react-hook-form`, `@hookform/resolvers` (in `apps/web`)
 - **Env vars:**
-  - `apps/server/.env`: all server-side vars — `DATABASE_URL`, `BETTER_AUTH_SECRET`, `BETTER_AUTH_URL` (=`http://localhost:3001`), `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `ALLOWED_ORIGIN`, `GEMINI_API_KEY`, `LINKEDIN_ENCRYPTION_KEY`; loaded via `tsx --env-file .env`
-  - `apps/web/.env.local`: `NEXT_PUBLIC_API_URL` (=`http://localhost:3001`); loaded by Next.js automatically
+  - `apps/web/.env.local`: `NEXT_PUBLIC_BASE_URL` (=`http://localhost:3000`), `BETTER_AUTH_SECRET`, `BETTER_AUTH_URL` (=`http://localhost:3000`), `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `DATABASE_URL`, `LINKEDIN_ENCRYPTION_KEY`, `REDIS_URL` (=`redis://localhost:6379`); loaded by Next.js automatically
+  - `apps/worker/.env`: `DATABASE_URL`, `REDIS_URL`, `GEMINI_API_KEY`, `LINKEDIN_ENCRYPTION_KEY`; loaded via `tsx --env-file apps/worker/.env`
   - `packages/db/.env`: `DATABASE_URL`; loaded by drizzle-kit automatically for `generate`/`migrate`
-  - Root `.env`: no longer exists — Docker Compose uses built-in `:-applied` defaults
-- **Env validation pattern:** each package's `src/env.ts` validates only the vars its own code uses (`packages/db` → `DATABASE_URL`, `packages/api` → auth + LinkedIn vars, `packages/ai` → `GEMINI_API_KEY`, `apps/server` → `ALLOWED_ORIGIN` + auth vars). Loading is handled by the entry point (`tsx --env-file`, Next.js, drizzle-kit), not by the packages themselves.
-- **Turborepo env keys:** runtime secrets use `passThroughEnv` (available to task, not hashed — changing them doesn't invalidate the build cache). `NEXT_PUBLIC_*` vars in `apps/web` are auto-inferred by Turbo's Next.js framework detection.
+- **Env validation pattern:** each package's `src/env.ts` validates only the vars its own code uses (`packages/db` → `DATABASE_URL`, `packages/api` → auth + LinkedIn + `REDIS_URL`, `packages/ai` → `GEMINI_API_KEY`, `apps/web/lib/env.ts` → `NEXT_PUBLIC_BASE_URL`). Loading is handled by the entry point (Next.js auto-loads `.env.local`; `tsx --env-file` for the worker; drizzle-kit for DB).
+- **Turborepo env keys:** runtime secrets use `passThroughEnv` (available to task, not hashed). `NEXT_PUBLIC_*` vars in `apps/web` are auto-inferred by Turbo's Next.js framework detection.
 - **Risks/Considerations:**
   - LinkedIn ToS: Playwright scraping violates LinkedIn ToS; user accepts this risk
   - LinkedIn anti-bot: expect CAPTCHAs and rate limits in production; MVP known limitation
   - LinkedIn credentials: stored encrypted (AES-256-GCM) in `profiles` table; never logged
-  - Long-running Playwright ops: fire-and-forget async from tRPC handler works for local MVP; needs a queue before production
+  - Worker crash resilience: BullMQ jobs persist in Redis; failed jobs are retried. Worker must update job status in DB before returning so the frontend reflects the outcome
   - Gemini free tier: 15 RPM — serialize apply calls, don't parallelize
 
 ---
@@ -75,10 +73,20 @@
 - **Files:** `docker-compose.yml`
 - **Verify:** `docker compose up -d` starts postgres
 
-#### 0.5. [x] Bootstrap Hono server
-- **What:** Create `apps/server/` with `package.json` (name `server`, scripts: `dev: tsx watch src/index.ts`, `build: tsc`), `tsconfig.json` extending root, and a stub `src/index.ts` that starts a Hono app on port 3001. Add `hono`, `@hono/node-server`, `tsx` as dependencies. Add `@repo/api` as `workspace:*` dependency. Register `apps/server` in `pnpm-workspace.yaml` if not already covered by the `apps/*` glob.
-- **Files:** `apps/server/package.json`, `apps/server/tsconfig.json`, `apps/server/src/index.ts`
-- **Verify:** `pnpm --filter server dev` starts and `curl http://localhost:3001/health` returns 200
+#### 0.5. [x] Cleanup: Delete apps/server
+- **What:** Delete the entire `apps/server/` directory — the Hono server is replaced by Next.js API routes. Remove any `apps/server` entries from `turbo.json` pipeline and `pnpm-workspace.yaml` if not covered by the `apps/*` glob.
+- **Files:** `apps/server/` (delete entire directory), `turbo.json`, `pnpm-workspace.yaml`
+- **Verify:** `ls apps/server/` returns "No such file or directory"; `grep -r "apps/server" turbo.json` returns no matches
+
+#### 0.6. [x] Add Redis to Docker Compose
+- **What:** Add a `redis:7-alpine` service to `docker-compose.yml` on port 6379. Add `REDIS_URL=redis://localhost:6379` to `apps/web/.env.local` and `apps/worker/.env`.
+- **Files:** `docker-compose.yml`, `apps/web/.env.local`, `apps/worker/.env`
+- **Verify:** `docker compose up -d` starts both postgres and redis; `redis-cli ping` returns `PONG`
+
+#### 0.7. [x] Bootstrap apps/worker
+- **What:** Create `apps/worker/` with `package.json` (name `@repo/worker`, scripts: `dev: tsx watch src/index.ts`), `tsconfig.json` extending root, stub `src/index.ts`. Add `@repo/api`, `@repo/ai`, `@repo/db` as `workspace:*` dependencies and `tsx` as devDependency. Add `@repo/worker` to the Turborepo `dev` pipeline in `turbo.json`.
+- **Files:** `apps/worker/package.json`, `apps/worker/tsconfig.json`, `apps/worker/src/index.ts`, `turbo.json`
+- **Verify:** `pnpm --filter @repo/worker dev` starts without error
 
 ---
 
@@ -109,26 +117,27 @@
 ### Phase 2: Authentication
 
 #### 2.1. [x] Better Auth server config
-- **What:** `packages/api/src/auth.ts` configures `betterAuth` with the Drizzle adapter (`usePlural: true`), `emailAndPassword: { enabled: true }`, Google OAuth, and `accountLinking`. Export only `auth` (not `toNextJsHandler` — the Hono server calls `auth.handler(c.req.raw)` directly). `packages/api/src/env.ts` validates `BETTER_AUTH_SECRET`, `BETTER_AUTH_URL`, `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`.
-- **Replaces previous build:** `packages/api/src/auth.ts` — remove the `toNextJsHandler` import and export; keep everything else. `packages/api/src/index.ts` — remove the `toNextJsHandler` re-export.
+- **What:** `packages/api/src/auth.ts` configures `betterAuth` with the Drizzle adapter (`usePlural: true`), `emailAndPassword: { enabled: true }`, Google OAuth, and `accountLinking`. Export only `auth` — Next.js API route calls `auth.handler` directly. `packages/api/src/env.ts` validates `BETTER_AUTH_SECRET`, `BETTER_AUTH_URL`, `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`.
 - **Files:** `packages/api/src/auth.ts`, `packages/api/src/index.ts`
-- **Verify:** `tsc --noEmit` passes in `packages/api`; no `toNextJsHandler` references remain
+- **Verify:** `tsc --noEmit` passes in `packages/api`
 
-#### 2.2. [x] Remove Next.js auth route handler
-- **What:** Delete `apps/web/app/api/auth/[...all]/route.ts` — auth is now served from the Hono server. Remove `DATABASE_URL` from `apps/web/.env.local` (web no longer connects to DB directly). Replace `NEXT_PUBLIC_BETTER_AUTH_URL` with `NEXT_PUBLIC_API_URL` in `apps/web/.env.local` and `apps/web/lib/env.ts`.
-- **Files:** `apps/web/app/api/auth/[...all]/route.ts` (delete), `apps/web/.env.local`, `apps/web/lib/env.ts`
-- **Verify:** `apps/web/app/api/auth/` directory no longer exists; `grep -r "NEXT_PUBLIC_BETTER_AUTH_URL" apps/web` returns no matches
+#### 2.2. [x] Add Next.js auth route handler
+- **What:** Re-create `apps/web/app/api/auth/[...all]/route.ts` — this file was deleted in a previous build and must be restored. Export `GET` and `POST` using `auth.handler` from `@repo/api` directly (`export const GET = auth.handler; export const POST = auth.handler`). No adapter needed — `auth.handler` accepts web-standard `Request` and returns `Response`. Add server-side env vars to `apps/web/.env.local`: `BETTER_AUTH_SECRET`, `BETTER_AUTH_URL=http://localhost:3000`, `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `DATABASE_URL`, `LINKEDIN_ENCRYPTION_KEY`.
+- **Replaces previous build:** `apps/web/app/api/auth/[...all]/route.ts` was deleted — re-create it.
+- **Files:** `apps/web/app/api/auth/[...all]/route.ts`, `apps/web/.env.local`
+- **Verify:** `curl http://localhost:3000/api/auth/get-session` returns `{"session":null}`
 
-#### 2.3. [x] Hono server with Better Auth
-- **What:** In `apps/server/src/index.ts`, add `hono/cors` middleware (allowing `NEXT_PUBLIC_API_URL` origin, credentials: true), mount Better Auth at `/api/auth/*` via `app.on(["POST","GET"], "/api/auth/*", (c) => auth.handler(c.req.raw))`. Add `apps/server/.env.local` with `BETTER_AUTH_SECRET`, `BETTER_AUTH_URL=http://localhost:3001`, `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `DATABASE_URL`. Add a `src/env.ts` in `apps/server` with Zod validation for these vars.
-- **Files:** `apps/server/src/index.ts`, `apps/server/src/env.ts`, `apps/server/.env.local`
-- **Verify:** `curl http://localhost:3001/api/auth/get-session` returns `{"session":null}` (unauthenticated)
+#### 2.3. [x] Update auth client + sweep NEXT_PUBLIC_API_URL
+- **What:** Update `apps/web/lib/auth-client.ts` to set `baseURL` to `http://localhost:3000` (Next.js, same process — not the old Hono URL). Remove `NEXT_PUBLIC_API_URL` from `apps/web/lib/env.ts` schema entirely. Remove all remaining references to `NEXT_PUBLIC_API_URL` across `apps/web` (env.ts, auth-client.ts, any other imports).
+- **Replaces previous build:** `apps/web/lib/auth-client.ts` — change `baseURL` source. `apps/web/lib/env.ts` — remove `NEXT_PUBLIC_API_URL` field. `apps/web/.env.local` — remove `NEXT_PUBLIC_API_URL` line.
+- **Files:** `apps/web/lib/auth-client.ts`, `apps/web/lib/env.ts`, `apps/web/.env.local`
+- **Verify:** `grep -r "NEXT_PUBLIC_API_URL" apps/web` returns no matches; auth client initialises without error
 
-#### 2.4. [x] Auth client update
-- **What:** Update `apps/web/lib/auth-client.ts` to use `NEXT_PUBLIC_API_URL` from `apps/web/lib/env.ts` as `baseURL`. Update `apps/web/lib/env.ts` to validate `NEXT_PUBLIC_API_URL` (replacing `NEXT_PUBLIC_BETTER_AUTH_URL`). Update `apps/web/proxy.ts` to check the Better Auth session against the Hono server URL.
-- **Replaces previous build:** `apps/web/lib/auth-client.ts` — change `baseURL` env var. `apps/web/lib/env.ts` — rename schema field. `apps/web/proxy.ts` — update server URL if hardcoded.
-- **Files:** `apps/web/lib/auth-client.ts`, `apps/web/lib/env.ts`, `apps/web/proxy.ts`
-- **Verify:** Visiting `/jobs` (protected) redirects to `/sign-in`
+#### 2.4. [x] Update proxy.ts for Next.js auth
+- **What:** Update `apps/web/proxy.ts` to validate sessions against the Next.js auth endpoint (`http://localhost:3000/api/auth/get-session`, same origin) instead of the old Hono server URL. Remove the `NEXT_PUBLIC_API_URL` dependency from proxy.ts.
+- **Replaces previous build:** `apps/web/proxy.ts` — update session check URL.
+- **Files:** `apps/web/proxy.ts`
+- **Verify:** Visiting `/jobs` unauthenticated redirects to `/sign-in`; authenticated requests pass through
 
 #### 2.5. [x] Sign-in and sign-up pages
 - **What:** `app/(auth)/sign-in/page.tsx` and `app/(auth)/sign-up/page.tsx` using shadcn `Card`, `Input`, `Button`. Email/password + Google OAuth via `authClient`. Forms use `react-hook-form` + `zodResolver`; field errors inline, server errors via `setError("root", ...)`.
@@ -154,15 +163,17 @@
 - **Files:** `packages/api/src/router.ts`, `packages/api/src/index.ts`
 - **Verify:** `tsc --noEmit` passes; `AppRouter` type is importable
 
-#### 3.3. [x] tRPC HTTP handler on Hono
-- **What:** In `apps/server/src/index.ts`, mount tRPC via `fetchRequestHandler` from `@trpc/server/adapters/fetch`: `app.all("/trpc/*", (c) => fetchRequestHandler({ endpoint: "/trpc", req: c.req.raw, router: appRouter, createContext: () => createContext(c.req.raw) }))`. Install `@trpc/server` in `apps/server`.
-- **Files:** `apps/server/src/index.ts`, `apps/server/package.json`
-- **Verify:** `curl "http://localhost:3001/trpc/health"` returns `{"result":{"data":"ok"}}`
+#### 3.3. [x] tRPC HTTP handler on Next.js
+- **What:** Create `apps/web/app/api/trpc/[trpc]/route.ts` using `fetchRequestHandler` from `@trpc/server/adapters/fetch`. Export `GET` and `POST`. Import `appRouter` and `createContext` from `@repo/api`. The Hono-based handler is gone with `apps/server` (task 0.5).
+- **Replaces previous build:** tRPC was mounted on the Hono server (now deleted). Create the Next.js route handler instead.
+- **Files:** `apps/web/app/api/trpc/[trpc]/route.ts`
+- **Verify:** `curl "http://localhost:3000/api/trpc/health"` returns `{"result":{"data":"ok"}}`
 
-#### 3.4. [x] tRPC client + React Query provider
-- **What:** Install `@trpc/client`, `@trpc/react-query`, `@tanstack/react-query` in `apps/web`. Create `apps/web/lib/trpc.ts` with `createTRPCReact<AppRouter>()` — use `import type { AppRouter }` from `@repo/api` (type-only, no DB bundled). HTTP link points to `env.NEXT_PUBLIC_API_URL + "/trpc"`. Create `TRPCProvider` client component wrapping `QueryClientProvider` + `trpc.Provider`. Mount in `apps/web/app/layout.tsx`.
-- **Files:** `apps/web/lib/trpc.ts`, `apps/web/app/layout.tsx`
-- **Verify:** No TypeScript errors; client components can import `trpc` and see typed procedures
+#### 3.4. [x] tRPC client
+- **What:** Update `apps/web/lib/trpc.ts` to use `/api/trpc` as the `httpBatchLink` endpoint (relative URL, same-origin — no env var required).
+- **Replaces previous build:** `apps/web/lib/trpc.ts` — change endpoint from `env.NEXT_PUBLIC_API_URL + "/trpc"` to `"/api/trpc"`.
+- **Files:** `apps/web/lib/trpc.ts`
+- **Verify:** No TypeScript errors; `trpc.health.useQuery()` returns `"ok"` in the browser
 
 ---
 
@@ -215,15 +226,17 @@
 - **Files:** `packages/automation/src/scorer.ts`
 - **Verify:** Unit tests confirm all three tiers and edge cases
 
-#### 5.5. [x] Search tRPC procedure
-- **What:** `packages/api/src/routers/jobs.ts` — `search` mutation: fetch criteria, decrypt creds, scrape, score, bulk-insert, return `{ queued: true }` immediately (fire-and-forget).
+#### 5.5. [ ] Search tRPC procedure
+- **What:** Update `packages/api/src/routers/jobs.ts` `search` mutation to enqueue a job to `searchQueue` (from `packages/api/src/queues/`) instead of calling `runSearch` as fire-and-forget async. Return `{ queued: true }` immediately after enqueue.
+- **Replaces previous build:** `packages/api/src/routers/jobs.ts` `search` mutation — replace `runSearch(...)` fire-and-forget with `searchQueue.add("search", { userId, criteria })`.
 - **Files:** `packages/api/src/routers/jobs.ts`
-- **Verify:** Returns `{ queued: true }` immediately; rows appear after async scrape
+- **Verify:** Returns `{ queued: true }` immediately; a BullMQ job is visible in the queue
 
-#### 5.6. [x] Job search + scorer tests
-- **What:** Vitest unit tests for scorer and jobs.search router (mocked browser/scraper).
-- **Files:** `packages/automation/src/scorer.test.ts`, `packages/api/src/routers/jobs.test.ts`
-- **Verify:** `pnpm test` passes for both packages
+#### 5.6. [ ] Job search + scorer tests
+- **What:** Update `packages/api/src/routers/jobs.test.ts` to mock `searchQueue` from `packages/api/src/queues/` and assert `searchQueue.add` is called with the correct job data instead of asserting the scraper was called directly.
+- **Replaces previous build:** `packages/api/src/routers/jobs.test.ts` — update mocks and assertions for the new enqueue pattern.
+- **Files:** `packages/api/src/routers/jobs.test.ts`
+- **Verify:** `pnpm --filter @repo/api vitest run` passes
 
 ---
 
@@ -268,15 +281,17 @@
 - **Files:** `packages/ai/src/agents/apply-agent.ts`
 - **Verify:** Prompt detects "Easy Apply" at runtime via `browser_snapshot`
 
-#### 7.4. [x] Apply tRPC procedure wiring
-- **What:** Add `apply` mutation to `packages/api/src/routers/jobs.ts`. Validates ownership + `pending_review` status, returns `{ queued: true }`, async-updates status after `applyToJob`. Service layer already in place (`packages/api/src/services/`) — add logic to `jobs.service.ts`.
+#### 7.4. [ ] Apply tRPC procedure wiring
+- **What:** Update `packages/api/src/routers/jobs.ts` `apply` mutation to enqueue one job per `jobId` to `applyQueue` (from `packages/api/src/queues/`) instead of calling `applyToJob` as fire-and-forget async. Validate ownership + `pending_review` status before enqueuing. Return `{ queued: true }`.
+- **Replaces previous build:** `packages/api/src/routers/jobs.ts` `apply` mutation — replace per-job `applyToJob(...)` fire-and-forget with `applyQueue.add("apply", { jobId, userId })`.
 - **Files:** `packages/api/src/routers/jobs.ts`
-- **Verify:** Returns `{ queued: true }`; foreign jobIds throw `FORBIDDEN`
+- **Verify:** Returns `{ queued: true }`; foreign jobIds throw `FORBIDDEN`; jobs appear in BullMQ apply queue
 
-#### 7.5. [x] Apply agent tests
-- **What:** Vitest tests for apply-agent and jobs.apply router.
-- **Files:** `packages/ai/src/agents/apply-agent.test.ts`, `packages/api/src/routers/jobs.test.ts`
-- **Verify:** `pnpm test` passes across all packages
+#### 7.5. [ ] Apply agent tests
+- **What:** Update `packages/api/src/routers/jobs.test.ts` to mock `applyQueue` from `packages/api/src/queues/` and assert `applyQueue.add` is called with correct job data per jobId.
+- **Replaces previous build:** `packages/api/src/routers/jobs.test.ts` — update apply mutation mocks and assertions for the new enqueue pattern.
+- **Files:** `packages/api/src/routers/jobs.test.ts`
+- **Verify:** `pnpm --filter @repo/api vitest run` passes
 
 ---
 
@@ -297,52 +312,35 @@
 - **Files:** `apps/web/app/(dashboard)/jobs/page.tsx`
 - **Verify:** Job statuses update without manual refresh
 
-#### 8.4. [x] CLAUDE.md
-- **What:** Run `/init` to generate `CLAUDE.md` documenting monorepo structure, how to run both servers locally, env vars, migration workflow.
+#### 8.4. [ ] CLAUDE.md
+- **What:** Update `CLAUDE.md` to reflect the new architecture: Next.js API routes for tRPC and Better Auth, `apps/worker` BullMQ app, Redis in Docker Compose, removed Hono server. Update dev commands (`pnpm turbo dev --filter=worker` replaces `--filter=server`), env var table, and architecture diagram.
+- **Replaces previous build:** `CLAUDE.md` — rewrite architecture section, dev commands, and env vars.
 - **Files:** `CLAUDE.md`
-- **Verify:** File accurately describes the project
+- **Verify:** File accurately describes the new architecture
 
 ---
 
-## Completed
+### Phase 9: BullMQ Queue + Worker
 
-- **Date:** 2026-05-22
-- **All tasks executed successfully:** yes
-- **Files changed:**
-  - `packages/db/src/schema/jobs.ts` — added `Job` type export
-  - `packages/db/src/schema/profiles.ts` — added `Profile` type export
-  - `packages/automation/src/types.ts` — `Platform` derived from `platformEnum`
-  - `packages/automation/src/scorer.ts` — `FitTier` derived from `fitTierEnum`; returns enum values at runtime
-  - `packages/automation/src/scorer.test.ts` — mock `@repo/db` to avoid DB env validation
-  - `packages/api/src/services/jobs.service.ts` — `listJobs`, `updateJobStatus`, `applyJobs` service functions
-  - `packages/api/src/routers/jobs.ts` — `list`, `updateStatus`, `applyJobs` procedures
-  - `packages/api/src/routers/jobs.test.ts` — `applyJobs` tests
-  - `packages/ai/src/gemini.ts` — Gemini 2.5 Flash model
-  - `packages/ai/src/mcp.ts` — `createPlaywrightMCPClient()` via `@ai-sdk/mcp`
-  - `packages/ai/src/agents/apply-agent.ts` — `applyToJob()` with full LinkedIn Easy Apply prompt
-  - `packages/ai/src/agents/apply-agent.test.ts` — 4 tests
-  - `packages/ai/src/index.ts` — exports all public AI APIs
-  - `apps/web/app/(dashboard)/layout.tsx` — dashboard layout with sidebar
-  - `apps/web/app/(dashboard)/jobs/page.tsx` — jobs page with skeleton, empty state, polling
-  - `apps/web/app/(dashboard)/jobs/page.tsx` — Search Jobs button
-  - `apps/web/components/nav/sidebar.tsx` — nav links + sign-out
-  - `apps/web/components/jobs/job-tabs.tsx` — 4-tab layout with selection state
-  - `apps/web/components/jobs/job-card.tsx` — fitTier badge, Skip, checkbox
-  - `apps/web/components/jobs/job-list-skeleton.tsx` — loading skeleton
-  - `apps/web/components/jobs/empty-state.tsx` — empty state component
-  - `apps/web/lib/trpc.tsx` — superjson transformer added
-  - `CLAUDE.md` — project documentation
-- **How to test:**
-  1. `docker compose up -d`
-  2. Copy `apps/server/.env.example` → `.env`, fill in real values
-  3. `pnpm --filter @repo/db migrate`
-  4. `pnpm turbo dev --filter=server` + `pnpm turbo dev --filter=web`
-  5. Visit http://localhost:3000, sign up, fill in Profile, click Search Jobs
-- **Follow-up items:**
-  - LinkedIn ToS: scraping and auto-apply violate LinkedIn's Terms of Service (known risk)
-  - Fire-and-forget async ops need a proper queue (pg-boss) before hosting
-  - Gemini free tier: 15 RPM — serialize apply calls in production
-  - LinkedIn CAPTCHA: expect blocks in real usage; MVP limitation
+#### 9.1. [ ] BullMQ queue definitions in packages/api
+- **What:** Install `bullmq` in `packages/api`. Create `packages/api/src/queues/index.ts` defining `searchQueue` and `applyQueue` as BullMQ `Queue` instances connected via `REDIS_URL`. Export TypeScript job data types: `SearchJobData` (`{ userId: string; criteriaId: string }`) and `ApplyJobData` (`{ jobId: string; userId: string }`). Add `REDIS_URL` to `packages/api/src/env.ts` Zod validation. Add `REDIS_URL` to `packages/api` turbo `passThroughEnv`.
+- **Files:** `packages/api/src/queues/index.ts`, `packages/api/src/env.ts`, `packages/api/package.json`
+- **Verify:** `tsc --noEmit` passes in `packages/api`; queue instances connect to Redis without error
+
+#### 9.2. [ ] Worker: search job processor
+- **What:** `apps/worker/src/workers/search.worker.ts` — BullMQ `Worker` consuming `searchQueue`. Fetches user criteria from DB, decrypts LinkedIn credentials, runs `packages/automation` scraper + scorer, bulk-inserts results to `jobs` table. Marks job complete on success, failed on error. Export the worker instance for graceful shutdown.
+- **Files:** `apps/worker/src/workers/search.worker.ts`
+- **Verify:** Enqueueing a search job via tRPC triggers scrape; rows appear in `jobs` table
+
+#### 9.3. [ ] Worker: apply job processor
+- **What:** `apps/worker/src/workers/apply.worker.ts` — BullMQ `Worker` consuming `applyQueue`. Fetches job + profile from DB, calls `applyToJob(job, profile)` from `@repo/ai`, updates job status to `applied` or `failed` in DB based on the `SUCCESS`/`FAILURE` sentinel. Export the worker instance for graceful shutdown.
+- **Files:** `apps/worker/src/workers/apply.worker.ts`
+- **Verify:** Enqueueing an apply job triggers the Gemini agent; job status updates in DB
+
+#### 9.4. [ ] Worker entrypoint + dev script
+- **What:** `apps/worker/src/index.ts` imports both worker instances and registers a `SIGTERM` handler that calls `worker.close()` on each before exiting. `apps/worker/.env` holds `DATABASE_URL`, `REDIS_URL`, `GEMINI_API_KEY`, `LINKEDIN_ENCRYPTION_KEY`; loaded via `tsx --env-file apps/worker/.env`. Add `REDIS_URL`, `GEMINI_API_KEY`, `LINKEDIN_ENCRYPTION_KEY` to `apps/worker` turbo `passThroughEnv`.
+- **Files:** `apps/worker/src/index.ts`, `apps/worker/.env`, `apps/worker/package.json`
+- **Verify:** `pnpm turbo dev --filter=@repo/worker` starts and processes queued jobs; `CTRL+C` shuts down gracefully without dropping in-progress jobs
 
 ---
 
@@ -352,18 +350,22 @@
 
 - **LinkedIn credential storage:** AES-256-GCM for MVP. Use a secrets manager before public deployment.
 
-- **Hono server separation:** `apps/server` owns all backend logic (Better Auth, tRPC, DB access). `apps/web` is purely frontend — `@repo/api` is imported type-only (`import type { AppRouter }`) so no DB pool is created in the Next.js process.
+- **Next.js owns all HTTP:** `apps/web` serves the frontend, tRPC API (`/api/trpc/*`), and Better Auth (`/api/auth/*`) from the same Next.js process. No separate backend server.
 
-- **Next.js 16 `proxy.ts`:** Edge route protection middleware. Checks Better Auth session cookie and redirects unauthenticated requests to `/sign-in` for `/(dashboard)` routes. Calls the Hono server (`NEXT_PUBLIC_API_URL`) for session validation.
+- **BullMQ as the async boundary:** tRPC mutations enqueue jobs; the worker processes them. The frontend polls `jobs.list` at 3s intervals to pick up status changes written by the worker.
 
-- **CORS:** Hono server must allow `http://localhost:3000` origin with `credentials: true` so the browser can send cookies cross-origin.
+- **`packages/api` is the queue source of truth:** Queue instances and job data types live in `packages/api/src/queues/`. Both the Next.js app (enqueue) and `apps/worker` (consume) import from `@repo/api` — no type duplication.
 
-- **Fire-and-forget:** Long-running Playwright ops (scrape, apply) are fire-and-forget from the Hono tRPC handler. Works for local MVP; migrate to a queue (pg-boss) before deploying to hosted environments.
+- **Next.js 16 `proxy.ts`:** Edge route protection middleware. Checks the Better Auth session by calling `/api/auth/get-session` on the same Next.js origin and redirects unauthenticated requests to `/sign-in` for `/(dashboard)` routes.
 
-- **Gemini free tier rate limit:** 15 RPM on `gemini-2.5-flash`. Apply procedure serializes jobs sequentially.
+- **Fire-and-forget replaced:** Long-running Playwright ops (scrape, apply) are now BullMQ jobs. Jobs persist in Redis; if the worker crashes mid-job, BullMQ retries automatically. Worker must write status to DB before completing so the frontend reflects the outcome.
+
+- **Gemini free tier rate limit:** 15 RPM on `gemini-2.5-flash`. Apply worker processes jobs serially (one BullMQ worker concurrency = 1).
 
 - **`packages/ai` vs `packages/automation` boundary:** `packages/ai` owns AI-driven form filling via MCP. `packages/automation` owns deterministic scraping via direct Playwright.
 
 - **2026-05-22 — Revision:** Swapped backend from Next.js route handlers to a separate Hono server (`apps/server`, port 3001). Added task 0.5 (Hono scaffold), replaced task 2.2 (Next.js auth route → cleanup + new Hono auth task), added task 2.4 (auth client update). Task 3.3 now mounts tRPC on Hono instead of Next.js. `apps/web` is frontend-only.
 
 - **2026-05-22 — Env architecture:** Each package owns its own `.env`. `apps/server/.env` holds all server runtime vars (loaded via `tsx --env-file .env`). `packages/db/.env` holds `DATABASE_URL` (auto-loaded by drizzle-kit). `apps/web/.env.local` holds `NEXT_PUBLIC_API_URL` (auto-loaded by Next.js). Root `.env` deleted. Each package's `src/env.ts` validates only what its own code uses; `packages/ai/src/env.ts` validates `GEMINI_API_KEY`. Per-package `turbo.json` files use `passThroughEnv` for runtime secrets (not hashed into cache key). `NEXT_PUBLIC_*` in `apps/web` auto-inferred by Turbo.
+
+- **2026-05-24 — Revision:** Replaced Hono server with Next.js API routes + BullMQ worker. Deleted `apps/server`; added `apps/worker` (BullMQ). tRPC and Better Auth moved to Next.js App Router API routes. Long-running search and apply tasks now enqueue to BullMQ (`searchQueue`, `applyQueue`) defined in `packages/api/src/queues/`. Redis added to Docker Compose. `NEXT_PUBLIC_API_URL` removed; auth client uses same-origin `http://localhost:3000`. Tasks cleared: 0.5 (cleanup), 2.2, 2.3, 2.4, 3.3, 3.4, 5.5, 5.6, 7.4, 7.5, 8.4. Phase 9 added.

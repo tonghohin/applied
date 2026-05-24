@@ -5,7 +5,6 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { createTRPCReact, httpBatchLink } from "@trpc/react-query";
 import { useState } from "react";
 import superjson from "superjson";
-import { env } from "./env";
 
 export type Job = RouterOutputs["jobs"]["list"][number];
 export type JobStatus = Job["status"];
@@ -19,7 +18,7 @@ export function TRPCProvider({ children }: { children: React.ReactNode }) {
     trpc.createClient({
       links: [
         httpBatchLink({
-          url: `${env.NEXT_PUBLIC_API_URL}/trpc`,
+          url: "/api/trpc",
           transformer: superjson,
         }),
       ],

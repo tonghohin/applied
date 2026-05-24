@@ -18,34 +18,6 @@ importers:
         specifier: ^5.8.3
         version: 5.9.3
 
-  apps/server:
-    dependencies:
-      '@hono/node-server':
-        specifier: ^1.13.8
-        version: 1.19.14(hono@4.12.21)
-      '@repo/api':
-        specifier: workspace:*
-        version: link:../../packages/api
-      '@trpc/server':
-        specifier: ^11.17.0
-        version: 11.17.0(typescript@5.9.3)
-      hono:
-        specifier: ^4.7.11
-        version: 4.12.21
-      zod:
-        specifier: ^4.4.3
-        version: 4.4.3
-    devDependencies:
-      '@types/node':
-        specifier: ^20
-        version: 20.19.41
-      tsx:
-        specifier: ^4.19.4
-        version: 4.22.3
-      typescript:
-        specifier: ^5.8.3
-        version: 5.9.3
-
   apps/web:
     dependencies:
       '@base-ui/react':
@@ -69,6 +41,9 @@ importers:
       '@trpc/react-query':
         specifier: ^11.17.0
         version: 11.17.0(@tanstack/react-query@5.100.11(react@19.2.4))(@trpc/client@11.17.0(@trpc/server@11.17.0(typescript@5.9.3))(typescript@5.9.3))(@trpc/server@11.17.0(typescript@5.9.3))(react@19.2.4)(typescript@5.9.3)
+      '@trpc/server':
+        specifier: ^11.17.0
+        version: 11.17.0(typescript@5.9.3)
       better-auth:
         specifier: ^1.6.11
         version: 1.6.11(@opentelemetry/api@1.9.1)(drizzle-kit@0.31.10)(drizzle-orm@0.45.2(@opentelemetry/api@1.9.1)(@types/pg@8.20.0)(kysely@0.28.17)(pg@8.21.0))(next@16.2.6(@opentelemetry/api@1.9.1)(react-dom@19.2.4(react@19.2.4))(react@19.2.4))(pg@8.21.0)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)(vitest@4.1.7(@opentelemetry/api@1.9.1)(@types/node@20.19.41)(@vitest/coverage-v8@4.1.7)(msw@2.14.6(@types/node@20.19.41)(typescript@5.9.3))(vite@8.0.14(@types/node@20.19.41)(esbuild@0.28.0)(jiti@2.7.0)(tsx@4.22.3)))
@@ -126,6 +101,28 @@ importers:
         version: 4.3.0
       typescript:
         specifier: ^5
+        version: 5.9.3
+
+  apps/worker:
+    dependencies:
+      '@repo/ai':
+        specifier: workspace:*
+        version: link:../../packages/ai
+      '@repo/api':
+        specifier: workspace:*
+        version: link:../../packages/api
+      '@repo/db':
+        specifier: workspace:*
+        version: link:../../packages/db
+    devDependencies:
+      '@types/node':
+        specifier: ^20
+        version: 20.19.41
+      tsx:
+        specifier: ^4.19.3
+        version: 4.22.3
+      typescript:
+        specifier: ^5.8.3
         version: 5.9.3
 
   packages/ai:

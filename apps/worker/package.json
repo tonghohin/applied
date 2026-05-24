@@ -1,24 +1,22 @@
 {
-  "name": "server",
+  "name": "@repo/worker",
   "version": "0.0.0",
   "private": true,
   "scripts": {
     "dev": "tsx watch --env-file .env src/index.ts",
-    "build": "tsc",
+    "build": "tsc --noEmit",
     "typecheck": "tsc --noEmit",
     "lint": "biome check .",
     "format": "biome format --write ."
   },
   "dependencies": {
-    "@hono/node-server": "^1.13.8",
+    "@repo/ai": "workspace:*",
     "@repo/api": "workspace:*",
-    "@trpc/server": "^11.17.0",
-    "hono": "^4.7.11",
-    "zod": "^4.4.3"
+    "@repo/db": "workspace:*"
   },
   "devDependencies": {
     "@types/node": "^20",
-    "tsx": "^4.19.4",
+    "tsx": "^4.19.3",
     "typescript": "^5.8.3"
   }
 }
