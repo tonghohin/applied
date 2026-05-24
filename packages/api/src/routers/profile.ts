@@ -4,8 +4,8 @@ import {
   upsertCriteriaSchema,
   upsertProfile,
   upsertProfileSchema,
-} from "../services/profile.service.js";
-import { protectedProcedure, router } from "../trpc.js";
+} from "../services/profile.service";
+import { protectedProcedure, router } from "../trpc";
 
 export const profileRouter = router({
   getProfile: protectedProcedure.query(({ ctx }) => getProfile(ctx.db, ctx.session.user.id)),

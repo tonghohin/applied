@@ -18,11 +18,10 @@
   },
   "dependencies": {
     "@better-auth/drizzle-adapter": "^1.6.11",
-    "@repo/ai": "workspace:*",
-    "@repo/automation": "workspace:^",
     "@repo/db": "workspace:*",
     "@trpc/server": "^11.17.0",
     "better-auth": "^1.6.11",
+    "bullmq": "^5.77.2",
     "drizzle-orm": "^0.45.2",
     "superjson": "^2.2.6",
     "zod": "^4.4.3"

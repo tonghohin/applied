@@ -1,2 +1,4 @@
-export { db } from "./db.js";
-export * from "./schema/index.js";
+export { db } from "./db";
+export type { Db } from "./db";
+export * from "./schema/index";
+export * from "./queries/index";

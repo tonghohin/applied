@@ -1,5 +1,5 @@
 import { pgEnum, pgTable, text, timestamp, uuid } from "drizzle-orm/pg-core";
-import { users } from "./auth.js";
+import { users } from "./auth";
 
 export const platformEnum = pgEnum("platform", ["linkedin"]);
 export const fitTierEnum = pgEnum("fit_tier", ["strong", "potential", "weak"]);

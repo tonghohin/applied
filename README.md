@@ -13,9 +13,9 @@ Automated job application tool. Scrapes LinkedIn for matching positions, scores 
 
 | Layer | Tech |
 |---|---|
-| Frontend | Next.js 16 App Router |
-| Backend | Hono + tRPC |
+| Frontend + API | Next.js 16 App Router |
 | Auth | Better Auth (Google OAuth) |
+| Job queue | BullMQ + Redis |
 | Database | PostgreSQL + Drizzle ORM |
 | Scraper | Playwright (LinkedIn) |
 | AI Agent | Gemini 2.5 Flash + MCP (Playwright tools) |
@@ -24,11 +24,11 @@ Automated job application tool. Scrapes LinkedIn for matching positions, scores 
 
 ```
 apps/
-  web/        Next.js frontend (port 3000)
-  server/     Hono API server (port 3001)
+  web/        Next.js frontend + API routes (port 3000)
+  worker/     BullMQ worker — runs scraper and AI agent
 packages/
-  api/        tRPC routers + services
-  db/         Drizzle schema + migrations
+  api/        tRPC routers, services, BullMQ queue definitions
+  db/         Drizzle schema + migrations + repository query functions
   automation/ LinkedIn scraper + job scorer
   ai/         Gemini apply agent
 ```
@@ -47,40 +47,46 @@ pnpm install
 
 ### 2. Set up environment variables
 
-**`apps/server/.env`**
-```
-DATABASE_URL=postgres://postgres:postgres@localhost:5432/applied
-BETTER_AUTH_SECRET=<random 32+ char string>
-BETTER_AUTH_URL=http://localhost:3001
-GOOGLE_CLIENT_ID=<from Google Cloud Console>
-GOOGLE_CLIENT_SECRET=<from Google Cloud Console>
-ALLOWED_ORIGIN=http://localhost:3000
-GEMINI_API_KEY=<from Google AI Studio>
-LINKEDIN_ENCRYPTION_KEY=<64 hex chars — openssl rand -hex 32>
-```
-
 **`apps/web/.env.local`**
 ```
-NEXT_PUBLIC_API_URL=http://localhost:3001
+NEXT_PUBLIC_BASE_URL=http://localhost:3000
+
+DATABASE_URL=postgresql://applied:applied@localhost:5432/applied
+BETTER_AUTH_SECRET=<random 32+ char string>
+BETTER_AUTH_URL=http://localhost:3000
+GOOGLE_CLIENT_ID=<from Google Cloud Console>
+GOOGLE_CLIENT_SECRET=<from Google Cloud Console>
+LINKEDIN_ENCRYPTION_KEY=<64 hex chars — openssl rand -hex 32>
+REDIS_URL=redis://localhost:6379
+```
+
+**`apps/worker/.env`**
+```
+DATABASE_URL=postgresql://applied:applied@localhost:5432/applied
+REDIS_URL=redis://localhost:6379
+GEMINI_API_KEY=<from Google AI Studio>
+LINKEDIN_ENCRYPTION_KEY=<64 hex chars — same as above>
 ```
 
 **`packages/db/.env`**
 ```
-DATABASE_URL=postgres://postgres:postgres@localhost:5432/applied
+DATABASE_URL=postgresql://applied:applied@localhost:5432/applied
 ```
 
-### 3. Start the database
+### 3. Start the database and Redis
 
 ```bash
 docker compose up -d
 pnpm migrate
 ```
 
-### 4. Start the servers
+### 4. Start the app
 
 ```bash
 pnpm dev
 ```
+
+This starts both `apps/web` (port 3000) and `apps/worker` in parallel.
 
 Open [http://localhost:3000](http://localhost:3000) and sign in with Google.
 

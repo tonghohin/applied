@@ -4,8 +4,8 @@ vi.mock("@repo/db", () => ({
   fitTierEnum: { enumValues: ["strong", "potential", "weak"] },
   platformEnum: { enumValues: ["linkedin"] },
 }));
-import { scoreJob } from "./scorer.js";
-import type { ScrapedJob } from "./types.js";
+import { scoreJob } from "./scorer";
+import type { ScrapedJob } from "./types";
 
 function makeJob(title: string, description: string): ScrapedJob {
   return {

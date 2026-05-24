@@ -1,18 +1,17 @@
 import { describe, expect, it, vi } from "vitest";
 
-vi.mock("../env.js", () => ({
-  env: { LINKEDIN_ENCRYPTION_KEY: "a".repeat(64) },
+vi.mock("../env", () => ({
+  env: { LINKEDIN_ENCRYPTION_KEY: "a".repeat(64), REDIS_URL: "redis://localhost:6379" },
 }));
 
-vi.mock("@repo/automation", () => ({
-  browserManager: { getBrowser: vi.fn(), close: vi.fn() },
-  loginToLinkedIn: vi.fn(),
-  scrapeLinkedInJobs: vi.fn().mockResolvedValue([]),
-  scoreJob: vi.fn().mockReturnValue("potential"),
+const { mockSearchAdd, mockApplyAdd } = vi.hoisted(() => ({
+  mockSearchAdd: vi.fn().mockResolvedValue(undefined),
+  mockApplyAdd: vi.fn().mockResolvedValue(undefined),
 }));
 
-vi.mock("@repo/ai", () => ({
-  applyToJob: vi.fn().mockResolvedValue({ success: true }),
+vi.mock("../queues/index", () => ({
+  searchQueue: { add: mockSearchAdd },
+  applyQueue: { add: mockApplyAdd },
 }));
 
 const updateChain = { set: vi.fn().mockReturnThis(), where: vi.fn().mockResolvedValue([]) };
@@ -30,8 +29,8 @@ vi.mock("@repo/db", () => ({
   jobStatusEnum: { enumValues: ["pending_review", "applied", "failed", "skipped"] },
 }));
 
-import type { Context } from "../context.js";
-import { jobsRouter } from "./jobs.js";
+import type { Context } from "../context";
+import { jobsRouter } from "./jobs";
 
 function makeCtx(userId = "user_1") {
   return {
@@ -61,22 +60,22 @@ function makeCtx(userId = "user_1") {
 }
 
 describe("jobs.applyJobs", () => {
-  it("returns { queued: true } immediately", async () => {
+  it("enqueues apply jobs and returns { queued: true }", async () => {
     const jobId = "550e8400-e29b-41d4-a716-446655440001";
+    mockApplyAdd.mockClear();
+
     const selectChain = {
       from: vi.fn().mockReturnThis(),
       where: vi.fn().mockResolvedValue([{ id: jobId, userId: "user_1", status: "pending_review" }]),
     };
-    const profileChain = {
-      from: vi.fn().mockReturnThis(),
-      where: vi.fn().mockResolvedValue([{ id: "profile-1" }]),
-    };
-    mockDb.select.mockReturnValueOnce(selectChain).mockReturnValueOnce(profileChain);
+    mockDb.select.mockReturnValueOnce(selectChain);
 
     const caller = jobsRouter.createCaller(makeCtx());
     const result = await caller.applyJobs({ jobIds: [jobId] });
 
     expect(result).toEqual({ queued: true });
+    expect(mockApplyAdd).toHaveBeenCalledOnce();
+    expect(mockApplyAdd).toHaveBeenCalledWith("apply", { jobId, userId: "user_1" });
   });
 
   it("throws FORBIDDEN when job belongs to another user", async () => {
@@ -93,21 +92,14 @@ describe("jobs.applyJobs", () => {
 });
 
 describe("jobs.search", () => {
-  it("returns { queued: true } immediately", async () => {
-    const selectChain1 = {
-      from: vi.fn().mockReturnThis(),
-      where: vi
-        .fn()
-        .mockResolvedValue([
-          { jobTitles: ["SWE"], locations: ["Remote"], remote: true, skills: [] },
-        ]),
-    };
-    const selectChain2 = { from: vi.fn().mockReturnThis(), where: vi.fn().mockResolvedValue([]) };
-    mockDb.select.mockReturnValueOnce(selectChain1).mockReturnValueOnce(selectChain2);
+  it("enqueues a search job and returns { queued: true }", async () => {
+    mockSearchAdd.mockClear();
 
     const caller = jobsRouter.createCaller(makeCtx());
     const result = await caller.search();
 
     expect(result).toEqual({ queued: true });
+    expect(mockSearchAdd).toHaveBeenCalledOnce();
+    expect(mockSearchAdd).toHaveBeenCalledWith("search", { userId: "user_1" });
   });
 });

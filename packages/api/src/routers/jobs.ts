@@ -1,21 +1,16 @@
 import { z } from "zod";
+import { applyQueue, searchQueue } from "../queues/index";
 import {
-  applyJobs,
   listJobs,
-  runSearch,
   updateJobStatus,
   updateStatusSchema,
-} from "../services/jobs.service.js";
-import { protectedProcedure, router } from "../trpc.js";
+  validateApplyJobs,
+} from "../services/jobs.service";
+import { protectedProcedure, router } from "../trpc";
 
 export const jobsRouter = router({
-  search: protectedProcedure.mutation(({ ctx }) => {
-    const userId = ctx.session.user.id;
-
-    runSearch(ctx.db, userId).catch((err) => {
-      console.error("[jobs.search] background error:", err);
-    });
-
+  search: protectedProcedure.mutation(async ({ ctx }) => {
+    await searchQueue.add("search", { userId: ctx.session.user.id });
     return { queued: true };
   }),
 
@@ -27,5 +22,10 @@ export const jobsRouter = router({
 
   applyJobs: protectedProcedure
     .input(z.object({ jobIds: z.array(z.uuid()) }))
-    .mutation(({ ctx, input }) => applyJobs(ctx.db, ctx.session.user.id, input.jobIds)),
+    .mutation(async ({ ctx, input }) => {
+      const userId = ctx.session.user.id;
+      const pending = await validateApplyJobs(ctx.db, userId, input.jobIds);
+      await Promise.all(pending.map((j) => applyQueue.add("apply", { jobId: j.id, userId })));
+      return { queued: true };
+    }),
 });

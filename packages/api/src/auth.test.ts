@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 
-vi.mock("./auth.js", () => ({
+vi.mock("./auth", () => ({
   auth: {
     api: {
       getSession: vi.fn(),
@@ -8,7 +8,7 @@ vi.mock("./auth.js", () => ({
   },
 }));
 
-import { auth } from "./auth.js";
+import { auth } from "./auth";
 
 const mockGetSession = vi.mocked(auth.api.getSession);
 

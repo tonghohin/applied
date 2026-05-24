@@ -1,10 +1,10 @@
 import { describe, expect, it, vi } from "vitest";
 
-vi.mock("../env.js", () => ({
+vi.mock("../env", () => ({
   env: { LINKEDIN_ENCRYPTION_KEY: "a".repeat(64) },
 }));
 
-import { decrypt, encrypt } from "./encrypt.js";
+import { decrypt, encrypt } from "./encrypt";
 
 describe("encrypt / decrypt", () => {
   it("round-trips plaintext", () => {

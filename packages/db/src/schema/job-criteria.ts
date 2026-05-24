@@ -1,5 +1,5 @@
 import { boolean, integer, pgTable, text, uuid } from "drizzle-orm/pg-core";
-import { users } from "./auth.js";
+import { users } from "./auth";
 
 export const jobCriteria = pgTable("job_criteria", {
   id: uuid("id").primaryKey().defaultRandom(),

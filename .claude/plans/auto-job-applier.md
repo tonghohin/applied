@@ -226,13 +226,13 @@
 - **Files:** `packages/automation/src/scorer.ts`
 - **Verify:** Unit tests confirm all three tiers and edge cases
 
-#### 5.5. [ ] Search tRPC procedure
+#### 5.5. [x] Search tRPC procedure
 - **What:** Update `packages/api/src/routers/jobs.ts` `search` mutation to enqueue a job to `searchQueue` (from `packages/api/src/queues/`) instead of calling `runSearch` as fire-and-forget async. Return `{ queued: true }` immediately after enqueue.
 - **Replaces previous build:** `packages/api/src/routers/jobs.ts` `search` mutation — replace `runSearch(...)` fire-and-forget with `searchQueue.add("search", { userId, criteria })`.
 - **Files:** `packages/api/src/routers/jobs.ts`
 - **Verify:** Returns `{ queued: true }` immediately; a BullMQ job is visible in the queue
 
-#### 5.6. [ ] Job search + scorer tests
+#### 5.6. [x] Job search + scorer tests
 - **What:** Update `packages/api/src/routers/jobs.test.ts` to mock `searchQueue` from `packages/api/src/queues/` and assert `searchQueue.add` is called with the correct job data instead of asserting the scraper was called directly.
 - **Replaces previous build:** `packages/api/src/routers/jobs.test.ts` — update mocks and assertions for the new enqueue pattern.
 - **Files:** `packages/api/src/routers/jobs.test.ts`
@@ -281,13 +281,13 @@
 - **Files:** `packages/ai/src/agents/apply-agent.ts`
 - **Verify:** Prompt detects "Easy Apply" at runtime via `browser_snapshot`
 
-#### 7.4. [ ] Apply tRPC procedure wiring
+#### 7.4. [x] Apply tRPC procedure wiring
 - **What:** Update `packages/api/src/routers/jobs.ts` `apply` mutation to enqueue one job per `jobId` to `applyQueue` (from `packages/api/src/queues/`) instead of calling `applyToJob` as fire-and-forget async. Validate ownership + `pending_review` status before enqueuing. Return `{ queued: true }`.
 - **Replaces previous build:** `packages/api/src/routers/jobs.ts` `apply` mutation — replace per-job `applyToJob(...)` fire-and-forget with `applyQueue.add("apply", { jobId, userId })`.
 - **Files:** `packages/api/src/routers/jobs.ts`
 - **Verify:** Returns `{ queued: true }`; foreign jobIds throw `FORBIDDEN`; jobs appear in BullMQ apply queue
 
-#### 7.5. [ ] Apply agent tests
+#### 7.5. [x] Apply agent tests
 - **What:** Update `packages/api/src/routers/jobs.test.ts` to mock `applyQueue` from `packages/api/src/queues/` and assert `applyQueue.add` is called with correct job data per jobId.
 - **Replaces previous build:** `packages/api/src/routers/jobs.test.ts` — update apply mutation mocks and assertions for the new enqueue pattern.
 - **Files:** `packages/api/src/routers/jobs.test.ts`
@@ -312,7 +312,7 @@
 - **Files:** `apps/web/app/(dashboard)/jobs/page.tsx`
 - **Verify:** Job statuses update without manual refresh
 
-#### 8.4. [ ] CLAUDE.md
+#### 8.4. [x] CLAUDE.md
 - **What:** Update `CLAUDE.md` to reflect the new architecture: Next.js API routes for tRPC and Better Auth, `apps/worker` BullMQ app, Redis in Docker Compose, removed Hono server. Update dev commands (`pnpm turbo dev --filter=worker` replaces `--filter=server`), env var table, and architecture diagram.
 - **Replaces previous build:** `CLAUDE.md` — rewrite architecture section, dev commands, and env vars.
 - **Files:** `CLAUDE.md`
@@ -322,22 +322,22 @@
 
 ### Phase 9: BullMQ Queue + Worker
 
-#### 9.1. [ ] BullMQ queue definitions in packages/api
+#### 9.1. [x] BullMQ queue definitions in packages/api
 - **What:** Install `bullmq` in `packages/api`. Create `packages/api/src/queues/index.ts` defining `searchQueue` and `applyQueue` as BullMQ `Queue` instances connected via `REDIS_URL`. Export TypeScript job data types: `SearchJobData` (`{ userId: string; criteriaId: string }`) and `ApplyJobData` (`{ jobId: string; userId: string }`). Add `REDIS_URL` to `packages/api/src/env.ts` Zod validation. Add `REDIS_URL` to `packages/api` turbo `passThroughEnv`.
 - **Files:** `packages/api/src/queues/index.ts`, `packages/api/src/env.ts`, `packages/api/package.json`
 - **Verify:** `tsc --noEmit` passes in `packages/api`; queue instances connect to Redis without error
 
-#### 9.2. [ ] Worker: search job processor
+#### 9.2. [x] Worker: search job processor
 - **What:** `apps/worker/src/workers/search.worker.ts` — BullMQ `Worker` consuming `searchQueue`. Fetches user criteria from DB, decrypts LinkedIn credentials, runs `packages/automation` scraper + scorer, bulk-inserts results to `jobs` table. Marks job complete on success, failed on error. Export the worker instance for graceful shutdown.
 - **Files:** `apps/worker/src/workers/search.worker.ts`
 - **Verify:** Enqueueing a search job via tRPC triggers scrape; rows appear in `jobs` table
 
-#### 9.3. [ ] Worker: apply job processor
+#### 9.3. [x] Worker: apply job processor
 - **What:** `apps/worker/src/workers/apply.worker.ts` — BullMQ `Worker` consuming `applyQueue`. Fetches job + profile from DB, calls `applyToJob(job, profile)` from `@repo/ai`, updates job status to `applied` or `failed` in DB based on the `SUCCESS`/`FAILURE` sentinel. Export the worker instance for graceful shutdown.
 - **Files:** `apps/worker/src/workers/apply.worker.ts`
 - **Verify:** Enqueueing an apply job triggers the Gemini agent; job status updates in DB
 
-#### 9.4. [ ] Worker entrypoint + dev script
+#### 9.4. [x] Worker entrypoint + dev script
 - **What:** `apps/worker/src/index.ts` imports both worker instances and registers a `SIGTERM` handler that calls `worker.close()` on each before exiting. `apps/worker/.env` holds `DATABASE_URL`, `REDIS_URL`, `GEMINI_API_KEY`, `LINKEDIN_ENCRYPTION_KEY`; loaded via `tsx --env-file apps/worker/.env`. Add `REDIS_URL`, `GEMINI_API_KEY`, `LINKEDIN_ENCRYPTION_KEY` to `apps/worker` turbo `passThroughEnv`.
 - **Files:** `apps/worker/src/index.ts`, `apps/worker/.env`, `apps/worker/package.json`
 - **Verify:** `pnpm turbo dev --filter=@repo/worker` starts and processes queued jobs; `CTRL+C` shuts down gracefully without dropping in-progress jobs
@@ -369,3 +369,52 @@
 - **2026-05-22 — Env architecture:** Each package owns its own `.env`. `apps/server/.env` holds all server runtime vars (loaded via `tsx --env-file .env`). `packages/db/.env` holds `DATABASE_URL` (auto-loaded by drizzle-kit). `apps/web/.env.local` holds `NEXT_PUBLIC_API_URL` (auto-loaded by Next.js). Root `.env` deleted. Each package's `src/env.ts` validates only what its own code uses; `packages/ai/src/env.ts` validates `GEMINI_API_KEY`. Per-package `turbo.json` files use `passThroughEnv` for runtime secrets (not hashed into cache key). `NEXT_PUBLIC_*` in `apps/web` auto-inferred by Turbo.
 
 - **2026-05-24 — Revision:** Replaced Hono server with Next.js API routes + BullMQ worker. Deleted `apps/server`; added `apps/worker` (BullMQ). tRPC and Better Auth moved to Next.js App Router API routes. Long-running search and apply tasks now enqueue to BullMQ (`searchQueue`, `applyQueue`) defined in `packages/api/src/queues/`. Redis added to Docker Compose. `NEXT_PUBLIC_API_URL` removed; auth client uses same-origin `http://localhost:3000`. Tasks cleared: 0.5 (cleanup), 2.2, 2.3, 2.4, 3.3, 3.4, 5.5, 5.6, 7.4, 7.5, 8.4. Phase 9 added.
+
+- **`packages/api/src/auth-env.ts`:** Auth env vars (`BETTER_AUTH_*`, `GOOGLE_*`) were split out of `env.ts` into `auth-env.ts` so the worker can import from `packages/api` services without needing those vars. `env.ts` now only validates `LINKEDIN_ENCRYPTION_KEY` and `REDIS_URL`.
+
+- **Worker import isolation:** `apps/worker` imports directly from `@repo/db`, `@repo/automation`, and `@repo/ai` — NOT from `@repo/api`. A local `src/decrypt.ts` inlines the AES-256-GCM decrypt function to avoid the auth env chain.
+
+- **2026-05-24 — Repository pattern + worker refactor:** Moved all DB queries out of `packages/automation` and `packages/ai` into `packages/db/src/queries/` (repository layer). Added `getJobCriteriaForUser`, `getJobForUser`, `insertJobs`, `updateJobApplied`, `updateJobFailed`, `getProfileForUser` as named functions exported from `@repo/db`. `packages/db` also now exports a `Db` type. `packages/automation/src/search.ts` (`runSearch`) and `packages/ai/src/agents/process-apply.ts` (`processApplyJob`) use these query functions instead of writing raw Drizzle. `packages/api/src/services/jobs.service.ts` is now CRUD-only (no automation imports). `@repo/automation` removed from `packages/api` deps. `drizzle-orm` removed from `packages/automation` and `packages/ai` deps.
+
+- **2026-05-24 — Turbopack module resolution fix:** Turbopack does NOT remap `.js` → `.ts` for workspace packages — it looks for literal file paths. Root `tsconfig.json` changed from `module: "NodeNext" / moduleResolution: "NodeNext"` to `module: "esnext" / moduleResolution: "bundler"`. All relative imports across packages and `apps/worker` had `.js` extensions stripped (40 files). No `transpilePackages` or `serverExternalPackages` needed — the extension removal alone fixes resolution.
+
+---
+
+## Completed
+
+- **Date:** 2026-05-24
+- **All tasks executed successfully:** yes
+- **Files changed:**
+  - `apps/server/` — deleted (replaced by Next.js API routes)
+  - `apps/web/app/api/auth/[...all]/route.ts` — created; Next.js auth route handler
+  - `apps/web/app/api/trpc/[trpc]/route.ts` — created; Next.js tRPC route handler
+  - `apps/web/lib/trpc.tsx` — endpoint changed to `/api/trpc`
+  - `apps/web/lib/auth-client.ts` — baseURL uses `NEXT_PUBLIC_BASE_URL`
+  - `apps/web/lib/env.ts` — replaced `NEXT_PUBLIC_API_URL` with `NEXT_PUBLIC_BASE_URL`
+  - `apps/web/proxy.ts` — unchanged (already cookie-based, no Hono URL)
+  - `apps/web/.env.local` / `.env.example` — updated vars, removed `GEMINI_API_KEY`
+  - `apps/web/package.json` — added `@trpc/server`
+  - `apps/worker/` — new BullMQ worker app (search + apply workers, graceful shutdown)
+  - `apps/worker/.env` / `.env.example` — created
+  - `docker-compose.yaml` — added Redis service
+  - `packages/api/src/auth-env.ts` — new; auth-specific env validation
+  - `packages/api/src/env.ts` — now only validates `LINKEDIN_ENCRYPTION_KEY` + `REDIS_URL`
+  - `packages/api/src/auth.ts` — imports from `auth-env.ts`, removed `trustedOrigins`
+  - `packages/api/src/queues/index.ts` — new; `searchQueue` + `applyQueue` + job data types
+  - `packages/api/src/routers/jobs.ts` — search + apply mutations now enqueue to BullMQ
+  - `packages/api/src/services/jobs.service.ts` — removed `applyJobs`/`applyToJob`; added `validateApplyJobs`
+  - `packages/api/src/routers/jobs.test.ts` — asserts queue enqueue calls
+  - `packages/api/package.json` — removed `@repo/ai`, added `bullmq`
+  - `CLAUDE.md` — updated for new architecture
+- **How to test:**
+  1. `docker compose up -d` (starts postgres + redis)
+  2. `pnpm turbo dev --filter=web` — Next.js on port 3000
+  3. `pnpm turbo dev --filter=@repo/worker` — BullMQ worker
+  4. Visit http://localhost:3000, sign in, fill profile, click Search Jobs
+  5. Jobs appear after the worker processes the search queue
+- **Follow-up items:**
+  - LinkedIn ToS: scraping and auto-apply violate LinkedIn's Terms of Service (known risk)
+  - Worker needs a proper job queue with retry/backoff config for production
+  - Gemini free tier: 15 RPM — apply worker concurrency is already 1
+  - LinkedIn CAPTCHA: expect blocks in real usage; MVP limitation
+  - `BETTER_AUTH_SECRET` and Google OAuth vars must match between `apps/web/.env.local` and `apps/worker/.env` if worker ever needs auth context (currently it doesn't)

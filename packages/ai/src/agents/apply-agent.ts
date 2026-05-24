@@ -1,7 +1,7 @@
 import type { Job, Profile } from "@repo/db";
 import { generateText, stepCountIs } from "ai";
-import { gemini } from "../gemini.js";
-import { createPlaywrightMCPClient } from "../mcp.js";
+import { gemini } from "../gemini";
+import { createPlaywrightMCPClient } from "../mcp";
 
 export type ApplyResult = { success: true } | { success: false; reason: string };
 

@@ -1,5 +1,5 @@
-export { auth } from "./auth.js";
-export { appRouter } from "./router.js";
-export type { AppRouter } from "./router.js";
-export { createContext } from "./context.js";
-export type { RouterOutputs } from "./types.js";
+export { auth } from "./auth";
+export { appRouter } from "./router";
+export type { AppRouter } from "./router";
+export { createContext } from "./context";
+export type { RouterOutputs } from "./types";

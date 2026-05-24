@@ -1,6 +1,6 @@
 /// <reference lib="dom" />
 import type { Page } from "playwright";
-import type { ScrapedJob, SearchCriteria } from "../types.js";
+import type { ScrapedJob, SearchCriteria } from "../types";
 
 const DELAY_MS = 1500;
 

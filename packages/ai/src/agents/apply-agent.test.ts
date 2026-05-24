@@ -5,15 +5,15 @@ const { mockClose, mockTools } = vi.hoisted(() => ({
   mockTools: vi.fn().mockResolvedValue({}),
 }));
 
-vi.mock("../env.js", () => ({
+vi.mock("../env", () => ({
   env: { GEMINI_API_KEY: "test-key" },
 }));
 
-vi.mock("../gemini.js", () => ({
+vi.mock("../gemini", () => ({
   gemini: {},
 }));
 
-vi.mock("../mcp.js", () => ({
+vi.mock("../mcp", () => ({
   createPlaywrightMCPClient: vi.fn().mockResolvedValue({
     tools: mockTools,
     close: mockClose,
@@ -27,7 +27,7 @@ vi.mock("ai", () => ({
 
 import type { Job, Profile } from "@repo/db";
 import { generateText } from "ai";
-import { applyToJob } from "./apply-agent.js";
+import { applyToJob } from "./apply-agent";
 
 const mockJob = {
   id: "job-1",

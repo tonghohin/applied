@@ -1,5 +1,5 @@
 import { createCipheriv, createDecipheriv, randomBytes } from "node:crypto";
-import { env } from "../env.js";
+import { env } from "../env";
 
 function getKey() {
   return Buffer.from(env.LINKEDIN_ENCRYPTION_KEY, "hex");

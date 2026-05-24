@@ -1,8 +1,8 @@
 import { jobCriteria, profiles } from "@repo/db";
 import { eq } from "drizzle-orm";
 import { z } from "zod";
-import type { Context } from "../context.js";
-import { encrypt } from "../lib/encrypt.js";
+import type { Context } from "../context";
+import { encrypt } from "../lib/encrypt";
 
 type Db = Context["db"];
 

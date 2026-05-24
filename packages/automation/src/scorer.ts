@@ -1,5 +1,5 @@
 import { fitTierEnum } from "@repo/db";
-import type { ScrapedJob, SearchCriteria } from "./types.js";
+import type { ScrapedJob, SearchCriteria } from "./types";
 
 export type FitTier = (typeof fitTierEnum.enumValues)[number];
 

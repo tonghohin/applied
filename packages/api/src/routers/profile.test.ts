@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 
-vi.mock("../env.js", () => ({
+vi.mock("../env", () => ({
   env: { LINKEDIN_ENCRYPTION_KEY: "a".repeat(64) },
 }));
 
@@ -29,9 +29,9 @@ vi.mock("@repo/db", () => ({
   jobCriteria: { userId: "userId_col" },
 }));
 
-import type { Context } from "../context.js";
-import { decrypt } from "../lib/encrypt.js";
-import { profileRouter } from "./profile.js";
+import type { Context } from "../context";
+import { decrypt } from "../lib/encrypt";
+import { profileRouter } from "./profile";
 
 function makeCtx(userId = "user_1") {
   return {
