@@ -1,14 +1,9 @@
-import { pgEnum, pgTable, text, timestamp, uuid } from "drizzle-orm/pg-core";
+import { pgTable, text, timestamp, uuid } from "drizzle-orm/pg-core";
 import { users } from "./auth";
+import { fitTierEnum, jobStatusEnum, platformEnum } from "./enums";
+import { searchRuns } from "./search-runs";
 
-export const platformEnum = pgEnum("platform", ["linkedin"]);
-export const fitTierEnum = pgEnum("fit_tier", ["strong", "potential", "weak"]);
-export const jobStatusEnum = pgEnum("job_status", [
-  "pending_review",
-  "applied",
-  "failed",
-  "skipped",
-]);
+export { fitTierEnum, jobStatusEnum, platformEnum };
 
 export const jobs = pgTable("jobs", {
   id: uuid("id").primaryKey().defaultRandom(),
@@ -23,6 +18,9 @@ export const jobs = pgTable("jobs", {
   platform: platformEnum("platform").notNull(),
   fitTier: fitTierEnum("fit_tier").notNull(),
   status: jobStatusEnum("status").notNull().default("pending_review"),
+  runId: uuid("run_id")
+    .notNull()
+    .references(() => searchRuns.id, { onDelete: "cascade" }),
   appliedAt: timestamp("applied_at"),
   failureReason: text("failure_reason"),
   createdAt: timestamp("created_at").notNull().defaultNow(),

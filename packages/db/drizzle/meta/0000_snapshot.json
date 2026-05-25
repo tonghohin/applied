@@ -1,5 +1,5 @@
 {
-  "id": "f368e7f7-2ef3-4635-990c-8e047f7336aa",
+  "id": "4e0ec9ab-85bc-4dd8-a0a6-7250fca0abea",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "version": "7",
   "dialect": "postgresql",
@@ -418,20 +418,20 @@
           "primaryKey": false,
           "notNull": false
         },
-        "resume_markdown": {
-          "name": "resume_markdown",
+        "resume": {
+          "name": "resume",
           "type": "text",
           "primaryKey": false,
           "notNull": true
         },
-        "cover_letter_markdown": {
-          "name": "cover_letter_markdown",
+        "cover_letter_instructions": {
+          "name": "cover_letter_instructions",
           "type": "text",
           "primaryKey": false,
-          "notNull": true
+          "notNull": false
         },
-        "linkedin_email_encrypted": {
-          "name": "linkedin_email_encrypted",
+        "linkedin_email": {
+          "name": "linkedin_email",
           "type": "text",
           "primaryKey": false,
           "notNull": false
@@ -520,17 +520,10 @@
         },
         "locations": {
           "name": "locations",
-          "type": "text[]",
+          "type": "jsonb",
           "primaryKey": false,
           "notNull": true,
-          "default": "'{}'"
-        },
-        "remote": {
-          "name": "remote",
-          "type": "boolean",
-          "primaryKey": false,
-          "notNull": true,
-          "default": false
+          "default": "'[]'::jsonb"
         },
         "seniority": {
           "name": "seniority",
@@ -645,6 +638,12 @@
           "notNull": true,
           "default": "'pending_review'"
         },
+        "run_id": {
+          "name": "run_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
         "applied_at": {
           "name": "applied_at",
           "type": "timestamp",
@@ -677,6 +676,106 @@
         "jobs_user_id_users_id_fk": {
           "name": "jobs_user_id_users_id_fk",
           "tableFrom": "jobs",
+          "tableTo": "users",
+          "columnsFrom": [
+            "user_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "jobs_run_id_search_runs_id_fk": {
+          "name": "jobs_run_id_search_runs_id_fk",
+          "tableFrom": "jobs",
+          "tableTo": "search_runs",
+          "columnsFrom": [
+            "run_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.search_runs": {
+      "name": "search_runs",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "user_id": {
+          "name": "user_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "platform": {
+          "name": "platform",
+          "type": "platform",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "status": {
+          "name": "status",
+          "type": "search_run_status",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'pending'"
+        },
+        "started_at": {
+          "name": "started_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "completed_at": {
+          "name": "completed_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "job_count": {
+          "name": "job_count",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
+        },
+        "error_message": {
+          "name": "error_message",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "search_criteria": {
+          "name": "search_criteria",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "search_runs_user_id_users_id_fk": {
+          "name": "search_runs_user_id_users_id_fk",
+          "tableFrom": "search_runs",
           "tableTo": "users",
           "columnsFrom": [
             "user_id"
@@ -720,6 +819,16 @@
       "schema": "public",
       "values": [
         "linkedin"
+      ]
+    },
+    "public.search_run_status": {
+      "name": "search_run_status",
+      "schema": "public",
+      "values": [
+        "pending",
+        "running",
+        "completed",
+        "failed"
       ]
     }
   },

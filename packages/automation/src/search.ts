@@ -1,12 +1,27 @@
-import { type Db, getJobCriteriaForUser, insertJobs } from "@repo/db";
+import { type Db, getJobCriteriaForUser, insertJobs, updateSearchRun } from "@repo/db";
 import { browserManager } from "./browser";
 import { loginToLinkedIn } from "./linkedin/login";
 import { scrapeLinkedInJobs } from "./linkedin/scraper";
 import { scoreJob } from "./scorer";
 
-export async function runSearch(db: Db, userId: string, email: string, password: string) {
+export async function runSearch(
+  db: Db,
+  userId: string,
+  email: string,
+  password: string,
+  runId: string,
+): Promise<number> {
   const criteriaRow = await getJobCriteriaForUser(db, userId);
   if (!criteriaRow) throw new Error("No job criteria found");
+
+  await updateSearchRun(db, runId, {
+    status: "running",
+    searchCriteria: {
+      jobTitles: criteriaRow.jobTitles,
+      skills: criteriaRow.skills,
+      locations: criteriaRow.locations,
+    },
+  });
 
   const browser = await browserManager.getBrowser();
   const page = await browser.newPage();
@@ -19,12 +34,13 @@ export async function runSearch(db: Db, userId: string, email: string, password:
       locations: criteriaRow.locations,
     });
 
-    if (scraped.length === 0) return;
+    if (scraped.length === 0) return 0;
 
     await insertJobs(
       db,
       scraped.map((job) => ({
         userId,
+        runId,
         title: job.title,
         company: job.company,
         location: job.location,
@@ -36,6 +52,8 @@ export async function runSearch(db: Db, userId: string, email: string, password:
         updatedAt: new Date(),
       })),
     );
+
+    return scraped.length;
   } finally {
     await page.close();
   }

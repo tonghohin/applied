@@ -1,6 +1,7 @@
 CREATE TYPE "public"."fit_tier" AS ENUM('strong', 'potential', 'weak');--> statement-breakpoint
 CREATE TYPE "public"."job_status" AS ENUM('pending_review', 'applied', 'failed', 'skipped');--> statement-breakpoint
 CREATE TYPE "public"."platform" AS ENUM('linkedin');--> statement-breakpoint
+CREATE TYPE "public"."search_run_status" AS ENUM('pending', 'running', 'completed', 'failed');--> statement-breakpoint
 CREATE TABLE "accounts" (
 	"id" text PRIMARY KEY NOT NULL,
 	"account_id" text NOT NULL,
@@ -59,9 +60,9 @@ CREATE TABLE "profiles" (
 	"linkedin_url" text,
 	"github_url" text,
 	"website_url" text,
-	"resume_markdown" text NOT NULL,
-	"cover_letter_markdown" text NOT NULL,
-	"linkedin_email_encrypted" text,
+	"resume" text NOT NULL,
+	"cover_letter_instructions" text,
+	"linkedin_email" text,
 	"linkedin_password_encrypted" text,
 	"created_at" timestamp DEFAULT now() NOT NULL,
 	"updated_at" timestamp DEFAULT now() NOT NULL,
@@ -73,7 +74,7 @@ CREATE TABLE "job_criteria" (
 	"user_id" text NOT NULL,
 	"job_titles" text[] DEFAULT '{}' NOT NULL,
 	"skills" text[] DEFAULT '{}' NOT NULL,
-	"locations" jsonb DEFAULT '[]' NOT NULL,
+	"locations" jsonb DEFAULT '[]'::jsonb NOT NULL,
 	"seniority" text[] DEFAULT '{}' NOT NULL,
 	"min_salary" integer,
 	CONSTRAINT "job_criteria_user_id_unique" UNIQUE("user_id")
@@ -90,10 +91,23 @@ CREATE TABLE "jobs" (
 	"platform" "platform" NOT NULL,
 	"fit_tier" "fit_tier" NOT NULL,
 	"status" "job_status" DEFAULT 'pending_review' NOT NULL,
+	"run_id" uuid NOT NULL,
 	"applied_at" timestamp,
 	"failure_reason" text,
 	"created_at" timestamp DEFAULT now() NOT NULL,
 	"updated_at" timestamp DEFAULT now() NOT NULL
+);
+--> statement-breakpoint
+CREATE TABLE "search_runs" (
+	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
+	"user_id" text NOT NULL,
+	"platform" "platform" NOT NULL,
+	"status" "search_run_status" DEFAULT 'pending' NOT NULL,
+	"started_at" timestamp DEFAULT now() NOT NULL,
+	"completed_at" timestamp,
+	"job_count" integer DEFAULT 0 NOT NULL,
+	"error_message" text,
+	"search_criteria" jsonb
 );
 --> statement-breakpoint
 ALTER TABLE "accounts" ADD CONSTRAINT "accounts_user_id_users_id_fk" FOREIGN KEY ("user_id") REFERENCES "public"."users"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
@@ -101,6 +115,8 @@ ALTER TABLE "sessions" ADD CONSTRAINT "sessions_user_id_users_id_fk" FOREIGN KEY
 ALTER TABLE "profiles" ADD CONSTRAINT "profiles_user_id_users_id_fk" FOREIGN KEY ("user_id") REFERENCES "public"."users"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "job_criteria" ADD CONSTRAINT "job_criteria_user_id_users_id_fk" FOREIGN KEY ("user_id") REFERENCES "public"."users"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "jobs" ADD CONSTRAINT "jobs_user_id_users_id_fk" FOREIGN KEY ("user_id") REFERENCES "public"."users"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "jobs" ADD CONSTRAINT "jobs_run_id_search_runs_id_fk" FOREIGN KEY ("run_id") REFERENCES "public"."search_runs"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "search_runs" ADD CONSTRAINT "search_runs_user_id_users_id_fk" FOREIGN KEY ("user_id") REFERENCES "public"."users"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 CREATE INDEX "account_userId_idx" ON "accounts" USING btree ("user_id");--> statement-breakpoint
 CREATE INDEX "session_userId_idx" ON "sessions" USING btree ("user_id");--> statement-breakpoint
 CREATE INDEX "verification_identifier_idx" ON "verifications" USING btree ("identifier");

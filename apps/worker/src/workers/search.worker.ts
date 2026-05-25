@@ -1,5 +1,5 @@
 import { runSearch } from "@repo/automation";
-import { db, profiles } from "@repo/db";
+import { db, insertSearchRun, profiles, updateSearchRun } from "@repo/db";
 import { Worker } from "bullmq";
 import { eq } from "drizzle-orm";
 import { decrypt } from "../decrypt";
@@ -21,7 +21,29 @@ async function processSearch(userId: string) {
   const email = profileRow.linkedinEmail;
   const password = decrypt(profileRow.linkedinPasswordEncrypted);
 
-  await runSearch(db, userId, email, password);
+  const run = await insertSearchRun(db, {
+    userId,
+    platform: "linkedin",
+    status: "pending",
+    startedAt: new Date(),
+  });
+  if (!run) throw new Error("Failed to create search run");
+
+  try {
+    const jobCount = await runSearch(db, userId, email, password, run.id);
+    await updateSearchRun(db, run.id, {
+      status: "completed",
+      completedAt: new Date(),
+      jobCount,
+    });
+  } catch (err) {
+    await updateSearchRun(db, run.id, {
+      status: "failed",
+      completedAt: new Date(),
+      errorMessage: err instanceof Error ? err.message : String(err),
+    });
+    throw err;
+  }
 }
 
 export const searchWorker = new Worker<SearchJobData>(

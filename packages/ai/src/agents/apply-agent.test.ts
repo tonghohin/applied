@@ -32,6 +32,7 @@ import { applyToJob } from "./apply-agent";
 const mockJob = {
   id: "job-1",
   userId: "user-1",
+  runId: "run-1",
   title: "Software Engineer",
   company: "Acme",
   location: "Remote",
