@@ -14,11 +14,11 @@ async function processSearch(userId: string) {
     .where(eq(profiles.userId, userId))
     .then((r) => r[0]);
 
-  if (!profileRow?.linkedinEmailEncrypted || !profileRow?.linkedinPasswordEncrypted) {
+  if (!profileRow?.linkedinEmail || !profileRow?.linkedinPasswordEncrypted) {
     throw new Error("LinkedIn credentials not set");
   }
 
-  const email = decrypt(profileRow.linkedinEmailEncrypted);
+  const email = profileRow.linkedinEmail;
   const password = decrypt(profileRow.linkedinPasswordEncrypted);
 
   await runSearch(db, userId, email, password);

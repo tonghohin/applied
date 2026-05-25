@@ -116,8 +116,8 @@ export async function upsertCoverLetter(db: Db, userId: string, input: UpsertCov
 export async function upsertLinkedIn(db: Db, userId: string, input: UpsertLinkedInInput) {
   const { linkedinEmail, linkedinPassword } = input;
   const set = {
-    linkedinEmailEncrypted: linkedinEmail ? encrypt(linkedinEmail) : null,
-    linkedinPasswordEncrypted: linkedinPassword ? encrypt(linkedinPassword) : null,
+    linkedinEmail,
+    linkedinPasswordEncrypted: encrypt(linkedinPassword),
     updatedAt: new Date(),
   };
   const [row] = await db

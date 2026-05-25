@@ -9,6 +9,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import { z } from "zod";
+
 const schema = z.object({
   linkedinEmail: z.email("Invalid email address"),
   linkedinPassword: z.string().min(1, "Required"),
@@ -16,7 +17,7 @@ const schema = z.object({
 
 type FormValues = z.infer<typeof schema>;
 
-export function LinkedInForm() {
+export function LinkedInForm({ savedEmail }: { savedEmail: string | null }) {
   const utils = trpc.useUtils();
   const { mutateAsync, isPending } = trpc.profile.upsertLinkedIn.useMutation({
     onSuccess: () => {
@@ -31,7 +32,7 @@ export function LinkedInForm() {
     formState: { errors, isSubmitting },
   } = useForm<FormValues>({
     resolver: zodResolver(schema),
-    defaultValues: { linkedinEmail: "", linkedinPassword: "" },
+    defaultValues: { linkedinEmail: savedEmail ?? "", linkedinPassword: "" },
   });
 
   async function onSubmit(values: FormValues) {
@@ -43,10 +44,11 @@ export function LinkedInForm() {
   }
 
   const loading = isSubmitting || isPending;
+  const hasCredentials = savedEmail !== null;
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-4">
-      <p className="text-sm text-muted-foreground">Credentials are encrypted and never logged.</p>
+      <p className="text-sm text-muted-foreground">Password is encrypted and never logged.</p>
       <div className="flex flex-col gap-1.5">
         <Label htmlFor="linkedinEmail">
           LinkedIn email <span className="text-destructive">*</span>
@@ -61,12 +63,16 @@ export function LinkedInForm() {
           LinkedIn password <span className="text-destructive">*</span>
         </Label>
         <PasswordInput id="linkedinPassword" {...register("linkedinPassword")} />
-        {errors.linkedinPassword && (
+        {errors.linkedinPassword ? (
           <p className="text-sm text-destructive">{errors.linkedinPassword.message}</p>
+        ) : (
+          <p className="text-sm text-muted-foreground">
+            For security, saved passwords are never shown.
+          </p>
         )}
       </div>
       <Button type="submit" disabled={loading}>
-        {loading ? "Saving…" : "Save"}
+        {loading ? "Saving…" : hasCredentials ? "Update credentials" : "Save credentials"}
       </Button>
     </form>
   );

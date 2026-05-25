@@ -58,7 +58,7 @@ const mockProfile = {
   websiteUrl: null,
   resumeMarkdown: "# Jane Doe\n5 years experience",
   coverLetterMarkdown: "Dear Hiring Manager,",
-  linkedinEmailEncrypted: null,
+  linkedinEmail: null,
   linkedinPasswordEncrypted: null,
   createdAt: new Date(),
   updatedAt: new Date(),

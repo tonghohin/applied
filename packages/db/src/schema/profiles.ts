@@ -16,7 +16,7 @@ export const profiles = pgTable("profiles", {
   websiteUrl: text("website_url"),
   resumeMarkdown: text("resume_markdown").notNull(),
   coverLetterMarkdown: text("cover_letter_markdown").notNull(),
-  linkedinEmailEncrypted: text("linkedin_email_encrypted"),
+  linkedinEmail: text("linkedin_email"),
   linkedinPasswordEncrypted: text("linkedin_password_encrypted"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),

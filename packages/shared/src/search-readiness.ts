@@ -5,7 +5,7 @@ type ProfileReadiness = {
   address?: string | null;
   resumeMarkdown?: string | null;
   coverLetterMarkdown?: string | null;
-  linkedinEmailEncrypted?: string | null;
+  linkedinEmail?: string | null;
   linkedinPasswordEncrypted?: string | null;
 };
 
@@ -26,7 +26,7 @@ export function getMissingSearchFields(
     [profile?.address, "Address"],
     [profile?.resumeMarkdown, "Resume"],
     [profile?.coverLetterMarkdown, "Cover letter"],
-    [profile?.linkedinEmailEncrypted, "LinkedIn email"],
+    [profile?.linkedinEmail, "LinkedIn email"],
     [profile?.linkedinPasswordEncrypted, "LinkedIn password"],
     [criteria?.jobTitles?.length, "Job titles"],
     [criteria?.skills?.length, "Skills"],

@@ -60,7 +60,7 @@ Better Auth with Google OAuth, configured in `packages/api/src/auth.ts`. The Dri
 
 ### Job search pipeline
 
-`jobs.search` enqueues to `searchQueue`. Worker decrypts LinkedIn credentials (AES-256-GCM), calls `runSearch` from `packages/automation` which scrapes LinkedIn via Playwright, scores jobs (title 4pts + skills up to 6pts; ≥7 strong, ≥3 potential, else weak), and inserts into `jobs` table.
+`jobs.search` enqueues to `searchQueue`. Worker reads `linkedinEmail` (plaintext) and decrypts `linkedinPasswordEncrypted` (AES-256-GCM), calls `runSearch` from `packages/automation` which scrapes LinkedIn via Playwright, scores jobs (title 4pts + skills up to 6pts; ≥7 strong, ≥3 potential, else weak), and inserts into `jobs` table.
 
 ### AI apply agent
 
@@ -78,6 +78,7 @@ Each package/app validates only the env vars it uses via its own `src/env.ts` (Z
 - Client in `apps/web/lib/trpc.tsx` — `createTRPCReact<AppRouter>()` with `httpBatchLink` pointing at `/api/trpc` + superjson
 - Use `trpc.x.queryOptions()` syntax (TanStack Query v5)
 - All procedures except `health` require authentication (`protectedProcedure` throws `UNAUTHORIZED` if no session)
+- Profile mutations are split by tab: `upsertPersonal`, `upsertResume`, `upsertCoverLetter`, `upsertLinkedIn`, `upsertCriteria` — each only validates and updates its own fields
 
 ### Data fetching pattern (server → client)
 
