@@ -2,6 +2,7 @@
 
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Field, FieldError, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { trpc } from "@/lib/trpc";
@@ -32,7 +33,6 @@ const schema = z.object({
 });
 
 type FormValues = z.infer<typeof schema>;
-
 
 export function CriteriaForm({
   initial,
@@ -103,27 +103,31 @@ export function CriteriaForm({
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-4">
-      <div className="flex flex-col gap-1.5">
-        <Label htmlFor="jobTitles">
+      <Field data-invalid={!!errors.jobTitles}>
+        <FieldLabel htmlFor="jobTitles">
           Job titles (comma-separated) <span className="text-destructive">*</span>
-        </Label>
+        </FieldLabel>
         <Input
           id="jobTitles"
           placeholder="Software Engineer, Frontend Developer"
           {...register("jobTitles")}
+          aria-invalid={!!errors.jobTitles}
         />
-        {errors.jobTitles && (
-          <p className="text-sm text-destructive">{errors.jobTitles.message}</p>
-        )}
-      </div>
+        <FieldError errors={[errors.jobTitles]} />
+      </Field>
 
-      <div className="flex flex-col gap-1.5">
-        <Label htmlFor="skills">
+      <Field data-invalid={!!errors.skills}>
+        <FieldLabel htmlFor="skills">
           Skills (comma-separated) <span className="text-destructive">*</span>
-        </Label>
-        <Input id="skills" placeholder="React, TypeScript, Node.js" {...register("skills")} />
-        {errors.skills && <p className="text-sm text-destructive">{errors.skills.message}</p>}
-      </div>
+        </FieldLabel>
+        <Input
+          id="skills"
+          placeholder="React, TypeScript, Node.js"
+          {...register("skills")}
+          aria-invalid={!!errors.skills}
+        />
+        <FieldError errors={[errors.skills]} />
+      </Field>
 
       <div className="flex flex-col gap-2">
         <div className="flex items-center justify-between">
@@ -142,11 +146,14 @@ export function CriteriaForm({
         {fields.map((field, index) => (
           <div key={field.id} className="flex flex-col gap-2 rounded-md border p-3">
             <div className="flex items-center gap-2">
-              <Input
-                placeholder="Toronto, Canada, New York…"
-                {...register(`locations.${index}.location`)}
-                className="flex-1"
-              />
+              <Field data-invalid={!!errors.locations?.[index]?.location} className="flex-1">
+                <Input
+                  placeholder="Toronto, Canada, New York…"
+                  {...register(`locations.${index}.location`)}
+                  aria-invalid={!!errors.locations?.[index]?.location}
+                />
+                <FieldError errors={[errors.locations?.[index]?.location]} />
+              </Field>
               <Button
                 type="button"
                 variant="ghost"
@@ -157,11 +164,6 @@ export function CriteriaForm({
                 Remove
               </Button>
             </div>
-            {errors.locations?.[index]?.location && (
-              <p className="text-sm text-destructive">
-                {errors.locations[index].location?.message}
-              </p>
-            )}
             <div className="flex gap-4">
               {WORK_TYPE_OPTIONS.map(({ value, label }) => {
                 const id = `wt-${index}-${value}`;
@@ -179,28 +181,24 @@ export function CriteriaForm({
                 );
               })}
             </div>
-            {errors.locations?.[index]?.workTypes && (
-              <p className="text-sm text-destructive">
-                {errors.locations[index].workTypes?.message}
-              </p>
-            )}
+            <FieldError errors={[errors.locations?.[index]?.workTypes]} />
           </div>
         ))}
 
         {typeof errors.locations?.message === "string" && (
-          <p className="text-sm text-destructive">{errors.locations.message}</p>
+          <FieldError errors={[errors.locations]} />
         )}
       </div>
 
-      <div className="flex flex-col gap-1.5">
-        <Label htmlFor="seniority">Seniority levels (comma-separated)</Label>
+      <Field>
+        <FieldLabel htmlFor="seniority">Seniority levels (comma-separated)</FieldLabel>
         <Input id="seniority" placeholder="Mid, Senior" {...register("seniority")} />
-      </div>
+      </Field>
 
-      <div className="flex flex-col gap-1.5">
-        <Label htmlFor="minSalary">Minimum salary (USD)</Label>
+      <Field>
+        <FieldLabel htmlFor="minSalary">Minimum salary (USD)</FieldLabel>
         <Input id="minSalary" type="number" placeholder="100000" {...register("minSalary")} />
-      </div>
+      </Field>
 
       <Button type="submit" disabled={loading}>
         {loading ? "Saving…" : "Save criteria"}

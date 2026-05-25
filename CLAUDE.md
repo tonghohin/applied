@@ -112,8 +112,14 @@ export function JobCard({ title, company }: JobCardProps) {}
 **Module imports**
 - Never use `.js` extensions on relative imports (e.g. `from "./auth"` not `from "./auth.js"`). The root tsconfig uses `moduleResolution: "bundler"` — Turbopack resolves imports literally and does not remap `.js` → `.ts`.
 
+**shadcn/ui components**
+- Before writing any UI markup, check `apps/web/components/ui/` for an installed component that covers the use case. Prefer the shadcn component over raw HTML + Tailwind every time — even for one-off elements like pills, dividers, or loading states.
+- If no installed component fits, install one: `npx shadcn@latest add <name>` (run from `apps/web/`). Only fall back to raw HTML when no shadcn component exists for the pattern.
+- For links styled as buttons, use `<Button render={<Link href="..." />}>` — this Button uses base-ui's `render` prop (not Radix's `asChild`). Works in server components: `@base-ui/react` declares its own `"use client"` boundary internally.
+- For forms, use `Field`, `FieldLabel`, `FieldError`, `FieldDescription` from `@/components/ui/field` with react-hook-form. Each `Field` takes `data-invalid={!!errors.x}`; each input takes `aria-invalid={!!errors.x}`; `<FieldError errors={[errors.x]} />` renders nothing when there is no error so no conditional needed.
+
 **Form feedback**
-- Field validation errors (e.g. "Required") go under the input via `{errors.field && <p>...`
+- Field validation errors go under the input via `<FieldError errors={[errors.field]} />` (no conditional wrapper needed)
 - Submission success and server errors go to Sonner: `toast.success(...)` in `onSuccess`, `toast.error(...)` in the `catch` block
 - Never use `setError("root", ...)` or render `errors.root` in the JSX
 

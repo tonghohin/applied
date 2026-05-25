@@ -5,15 +5,17 @@ import {
   Card,
   CardContent,
   CardDescription,
-  CardFooter,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { Field, FieldError, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { PasswordInput } from "@/components/ui/password-input";
-import { Label } from "@/components/ui/label";
+import { Separator } from "@/components/ui/separator";
 import { authClient } from "@/lib/auth-client";
+import { RiGoogleFill } from "@remixicon/react";
 import { zodResolver } from "@hookform/resolvers/zod";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
@@ -44,51 +46,80 @@ export default function SignUpPage() {
   async function onSubmit(values: FormValues) {
     const { error } = await authClient.signUp.email(values);
     if (error) {
-      toast.error(error.message ?? "Sign up failed");
+      const message =
+        error.code === "USER_ALREADY_EXISTS_USE_ANOTHER_EMAIL"
+          ? "An account with this email already exists. Try signing in instead."
+          : (error.message ?? "Sign up failed");
+      toast.error(message);
     } else {
       router.push("/jobs");
     }
   }
 
+  async function handleGoogle() {
+    await authClient.signIn.social({ provider: "google", callbackURL: "/jobs" });
+  }
+
   return (
     <div className="flex min-h-screen items-center justify-center p-4">
       <Card className="w-full max-w-sm">
-        <CardHeader>
-          <CardTitle>Create account</CardTitle>
-          <CardDescription>Enter your details to get started</CardDescription>
+        <CardHeader className="text-center">
+          <CardTitle className="text-2xl">Create your account</CardTitle>
+          <CardDescription>Enter your details below to create your account</CardDescription>
         </CardHeader>
-        <CardContent>
+        <CardContent className="flex flex-col gap-4">
           <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-4">
-            <div className="flex flex-col gap-1.5">
-              <Label htmlFor="name">Name</Label>
-              <Input id="name" type="text" placeholder="Jane Smith" {...register("name")} />
-              {errors.name && <p className="text-sm text-destructive">{errors.name.message}</p>}
-            </div>
-            <div className="flex flex-col gap-1.5">
-              <Label htmlFor="email">Email</Label>
-              <Input id="email" type="email" placeholder="you@example.com" {...register("email")} />
-              {errors.email && <p className="text-sm text-destructive">{errors.email.message}</p>}
-            </div>
-            <div className="flex flex-col gap-1.5">
-              <Label htmlFor="password">Password</Label>
-              <PasswordInput id="password" placeholder="••••••••" {...register("password")} />
-              {errors.password && (
-                <p className="text-sm text-destructive">{errors.password.message}</p>
-              )}
-            </div>
+            <Field data-invalid={!!errors.name}>
+              <FieldLabel htmlFor="name">Name</FieldLabel>
+              <Input
+                id="name"
+                type="text"
+                placeholder="Jane Smith"
+                {...register("name")}
+                aria-invalid={!!errors.name}
+              />
+              <FieldError errors={[errors.name]} />
+            </Field>
+            <Field data-invalid={!!errors.email}>
+              <FieldLabel htmlFor="email">Email</FieldLabel>
+              <Input
+                id="email"
+                type="email"
+                placeholder="m@example.com"
+                {...register("email")}
+                aria-invalid={!!errors.email}
+              />
+              <FieldError errors={[errors.email]} />
+            </Field>
+            <Field data-invalid={!!errors.password}>
+              <FieldLabel htmlFor="password">Password</FieldLabel>
+              <PasswordInput
+                id="password"
+                {...register("password")}
+                aria-invalid={!!errors.password}
+              />
+              <FieldError errors={[errors.password]} />
+            </Field>
             <Button type="submit" disabled={isSubmitting} className="w-full">
               {isSubmitting ? "Creating account…" : "Create account"}
             </Button>
           </form>
-        </CardContent>
-        <CardFooter>
-          <p className="text-sm text-muted-foreground">
+          <div className="flex items-center gap-3">
+            <Separator className="flex-1" />
+            <span className="text-muted-foreground text-sm">Or continue with</span>
+            <Separator className="flex-1" />
+          </div>
+          <Button variant="outline" className="w-full" onClick={handleGoogle}>
+            <RiGoogleFill />
+            Continue with Google
+          </Button>
+          <p className="text-center text-sm text-muted-foreground">
             Already have an account?{" "}
-            <a href="/sign-in" className="text-primary underline-offset-4 hover:underline">
+            <Link href="/sign-in" className="underline-offset-4 hover:underline">
               Sign in
-            </a>
+            </Link>
           </p>
-        </CardFooter>
+        </CardContent>
       </Card>
     </div>
   );

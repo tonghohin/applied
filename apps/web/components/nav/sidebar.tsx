@@ -10,13 +10,13 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from "@/components/ui/sidebar";
-import { BriefcaseIcon, LogOutIcon, UserIcon } from "lucide-react";
+import { RiBriefcaseLine, RiLogoutBoxLine, RiUserLine } from "@remixicon/react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 
 const NAV_LINKS = [
-  { href: "/jobs", label: "Jobs", icon: BriefcaseIcon },
-  { href: "/profile", label: "Profile", icon: UserIcon },
+  { href: "/jobs", label: "Jobs", icon: RiBriefcaseLine },
+  { href: "/profile", label: "Profile", icon: RiUserLine },
 ];
 
 export function AppSidebar() {
@@ -49,7 +49,7 @@ export function AppSidebar() {
         <SidebarMenu>
           <SidebarMenuItem>
             <SidebarMenuButton onClick={handleSignOut}>
-              <LogOutIcon />
+              <RiLogoutBoxLine />
               Sign out
             </SidebarMenuButton>
           </SidebarMenuItem>

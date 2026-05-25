@@ -1,6 +1,7 @@
 import { drizzleAdapter } from "@better-auth/drizzle-adapter";
 import { db } from "@repo/db";
 import { betterAuth } from "better-auth";
+import { lastLoginMethod } from "better-auth/plugins";
 import { authEnv as env } from "./auth-env";
 
 export const auth = betterAuth({
@@ -21,4 +22,5 @@ export const auth = betterAuth({
       requireLocalEmailVerified: false,
     },
   },
+  plugins: [lastLoginMethod()],
 });

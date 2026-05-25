@@ -1,7 +1,7 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
-import { Label } from "@/components/ui/label";
+import { Field, FieldError, FieldLabel } from "@/components/ui/field";
 import { Textarea } from "@/components/ui/textarea";
 import { trpc } from "@/lib/trpc";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -46,20 +46,19 @@ export function CoverLetterForm({ initial }: { initial?: InitialProfile }) {
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-4">
-      <div className="flex flex-col gap-1.5">
-        <Label htmlFor="coverLetterMarkdown">
+      <Field data-invalid={!!errors.coverLetterMarkdown}>
+        <FieldLabel htmlFor="coverLetterMarkdown">
           Cover letter template (Markdown) <span className="text-destructive">*</span>
-        </Label>
+        </FieldLabel>
         <Textarea
           id="coverLetterMarkdown"
           rows={20}
           placeholder="Dear Hiring Manager,..."
           {...register("coverLetterMarkdown")}
+          aria-invalid={!!errors.coverLetterMarkdown}
         />
-        {errors.coverLetterMarkdown && (
-          <p className="text-sm text-destructive">{errors.coverLetterMarkdown.message}</p>
-        )}
-      </div>
+        <FieldError errors={[errors.coverLetterMarkdown]} />
+      </Field>
       <Button type="submit" disabled={loading}>
         {loading ? "Saving…" : "Save"}
       </Button>

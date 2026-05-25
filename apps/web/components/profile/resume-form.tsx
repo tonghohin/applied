@@ -1,7 +1,7 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
-import { Label } from "@/components/ui/label";
+import { Field, FieldError, FieldLabel } from "@/components/ui/field";
 import { Textarea } from "@/components/ui/textarea";
 import { trpc } from "@/lib/trpc";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -46,20 +46,19 @@ export function ResumeForm({ initial }: { initial?: InitialProfile }) {
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-4">
-      <div className="flex flex-col gap-1.5">
-        <Label htmlFor="resumeMarkdown">
+      <Field data-invalid={!!errors.resumeMarkdown}>
+        <FieldLabel htmlFor="resumeMarkdown">
           Resume (Markdown) <span className="text-destructive">*</span>
-        </Label>
+        </FieldLabel>
         <Textarea
           id="resumeMarkdown"
           rows={20}
           placeholder="# Your Name&#10;&#10;## Experience..."
           {...register("resumeMarkdown")}
+          aria-invalid={!!errors.resumeMarkdown}
         />
-        {errors.resumeMarkdown && (
-          <p className="text-sm text-destructive">{errors.resumeMarkdown.message}</p>
-        )}
-      </div>
+        <FieldError errors={[errors.resumeMarkdown]} />
+      </Field>
       <Button type="submit" disabled={loading}>
         {loading ? "Saving…" : "Save"}
       </Button>

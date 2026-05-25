@@ -1,6 +1,6 @@
 "use client";
 
-import { Eye, EyeOff } from "lucide-react";
+import { RiEyeLine, RiEyeOffLine } from "@remixicon/react";
 import type * as React from "react";
 import { useState } from "react";
 import { InputGroup, InputGroupAddon, InputGroupButton, InputGroupInput } from "./input-group";
@@ -17,7 +17,7 @@ function PasswordInput({ className, ...props }: Omit<React.ComponentProps<"input
           tabIndex={-1}
           aria-label={visible ? "Hide password" : "Show password"}
         >
-          {visible ? <EyeOff /> : <Eye />}
+          {visible ? <RiEyeOffLine /> : <RiEyeLine />}
         </InputGroupButton>
       </InputGroupAddon>
     </InputGroup>

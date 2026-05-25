@@ -1,9 +1,9 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
+import { Field, FieldDescription, FieldError, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { PasswordInput } from "@/components/ui/password-input";
-import { Label } from "@/components/ui/label";
 import { trpc } from "@/lib/trpc";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
@@ -49,28 +49,32 @@ export function LinkedInForm({ savedEmail }: { savedEmail: string | null }) {
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-4">
       <p className="text-sm text-muted-foreground">Password is encrypted and never logged.</p>
-      <div className="flex flex-col gap-1.5">
-        <Label htmlFor="linkedinEmail">
+      <Field data-invalid={!!errors.linkedinEmail}>
+        <FieldLabel htmlFor="linkedinEmail">
           LinkedIn email <span className="text-destructive">*</span>
-        </Label>
-        <Input id="linkedinEmail" type="email" {...register("linkedinEmail")} />
-        {errors.linkedinEmail && (
-          <p className="text-sm text-destructive">{errors.linkedinEmail.message}</p>
-        )}
-      </div>
-      <div className="flex flex-col gap-1.5">
-        <Label htmlFor="linkedinPassword">
+        </FieldLabel>
+        <Input
+          id="linkedinEmail"
+          type="email"
+          {...register("linkedinEmail")}
+          aria-invalid={!!errors.linkedinEmail}
+        />
+        <FieldError errors={[errors.linkedinEmail]} />
+      </Field>
+      <Field data-invalid={!!errors.linkedinPassword}>
+        <FieldLabel htmlFor="linkedinPassword">
           LinkedIn password <span className="text-destructive">*</span>
-        </Label>
-        <PasswordInput id="linkedinPassword" {...register("linkedinPassword")} />
-        {errors.linkedinPassword ? (
-          <p className="text-sm text-destructive">{errors.linkedinPassword.message}</p>
-        ) : (
-          <p className="text-sm text-muted-foreground">
-            For security, saved passwords are never shown.
-          </p>
+        </FieldLabel>
+        <PasswordInput
+          id="linkedinPassword"
+          {...register("linkedinPassword")}
+          aria-invalid={!!errors.linkedinPassword}
+        />
+        <FieldError errors={[errors.linkedinPassword]} />
+        {!errors.linkedinPassword && (
+          <FieldDescription>For security, saved passwords are never shown.</FieldDescription>
         )}
-      </div>
+      </Field>
       <Button type="submit" disabled={loading}>
         {loading ? "Saving…" : hasCredentials ? "Update credentials" : "Save credentials"}
       </Button>

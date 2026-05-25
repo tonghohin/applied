@@ -1,8 +1,8 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
+import { Field, FieldError, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { trpc } from "@/lib/trpc";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
@@ -61,66 +61,62 @@ export function PersonalForm({ initial }: { initial?: InitialProfile }) {
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-4">
       <div className="grid grid-cols-2 gap-4">
-        <div className="flex flex-col gap-1.5">
-          <Label htmlFor="firstName">
+        <Field data-invalid={!!errors.firstName}>
+          <FieldLabel htmlFor="firstName">
             First name <span className="text-destructive">*</span>
-          </Label>
-          <Input id="firstName" {...register("firstName")} />
-          {errors.firstName && (
-            <p className="text-sm text-destructive">{errors.firstName.message}</p>
-          )}
-        </div>
-        <div className="flex flex-col gap-1.5">
-          <Label htmlFor="lastName">
+          </FieldLabel>
+          <Input id="firstName" {...register("firstName")} aria-invalid={!!errors.firstName} />
+          <FieldError errors={[errors.firstName]} />
+        </Field>
+        <Field data-invalid={!!errors.lastName}>
+          <FieldLabel htmlFor="lastName">
             Last name <span className="text-destructive">*</span>
-          </Label>
-          <Input id="lastName" {...register("lastName")} />
-          {errors.lastName && (
-            <p className="text-sm text-destructive">{errors.lastName.message}</p>
-          )}
-        </div>
+          </FieldLabel>
+          <Input id="lastName" {...register("lastName")} aria-invalid={!!errors.lastName} />
+          <FieldError errors={[errors.lastName]} />
+        </Field>
       </div>
-      <div className="flex flex-col gap-1.5">
-        <Label htmlFor="phone">
+      <Field data-invalid={!!errors.phone}>
+        <FieldLabel htmlFor="phone">
           Phone <span className="text-destructive">*</span>
-        </Label>
-        <Input id="phone" type="tel" {...register("phone")} />
-        {errors.phone && <p className="text-sm text-destructive">{errors.phone.message}</p>}
-      </div>
-      <div className="flex flex-col gap-1.5">
-        <Label htmlFor="address">
+        </FieldLabel>
+        <Input id="phone" type="tel" {...register("phone")} aria-invalid={!!errors.phone} />
+        <FieldError errors={[errors.phone]} />
+      </Field>
+      <Field data-invalid={!!errors.address}>
+        <FieldLabel htmlFor="address">
           Address <span className="text-destructive">*</span>
-        </Label>
-        <Input id="address" {...register("address")} />
-        {errors.address && <p className="text-sm text-destructive">{errors.address.message}</p>}
-      </div>
-      <div className="flex flex-col gap-1.5">
-        <Label htmlFor="linkedinUrl">LinkedIn URL</Label>
+        </FieldLabel>
+        <Input id="address" {...register("address")} aria-invalid={!!errors.address} />
+        <FieldError errors={[errors.address]} />
+      </Field>
+      <Field>
+        <FieldLabel htmlFor="linkedinUrl">LinkedIn URL</FieldLabel>
         <Input
           id="linkedinUrl"
           type="url"
           placeholder="https://linkedin.com/in/you"
           {...register("linkedinUrl")}
         />
-      </div>
-      <div className="flex flex-col gap-1.5">
-        <Label htmlFor="githubUrl">GitHub URL</Label>
+      </Field>
+      <Field>
+        <FieldLabel htmlFor="githubUrl">GitHub URL</FieldLabel>
         <Input
           id="githubUrl"
           type="url"
           placeholder="https://github.com/you"
           {...register("githubUrl")}
         />
-      </div>
-      <div className="flex flex-col gap-1.5">
-        <Label htmlFor="websiteUrl">Website URL</Label>
+      </Field>
+      <Field>
+        <FieldLabel htmlFor="websiteUrl">Website URL</FieldLabel>
         <Input
           id="websiteUrl"
           type="url"
           placeholder="https://yoursite.com"
           {...register("websiteUrl")}
         />
-      </div>
+      </Field>
       <Button type="submit" disabled={loading}>
         {loading ? "Saving…" : "Save"}
       </Button>

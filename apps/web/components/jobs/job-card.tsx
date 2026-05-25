@@ -1,13 +1,15 @@
 "use client";
 
+import { Badge, type BadgeVariant } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import { trpc } from "@/lib/trpc";
 import type { Job } from "@/lib/trpc";
 
-const FIT_TIER_STYLES: Record<Job["fitTier"], string> = {
-  strong: "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400",
-  potential: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400",
-  weak: "bg-zinc-100 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-400",
+const FIT_TIER_VARIANT: Record<Job["fitTier"], BadgeVariant> = {
+  strong: "success",
+  potential: "warning",
+  weak: "muted",
 };
 
 export function JobCard({
@@ -38,11 +40,7 @@ export function JobCard({
           >
             {job.title}
           </a>
-          <span
-            className={`shrink-0 rounded-full px-2 py-0.5 text-xs font-medium ${FIT_TIER_STYLES[job.fitTier]}`}
-          >
-            {job.fitTier}
-          </span>
+          <Badge variant={FIT_TIER_VARIANT[job.fitTier]}>{job.fitTier}</Badge>
         </div>
         <p className="text-sm text-muted-foreground">
           {job.company}
@@ -52,12 +50,7 @@ export function JobCard({
       {job.status === "pending_review" && (
         <div className="flex items-center gap-2 shrink-0">
           {onToggleSelect && (
-            <input
-              type="checkbox"
-              checked={selected ?? false}
-              onChange={onToggleSelect}
-              className="h-4 w-4 cursor-pointer"
-            />
+            <Checkbox checked={selected ?? false} onCheckedChange={onToggleSelect} />
           )}
           <Button
             size="sm"

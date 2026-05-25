@@ -1,3 +1,6 @@
+import Link from "next/link";
+import { Button } from "@/components/ui/button";
+
 export default function Home() {
   return (
     <main className="flex min-h-screen flex-col items-center justify-center gap-6 p-8 text-center">
@@ -5,12 +8,9 @@ export default function Home() {
       <p className="text-xl text-muted-foreground max-w-md">
         Stop applying manually. Let AI handle it.
       </p>
-      <a
-        href="/sign-in"
-        className="rounded-md bg-primary px-6 py-3 text-sm font-medium text-primary-foreground hover:opacity-90 transition-opacity"
-      >
+      <Button size="lg" render={<Link href="/sign-in" />}>
         Get started
-      </a>
+      </Button>
     </main>
   );
 }
