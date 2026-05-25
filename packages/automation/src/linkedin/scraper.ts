@@ -16,18 +16,15 @@ function buildSearchUrl(jobTitle: string, location: string, workTypes: WorkType[
 
 async function scrapeJobsPage(page: Page): Promise<ScrapedJob[]> {
   return page.evaluate(() => {
-    const cards = Array.from(document.querySelectorAll(".jobs-search-results__list-item"));
+    const cards = Array.from(document.querySelectorAll("[data-occludable-job-id]"));
     return cards
       .map((card) => {
-        const titleEl = card.querySelector(".job-card-list__title, .job-card-container__link");
-        const companyEl = card.querySelector(
-          ".job-card-container__primary-description, .artdeco-entity-lockup__subtitle"
-        );
-        const locationEl = card.querySelector(".job-card-container__metadata-item");
-        const linkEl = card.querySelector("a[href*='/jobs/view/']");
+        const linkEl = card.querySelector("a.job-card-container__link");
+        const companyEl = card.querySelector(".artdeco-entity-lockup__subtitle");
+        const locationEl = card.querySelector(".artdeco-entity-lockup__caption");
 
         return {
-          title: titleEl?.textContent?.trim() ?? "",
+          title: linkEl?.getAttribute("aria-label") ?? linkEl?.textContent?.trim() ?? "",
           company: companyEl?.textContent?.trim() ?? "",
           location: locationEl?.textContent?.trim() ?? "",
           url: linkEl instanceof HTMLAnchorElement ? linkEl.href : "",
@@ -43,8 +40,20 @@ async function fetchDescription(page: Page, url: string): Promise<string> {
   await page.goto(url, { waitUntil: "domcontentloaded" });
   await page.waitForTimeout(DELAY_MS);
   return page.evaluate(() => {
-    const el = document.querySelector(".jobs-description__content, .job-view-layout");
-    return el?.textContent?.trim() ?? "";
+    // Primary: LinkedIn usually wraps the description with an "About the job" header
+    const aboutJobEl = Array.from(document.querySelectorAll("div, section, article")).find((el) => {
+      const text = el.textContent?.trim() ?? "";
+      return text.startsWith("About the job") && text.length > 100 && text.length < 8000;
+    });
+    if (aboutJobEl) return aboutJobEl.textContent?.trim() ?? "";
+
+    // Fallback: biggest bounded section (excludes nav/footer)
+    const sections = Array.from(document.querySelectorAll("section"));
+    const biggest = sections
+      .map((s) => s.textContent?.trim() ?? "")
+      .filter((t) => t.length > 200 && t.length < 10000)
+      .sort((a, b) => b.length - a.length)[0];
+    return biggest ?? "";
   });
 }
 

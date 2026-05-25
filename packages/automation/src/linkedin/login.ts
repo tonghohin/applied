@@ -20,8 +20,9 @@ export async function loginToLinkedIn(page: Page, email: string, password: strin
   }
 
   await emailInput.fill(email);
-  await page.locator('input[type="password"]:visible').first().fill(password);
-  await page.locator("button:visible").filter({ hasText: /^Sign in$/ }).first().click();
+  const passwordInput = page.locator('input[type="password"]:visible').first();
+  await passwordInput.fill(password);
+  await passwordInput.press("Enter");
 
   try {
     await page.waitForURL("**/feed**", { timeout: 10000 });
