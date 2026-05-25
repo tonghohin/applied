@@ -10,7 +10,7 @@ export const applyWorker = new Worker<ApplyJobData>(
   async (job) => {
     await processApplyJob(db, job.data.jobId, job.data.userId);
   },
-  { connection: { url: env.REDIS_URL }, concurrency: 1 },
+  { connection: { url: env.REDIS_URL }, concurrency: 1, lockDuration: 10 * 60 * 1000 },
 );
 
 applyWorker.on("failed", (job, err) => {

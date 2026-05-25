@@ -51,7 +51,7 @@ export const searchWorker = new Worker<SearchJobData>(
   async (job) => {
     await processSearch(job.data.userId);
   },
-  { connection: { url: env.REDIS_URL }, concurrency: 1 },
+  { connection: { url: env.REDIS_URL }, concurrency: 1, lockDuration: 5 * 60 * 1000 },
 );
 
 searchWorker.on("failed", (job, err) => {

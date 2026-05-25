@@ -1,15 +1,17 @@
 import type { Page } from "playwright";
 
 export async function loginToLinkedIn(page: Page, email: string, password: string): Promise<void> {
-  await page.goto("https://www.linkedin.com/login", { waitUntil: "domcontentloaded" });
+  await page.goto("https://www.linkedin.com/login", { waitUntil: "load" });
 
   const url = page.url();
   if (url.includes("checkpoint") || url.includes("captcha") || url.includes("challenge")) {
     throw new Error("LinkedIn login blocked: CAPTCHA or security challenge detected before login form");
   }
 
-  const usernameField = await page.waitForSelector("#username", { timeout: 10000 }).catch(() => null);
-  if (!usernameField) {
+  const emailInput = page.locator('input[type="email"]:visible').first();
+
+  const ready = await emailInput.waitFor({ state: "visible", timeout: 15000 }).then(() => true).catch(() => false);
+  if (!ready) {
     const screenshot = await page.screenshot({ type: "png" });
     const fs = await import("node:fs/promises");
     const path = `/tmp/linkedin-login-failure-${Date.now()}.png`;
@@ -17,9 +19,9 @@ export async function loginToLinkedIn(page: Page, email: string, password: strin
     throw new Error(`LinkedIn login page did not show the email field (current URL: ${url}, screenshot: ${path})`);
   }
 
-  await page.fill("#username", email);
-  await page.fill("#password", password);
-  await page.click('[type="submit"]');
+  await emailInput.fill(email);
+  await page.locator('input[type="password"]:visible').first().fill(password);
+  await page.locator("button:visible").filter({ hasText: /^Sign in$/ }).first().click();
 
   try {
     await page.waitForURL("**/feed**", { timeout: 10000 });
