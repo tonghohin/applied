@@ -1,3 +1,4 @@
+import { TRPCError } from "@trpc/server";
 import { z } from "zod";
 import { applyQueue, searchQueue } from "../queues/index";
 import {
@@ -7,10 +8,24 @@ import {
   validateApplyJobs,
 } from "../services/jobs.service";
 import { protectedProcedure, router } from "../trpc";
+import { getJobCriteriaForUser, getProfileForUser } from "@repo/db";
+import { getMissingSearchFields } from "@repo/shared";
 
 export const jobsRouter = router({
   search: protectedProcedure.mutation(async ({ ctx }) => {
-    await searchQueue.add("search", { userId: ctx.session.user.id });
+    const userId = ctx.session.user.id;
+    const [profile, criteria] = await Promise.all([
+      getProfileForUser(ctx.db, userId),
+      getJobCriteriaForUser(ctx.db, userId),
+    ]);
+
+    const missingFields = getMissingSearchFields(profile, criteria);
+
+    if (missingFields.length > 0) {
+      throw new TRPCError({ code: "PRECONDITION_FAILED", message: missingFields.join(", ") });
+    }
+
+    await searchQueue.add("search", { userId });
     return { queued: true };
   }),
 

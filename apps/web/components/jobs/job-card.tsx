@@ -10,13 +10,15 @@ const FIT_TIER_STYLES: Record<Job["fitTier"], string> = {
   weak: "bg-zinc-100 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-400",
 };
 
-interface JobCardProps {
+export function JobCard({
+  job,
+  selected,
+  onToggleSelect,
+}: {
   job: Job;
   selected?: boolean;
   onToggleSelect?: () => void;
-}
-
-export function JobCard({ job, selected, onToggleSelect }: JobCardProps) {
+}) {
   const utils = trpc.useUtils();
   const updateStatus = trpc.jobs.updateStatus.useMutation({
     onSuccess: () => utils.jobs.list.invalidate(),

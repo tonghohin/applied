@@ -73,8 +73,7 @@ CREATE TABLE "job_criteria" (
 	"user_id" text NOT NULL,
 	"job_titles" text[] DEFAULT '{}' NOT NULL,
 	"skills" text[] DEFAULT '{}' NOT NULL,
-	"locations" text[] DEFAULT '{}' NOT NULL,
-	"remote" boolean DEFAULT false NOT NULL,
+	"locations" jsonb DEFAULT '[]' NOT NULL,
 	"seniority" text[] DEFAULT '{}' NOT NULL,
 	"min_salary" integer,
 	CONSTRAINT "job_criteria_user_id_unique" UNIQUE("user_id")

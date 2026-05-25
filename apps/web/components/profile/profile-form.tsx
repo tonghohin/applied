@@ -25,7 +25,10 @@ const schema = z.object({
 
 type FormValues = z.infer<typeof schema>;
 
-interface Props {
+export function ProfileForm({
+  tab,
+  initial,
+}: {
   tab: "personal" | "resume" | "cover-letter" | "linkedin";
   initial?: {
     firstName?: string;
@@ -38,9 +41,7 @@ interface Props {
     resumeMarkdown?: string;
     coverLetterMarkdown?: string;
   } | null;
-}
-
-export function ProfileForm({ tab, initial }: Props) {
+}) {
   const utils = trpc.useUtils();
   const { mutateAsync, isPending } = trpc.profile.upsertProfile.useMutation({
     onSuccess: () => utils.profile.getProfile.invalidate(),
@@ -84,14 +85,14 @@ export function ProfileForm({ tab, initial }: Props) {
         <>
           <div className="grid grid-cols-2 gap-4">
             <div className="flex flex-col gap-1.5">
-              <Label htmlFor="firstName">First name</Label>
+              <Label htmlFor="firstName">First name <span className="text-destructive">*</span></Label>
               <Input id="firstName" {...register("firstName")} />
               {errors.firstName && (
                 <p className="text-sm text-destructive">{errors.firstName.message}</p>
               )}
             </div>
             <div className="flex flex-col gap-1.5">
-              <Label htmlFor="lastName">Last name</Label>
+              <Label htmlFor="lastName">Last name <span className="text-destructive">*</span></Label>
               <Input id="lastName" {...register("lastName")} />
               {errors.lastName && (
                 <p className="text-sm text-destructive">{errors.lastName.message}</p>
@@ -99,12 +100,12 @@ export function ProfileForm({ tab, initial }: Props) {
             </div>
           </div>
           <div className="flex flex-col gap-1.5">
-            <Label htmlFor="phone">Phone</Label>
+            <Label htmlFor="phone">Phone <span className="text-destructive">*</span></Label>
             <Input id="phone" type="tel" {...register("phone")} />
             {errors.phone && <p className="text-sm text-destructive">{errors.phone.message}</p>}
           </div>
           <div className="flex flex-col gap-1.5">
-            <Label htmlFor="address">Address</Label>
+            <Label htmlFor="address">Address <span className="text-destructive">*</span></Label>
             <Input id="address" {...register("address")} />
             {errors.address && <p className="text-sm text-destructive">{errors.address.message}</p>}
           </div>
@@ -140,7 +141,7 @@ export function ProfileForm({ tab, initial }: Props) {
 
       {tab === "resume" && (
         <div className="flex flex-col gap-1.5">
-          <Label htmlFor="resumeMarkdown">Resume (Markdown)</Label>
+          <Label htmlFor="resumeMarkdown">Resume (Markdown) <span className="text-destructive">*</span></Label>
           <Textarea
             id="resumeMarkdown"
             rows={20}
@@ -155,7 +156,7 @@ export function ProfileForm({ tab, initial }: Props) {
 
       {tab === "cover-letter" && (
         <div className="flex flex-col gap-1.5">
-          <Label htmlFor="coverLetterMarkdown">Cover letter template (Markdown)</Label>
+          <Label htmlFor="coverLetterMarkdown">Cover letter template (Markdown) <span className="text-destructive">*</span></Label>
           <Textarea
             id="coverLetterMarkdown"
             rows={20}

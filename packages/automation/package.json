@@ -18,6 +18,7 @@
   },
   "dependencies": {
     "@repo/db": "workspace:*",
+    "@repo/shared": "workspace:^",
     "playwright": "^1.60.0"
   }
 }

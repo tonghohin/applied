@@ -1,3 +1,4 @@
+import { WORK_TYPES } from "@repo/shared";
 import { jobCriteria, profiles } from "@repo/db";
 import { eq } from "drizzle-orm";
 import { z } from "zod";
@@ -20,11 +21,15 @@ export const upsertProfileSchema = z.object({
   linkedinPassword: z.string().optional(),
 });
 
+const locationEntrySchema = z.object({
+  location: z.string().min(1),
+  workTypes: z.array(z.enum(WORK_TYPES)).min(1),
+});
+
 export const upsertCriteriaSchema = z.object({
   jobTitles: z.array(z.string()),
   skills: z.array(z.string()),
-  locations: z.array(z.string()),
-  remote: z.boolean(),
+  locations: z.array(locationEntrySchema),
   seniority: z.array(z.string()),
   minSalary: z.number().int().positive().optional(),
 });

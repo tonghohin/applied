@@ -1,4 +1,5 @@
-import { boolean, integer, pgTable, text, uuid } from "drizzle-orm/pg-core";
+import { integer, jsonb, pgTable, text, uuid } from "drizzle-orm/pg-core";
+import type { LocationEntry } from "@repo/shared";
 import { users } from "./auth";
 
 export const jobCriteria = pgTable("job_criteria", {
@@ -9,8 +10,7 @@ export const jobCriteria = pgTable("job_criteria", {
     .references(() => users.id, { onDelete: "cascade" }),
   jobTitles: text("job_titles").array().notNull().default([]),
   skills: text("skills").array().notNull().default([]),
-  locations: text("locations").array().notNull().default([]),
-  remote: boolean("remote").notNull().default(false),
+  locations: jsonb("locations").notNull().default([]).$type<LocationEntry[]>(),
   seniority: text("seniority").array().notNull().default([]),
   minSalary: integer("min_salary"),
 });

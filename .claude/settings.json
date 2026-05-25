@@ -1,0 +1,17 @@
+{
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "cd /Users/hin/Desktop/applied && output=$(pnpm typecheck 2>&1); code=$?; if [ $code -ne 0 ]; then echo \"$output\"; exit 2; fi",
+            "asyncRewake": true,
+            "statusMessage": "Type checking..."
+          }
+        ]
+      }
+    ]
+  }
+}

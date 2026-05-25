@@ -4,6 +4,10 @@
   "private": true,
   "main": "src/index.ts",
   "types": "src/index.ts",
+  "exports": {
+    ".": "./src/index.ts",
+    "./src/schema": "./src/schema/index.ts"
+  },
   "scripts": {
     "build": "tsc --noEmit",
     "typecheck": "tsc --noEmit",
@@ -18,6 +22,7 @@
     "typescript": "^5.8.3"
   },
   "dependencies": {
+    "@repo/shared": "workspace:^",
     "drizzle-orm": "^0.45.2",
     "pg": "^8.21.0",
     "zod": "^4.4.3"

@@ -4,9 +4,11 @@ vi.mock("../env", () => ({
   env: { LINKEDIN_ENCRYPTION_KEY: "a".repeat(64), REDIS_URL: "redis://localhost:6379" },
 }));
 
-const { mockSearchAdd, mockApplyAdd } = vi.hoisted(() => ({
+const { mockSearchAdd, mockApplyAdd, mockGetProfile, mockGetCriteria } = vi.hoisted(() => ({
   mockSearchAdd: vi.fn().mockResolvedValue(undefined),
   mockApplyAdd: vi.fn().mockResolvedValue(undefined),
+  mockGetProfile: vi.fn(),
+  mockGetCriteria: vi.fn(),
 }));
 
 vi.mock("../queues/index", () => ({
@@ -21,12 +23,36 @@ const mockDb = {
   update: vi.fn().mockReturnValue(updateChain),
 };
 
+const completeProfile = {
+  id: "p1",
+  userId: "user_1",
+  firstName: "Jane",
+  lastName: "Doe",
+  phone: "555",
+  address: "123 Main",
+  resumeMarkdown: "# Resume",
+  coverLetterMarkdown: "Dear...",
+  linkedinEmailEncrypted: "enc_email",
+  linkedinPasswordEncrypted: "enc_pass",
+};
+
+const completeCriteria = {
+  id: "c1",
+  userId: "user_1",
+  jobTitles: ["SWE"],
+  skills: ["TypeScript"],
+  locations: [{ location: "Toronto", workTypes: ["remote"] }],
+};
+
 vi.mock("@repo/db", () => ({
   db: { select: vi.fn(), insert: vi.fn() },
   jobs: { userId: "userId_col", id: "id_col" },
   jobCriteria: { userId: "userId_col" },
   profiles: { userId: "userId_col" },
   jobStatusEnum: { enumValues: ["pending_review", "applied", "failed", "skipped"] },
+  WORK_TYPES: ["on-site", "remote", "hybrid"],
+  getProfileForUser: mockGetProfile,
+  getJobCriteriaForUser: mockGetCriteria,
 }));
 
 import type { Context } from "../context";
@@ -92,8 +118,10 @@ describe("jobs.applyJobs", () => {
 });
 
 describe("jobs.search", () => {
-  it("enqueues a search job and returns { queued: true }", async () => {
+  it("enqueues a search job and returns { queued: true } when profile is complete", async () => {
     mockSearchAdd.mockClear();
+    mockGetProfile.mockResolvedValue(completeProfile);
+    mockGetCriteria.mockResolvedValue(completeCriteria);
 
     const caller = jobsRouter.createCaller(makeCtx());
     const result = await caller.search();
@@ -101,5 +129,15 @@ describe("jobs.search", () => {
     expect(result).toEqual({ queued: true });
     expect(mockSearchAdd).toHaveBeenCalledOnce();
     expect(mockSearchAdd).toHaveBeenCalledWith("search", { userId: "user_1" });
+  });
+
+  it("throws PRECONDITION_FAILED when required fields are missing", async () => {
+    mockSearchAdd.mockClear();
+    mockGetProfile.mockResolvedValue(null);
+    mockGetCriteria.mockResolvedValue(null);
+
+    const caller = jobsRouter.createCaller(makeCtx());
+    await expect(caller.search()).rejects.toMatchObject({ code: "PRECONDITION_FAILED" });
+    expect(mockSearchAdd).not.toHaveBeenCalled();
   });
 });

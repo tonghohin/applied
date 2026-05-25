@@ -17,7 +17,6 @@ export async function runSearch(db: Db, userId: string, email: string, password:
     const scraped = await scrapeLinkedInJobs(page, {
       jobTitles: criteriaRow.jobTitles,
       locations: criteriaRow.locations,
-      remote: criteriaRow.remote,
     });
 
     if (scraped.length === 0) return;

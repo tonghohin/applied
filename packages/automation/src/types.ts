@@ -1,3 +1,4 @@
+import type { LocationEntry } from "@repo/shared";
 import type { platformEnum } from "@repo/db";
 
 export type Platform = (typeof platformEnum.enumValues)[number];
@@ -13,6 +14,5 @@ export interface ScrapedJob {
 
 export interface SearchCriteria {
   jobTitles: string[];
-  locations: string[];
-  remote: boolean;
+  locations: LocationEntry[];
 }

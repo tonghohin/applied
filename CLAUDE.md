@@ -115,4 +115,4 @@ export function JobCard({ title, company }: JobCardProps) {}
 **Type safety**
 - No `any`, no type casts (`as Foo`, `as unknown as Foo`)
 - Prefer enum values (Drizzle `pgEnum`, `z.enum`, or `as const` objects) over plain `string` for fields with a fixed set of values — e.g. `fitTier`, `jobStatus`, `platform`
-- Reuse existing types from `@repo/db` (`Job`, `Profile`, `Db`, enum value types) rather than redefining them
+- Reuse existing types and constants exported from workspace packages rather than redefining them inline

@@ -27,6 +27,7 @@ vi.mock("@repo/db", () => ({
   },
   profiles: { userId: "userId_col" },
   jobCriteria: { userId: "userId_col" },
+  WORK_TYPES: ["on-site", "remote", "hybrid"],
 }));
 
 import type { Context } from "../context";
@@ -164,8 +165,7 @@ describe("profile.upsertCriteria", () => {
     const result = await caller.upsertCriteria({
       jobTitles: ["Software Engineer"],
       skills: ["TypeScript"],
-      locations: ["Remote"],
-      remote: true,
+      locations: [{ location: "Toronto", workTypes: ["hybrid", "remote"] }],
       seniority: ["Senior"],
       minSalary: 120000,
     });

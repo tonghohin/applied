@@ -344,6 +344,45 @@
 
 ---
 
+### Phase 10: Locations Structure Refactor
+
+#### 10.1. [x] Schema: change locations column to JSONB
+- **What:** In `packages/db/src/schema/job-criteria.ts`, replace `locations: text("locations").array().notNull().default([])` with a JSONB column typed as `LocationEntry[]`. Define and export `WorkType = "on-site" | "remote" | "hybrid"` as a const and `LocationEntry = { location: string; workTypes: WorkType[] }`. Export both types from `packages/db/src/index.ts`. Edit the existing migration SQL in `packages/db/drizzle/0000_bent_human_fly.sql` in-place to change the `locations` column definition from `text[]` to `jsonb` (app is not deployed — no new migration needed). Reset the local DB with `docker compose down -v && docker compose up -d`, then run `pnpm migrate` to apply the updated migration cleanly.
+- **Replaces previous build:** `packages/db/src/schema/job-criteria.ts` — change `locations` column. `packages/db/drizzle/0000_bent_human_fly.sql` — edit in-place.
+- **Files:** `packages/db/src/schema/job-criteria.ts`, `packages/db/src/index.ts`, `packages/db/drizzle/0000_bent_human_fly.sql`
+- **Verify:** `docker compose down -v && docker compose up -d && pnpm migrate` succeeds; `tsc --noEmit` passes in `packages/db`
+
+#### 10.2. [x] Update criteria form for per-location work types + required field indicators
+- **What:** Rewrite the location section of `apps/web/components/profile/criteria-form.tsx`. Each location entry is a `LocationEntry` object: a text input for the location name and three checkboxes for work types (`On-site`, `Remote`, `Hybrid`). New entries default to all three checked. Add/remove entries with a button. Also add required field indicators (`*`) to all required field labels in both `profile-form.tsx` (firstName, lastName, phone, address, resume, coverLetter) and `criteria-form.tsx` (jobTitles, skills, locations).
+- **Replaces previous build:** `apps/web/components/profile/criteria-form.tsx` — rewrite location input section. `apps/web/components/profile/profile-form.tsx` — add `*` markers to required labels.
+- **Files:** `apps/web/components/profile/criteria-form.tsx`, `apps/web/components/profile/profile-form.tsx`
+- **Verify:** New location entry defaults to all three work types checked; can uncheck individual types; form submits `LocationEntry[]` to DB; required fields show `*`
+
+#### 10.3. [x] Update scraper to consume LocationEntry[]
+- **What:** Update the `criteria` parameter in `packages/automation/src/linkedin/scraper.ts` — change `locations: string[]` to `locations: LocationEntry[]`. Build one search pass per location entry; apply LinkedIn work-type filter params (`f_WT`: `1`=on-site, `2`=remote, `3`=hybrid) from each entry's `workTypes`. Import `LocationEntry` from `@repo/db`. Update `packages/automation/src/search.ts` to pass `criteriaRow.locations` (already `LocationEntry[]` after the schema change).
+- **Replaces previous build:** `packages/automation/src/linkedin/scraper.ts` — update param type and URL construction. `packages/automation/src/search.ts` — no logic change needed if types align.
+- **Files:** `packages/automation/src/linkedin/scraper.ts`, `packages/automation/src/search.ts`
+- **Verify:** `tsc --noEmit` passes in `packages/automation`; each location entry produces a search URL with the correct `f_WT` values
+
+---
+
+### Phase 11: Search Readiness Guard
+
+#### 11.1. [x] Server-side readiness check in search mutation
+- **What:** At the top of the `search` mutation in `packages/api/src/routers/jobs.ts`, call `getProfileForUser` and `getJobCriteriaForUser` from `@repo/db`. Build a `missingFields: string[]` array by checking:
+  - Profile (if row missing or field falsy): `"First name"`, `"Last name"`, `"Phone"`, `"Address"`, `"Resume"`, `"Cover letter"`, `"LinkedIn email"`, `"LinkedIn password"`
+  - Criteria (if row missing or array empty): `"Job titles"`, `"Skills"`, `"Locations"`
+  - If `missingFields.length > 0`, throw `new TRPCError({ code: "PRECONDITION_FAILED", message: missingFields.join(", ") })`
+- **Files:** `packages/api/src/routers/jobs.ts`
+- **Verify:** `tsc --noEmit` passes; calling `search` with an incomplete profile returns `PRECONDITION_FAILED` whose message lists the missing field names
+
+#### 11.2. [x] UI readiness guard — disabled button + Sonner toast
+- **What:** In the jobs UI, derive readiness from the `trpc.profile.getProfile.useQuery()` result. Compute `missingFields` using the same field list as the server (check profile fields + criteria arrays). Pass `disabled={missingFields.length > 0}` to the "Search Jobs" button. In `search.onError`, call `toast.error("Complete your profile first", { description: missingFields.join(", ") })` from Sonner. Also handle the `PRECONDITION_FAILED` case from the server as a fallback.
+- **Files:** `apps/web/app/(dashboard)/jobs/page.tsx` or `apps/web/components/jobs/job-tabs.tsx`
+- **Verify:** Button is disabled when any required field is missing; hovering or clicking shows missing fields in a Sonner toast; button enables once all fields are filled
+
+---
+
 ## Notes
 
 - **LinkedIn ToS:** Scraping and automated form submission violates LinkedIn's Terms of Service. Known, accepted risk.
@@ -375,6 +414,8 @@
 - **Worker import isolation:** `apps/worker` imports directly from `@repo/db`, `@repo/automation`, and `@repo/ai` — NOT from `@repo/api`. A local `src/decrypt.ts` inlines the AES-256-GCM decrypt function to avoid the auth env chain.
 
 - **2026-05-24 — Repository pattern + worker refactor:** Moved all DB queries out of `packages/automation` and `packages/ai` into `packages/db/src/queries/` (repository layer). Added `getJobCriteriaForUser`, `getJobForUser`, `insertJobs`, `updateJobApplied`, `updateJobFailed`, `getProfileForUser` as named functions exported from `@repo/db`. `packages/db` also now exports a `Db` type. `packages/automation/src/search.ts` (`runSearch`) and `packages/ai/src/agents/process-apply.ts` (`processApplyJob`) use these query functions instead of writing raw Drizzle. `packages/api/src/services/jobs.service.ts` is now CRUD-only (no automation imports). `@repo/automation` removed from `packages/api` deps. `drizzle-orm` removed from `packages/automation` and `packages/ai` deps.
+
+- **2026-05-24 — Revision:** Added Phase 10 (locations refactor: `text[]` → `jsonb` `LocationEntry[]` with per-location work types, criteria form rewrite, scraper update, required field `*` indicators) and Phase 11 (search readiness guard: server-side `PRECONDITION_FAILED` + UI disabled button + Sonner toast). Required fields confirmed: profile firstName/lastName/phone/address/resume/coverLetter/linkedinEmail/linkedinPassword; criteria jobTitles/skills/locations (each ≥1 entry). Work types: `on-site`, `remote`, `hybrid`; default all three on new location entry.
 
 - **2026-05-24 — Turbopack module resolution fix:** Turbopack does NOT remap `.js` → `.ts` for workspace packages — it looks for literal file paths. Root `tsconfig.json` changed from `module: "NodeNext" / moduleResolution: "NodeNext"` to `module: "esnext" / moduleResolution: "bundler"`. All relative imports across packages and `apps/worker` had `.js` extensions stripped (40 files). No `transpilePackages` or `serverExternalPackages` needed — the extension removal alone fixes resolution.
 

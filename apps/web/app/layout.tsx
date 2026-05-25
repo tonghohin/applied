@@ -2,6 +2,7 @@ import { TRPCProvider } from "@/lib/trpc";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
+import { Toaster } from "sonner";
 import "./globals.css";
 
 const geistSans = Geist({ variable: "--font-sans", subsets: ["latin"] });
@@ -18,6 +19,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body className="min-h-full flex flex-col">
         <TRPCProvider>
           <TooltipProvider>{children}</TooltipProvider>
+          <Toaster richColors />
         </TRPCProvider>
       </body>
     </html>

@@ -1,15 +1,16 @@
 /// <reference lib="dom" />
+import type { WorkType } from "@repo/shared";
 import type { Page } from "playwright";
 import type { ScrapedJob, SearchCriteria } from "../types";
 
 const DELAY_MS = 1500;
 
-function buildSearchUrl(jobTitle: string, location: string, remote: boolean): string {
-  const params = new URLSearchParams({
-    keywords: jobTitle,
-    location: location,
-    ...(remote ? { f_WT: "2" } : {}),
-  });
+const WT_MAP: Record<WorkType, string> = { "on-site": "1", remote: "2", hybrid: "3" };
+
+function buildSearchUrl(jobTitle: string, location: string, workTypes: WorkType[]): string {
+  const f_WT = workTypes.map((w) => WT_MAP[w]).filter(Boolean).join(",");
+  const params = new URLSearchParams({ keywords: jobTitle, location });
+  if (f_WT) params.set("f_WT", f_WT);
   return `https://www.linkedin.com/jobs/search/?${params.toString()}`;
 }
 
@@ -55,23 +56,24 @@ export async function scrapeLinkedInJobs(
   const seen = new Set<string>();
 
   for (const jobTitle of criteria.jobTitles.slice(0, 2)) {
-    const location = criteria.locations[0] ?? "Remote";
-    const searchUrl = buildSearchUrl(jobTitle, location, criteria.remote);
+    for (const locationEntry of criteria.locations) {
+      const searchUrl = buildSearchUrl(jobTitle, locationEntry.location, locationEntry.workTypes);
 
-    for (let pageNum = 0; pageNum < 3; pageNum++) {
-      const url = pageNum === 0 ? searchUrl : `${searchUrl}&start=${pageNum * 25}`;
-      await page.goto(url, { waitUntil: "domcontentloaded" });
-      await page.waitForTimeout(DELAY_MS);
+      for (let pageNum = 0; pageNum < 3; pageNum++) {
+        const url = pageNum === 0 ? searchUrl : `${searchUrl}&start=${pageNum * 25}`;
+        await page.goto(url, { waitUntil: "domcontentloaded" });
+        await page.waitForTimeout(DELAY_MS);
 
-      const jobs = await scrapeJobsPage(page);
-      if (jobs.length === 0) break;
+        const jobs = await scrapeJobsPage(page);
+        if (jobs.length === 0) break;
 
-      for (const job of jobs) {
-        if (seen.has(job.url)) continue;
-        seen.add(job.url);
+        for (const job of jobs) {
+          if (seen.has(job.url)) continue;
+          seen.add(job.url);
 
-        const description = await fetchDescription(page, job.url);
-        results.push({ ...job, description });
+          const description = await fetchDescription(page, job.url);
+          results.push({ ...job, description });
+        }
       }
     }
   }
