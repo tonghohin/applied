@@ -18,7 +18,7 @@ type FormValues = z.infer<typeof schema>;
 
 export function CoverLetterForm({ initial }: { initial?: InitialProfile }) {
   const utils = trpc.useUtils();
-  const { mutateAsync, isPending } = trpc.profile.upsertProfile.useMutation({
+  const { mutateAsync, isPending } = trpc.profile.upsertCoverLetter.useMutation({
     onSuccess: () => {
       toast.success("Cover letter saved");
       utils.profile.getProfile.invalidate();
@@ -36,17 +36,7 @@ export function CoverLetterForm({ initial }: { initial?: InitialProfile }) {
 
   async function onSubmit(values: FormValues) {
     try {
-      await mutateAsync({
-        firstName: initial?.firstName ?? "",
-        lastName: initial?.lastName ?? "",
-        phone: initial?.phone ?? "",
-        address: initial?.address ?? "",
-        linkedinUrl: initial?.linkedinUrl ?? "",
-        githubUrl: initial?.githubUrl ?? "",
-        websiteUrl: initial?.websiteUrl ?? "",
-        resumeMarkdown: initial?.resumeMarkdown ?? "",
-        ...values,
-      });
+      await mutateAsync(values);
     } catch {
       toast.error("Failed to save cover letter");
     }

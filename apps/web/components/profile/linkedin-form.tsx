@@ -8,8 +8,6 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import { z } from "zod";
-import type { InitialProfile } from "./types";
-
 const schema = z.object({
   linkedinEmail: z.string().optional(),
   linkedinPassword: z.string().optional(),
@@ -17,9 +15,9 @@ const schema = z.object({
 
 type FormValues = z.infer<typeof schema>;
 
-export function LinkedInForm({ initial }: { initial?: InitialProfile }) {
+export function LinkedInForm() {
   const utils = trpc.useUtils();
-  const { mutateAsync, isPending } = trpc.profile.upsertProfile.useMutation({
+  const { mutateAsync, isPending } = trpc.profile.upsertLinkedIn.useMutation({
     onSuccess: () => {
       toast.success("LinkedIn credentials saved");
       utils.profile.getProfile.invalidate();
@@ -37,18 +35,7 @@ export function LinkedInForm({ initial }: { initial?: InitialProfile }) {
 
   async function onSubmit(values: FormValues) {
     try {
-      await mutateAsync({
-        firstName: initial?.firstName ?? "",
-        lastName: initial?.lastName ?? "",
-        phone: initial?.phone ?? "",
-        address: initial?.address ?? "",
-        linkedinUrl: initial?.linkedinUrl ?? "",
-        githubUrl: initial?.githubUrl ?? "",
-        websiteUrl: initial?.websiteUrl ?? "",
-        resumeMarkdown: initial?.resumeMarkdown ?? "",
-        coverLetterMarkdown: initial?.coverLetterMarkdown ?? "",
-        ...values,
-      });
+      await mutateAsync(values);
     } catch {
       toast.error("Failed to save LinkedIn credentials");
     }

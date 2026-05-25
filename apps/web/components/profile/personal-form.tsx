@@ -24,7 +24,7 @@ type FormValues = z.infer<typeof schema>;
 
 export function PersonalForm({ initial }: { initial?: InitialProfile }) {
   const utils = trpc.useUtils();
-  const { mutateAsync, isPending } = trpc.profile.upsertProfile.useMutation({
+  const { mutateAsync, isPending } = trpc.profile.upsertPersonal.useMutation({
     onSuccess: () => {
       toast.success("Personal info saved");
       utils.profile.getProfile.invalidate();
@@ -50,11 +50,7 @@ export function PersonalForm({ initial }: { initial?: InitialProfile }) {
 
   async function onSubmit(values: FormValues) {
     try {
-      await mutateAsync({
-        ...values,
-        resumeMarkdown: initial?.resumeMarkdown ?? "",
-        coverLetterMarkdown: initial?.coverLetterMarkdown ?? "",
-      });
+      await mutateAsync(values);
     } catch {
       toast.error("Failed to save personal info");
     }

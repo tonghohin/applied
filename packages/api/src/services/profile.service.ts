@@ -7,7 +7,7 @@ import { encrypt } from "../lib/encrypt";
 
 type Db = Context["db"];
 
-export const upsertProfileSchema = z.object({
+export const upsertPersonalSchema = z.object({
   firstName: z.string().min(1),
   lastName: z.string().min(1),
   phone: z.string().min(1),
@@ -15,8 +15,17 @@ export const upsertProfileSchema = z.object({
   linkedinUrl: z.url().optional().or(z.literal("")),
   githubUrl: z.url().optional().or(z.literal("")),
   websiteUrl: z.url().optional().or(z.literal("")),
+});
+
+export const upsertResumeSchema = z.object({
   resumeMarkdown: z.string().min(1),
+});
+
+export const upsertCoverLetterSchema = z.object({
   coverLetterMarkdown: z.string().min(1),
+});
+
+export const upsertLinkedInSchema = z.object({
   linkedinEmail: z.email().optional().or(z.literal("")),
   linkedinPassword: z.string().optional(),
 });
@@ -34,7 +43,10 @@ export const upsertCriteriaSchema = z.object({
   minSalary: z.number().int().positive().optional(),
 });
 
-export type UpsertProfileInput = z.infer<typeof upsertProfileSchema>;
+export type UpsertPersonalInput = z.infer<typeof upsertPersonalSchema>;
+export type UpsertResumeInput = z.infer<typeof upsertResumeSchema>;
+export type UpsertCoverLetterInput = z.infer<typeof upsertCoverLetterSchema>;
+export type UpsertLinkedInInput = z.infer<typeof upsertLinkedInSchema>;
 export type UpsertCriteriaInput = z.infer<typeof upsertCriteriaSchema>;
 
 export async function getProfile(db: Db, userId: string) {
@@ -53,34 +65,85 @@ export async function getProfile(db: Db, userId: string) {
   return { profile, criteria };
 }
 
-export async function upsertProfile(db: Db, userId: string, input: UpsertProfileInput) {
-  const { linkedinEmail, linkedinPassword, ...rest } = input;
+export async function upsertPersonal(db: Db, userId: string, input: UpsertPersonalInput) {
+  const set = { ...input, updatedAt: new Date() };
+  const [row] = await db
+    .insert(profiles)
+    .values({ ...set, userId, resumeMarkdown: "", coverLetterMarkdown: "", createdAt: new Date() })
+    .onConflictDoUpdate({ target: profiles.userId, set })
+    .returning();
+  return row;
+}
 
-  const values = {
-    ...rest,
-    userId,
+export async function upsertResume(db: Db, userId: string, input: UpsertResumeInput) {
+  const set = { ...input, updatedAt: new Date() };
+  const [row] = await db
+    .insert(profiles)
+    .values({
+      ...set,
+      userId,
+      firstName: "",
+      lastName: "",
+      phone: "",
+      address: "",
+      coverLetterMarkdown: "",
+      createdAt: new Date(),
+    })
+    .onConflictDoUpdate({ target: profiles.userId, set })
+    .returning();
+  return row;
+}
+
+export async function upsertCoverLetter(db: Db, userId: string, input: UpsertCoverLetterInput) {
+  const set = { ...input, updatedAt: new Date() };
+  const [row] = await db
+    .insert(profiles)
+    .values({
+      ...set,
+      userId,
+      firstName: "",
+      lastName: "",
+      phone: "",
+      address: "",
+      resumeMarkdown: "",
+      createdAt: new Date(),
+    })
+    .onConflictDoUpdate({ target: profiles.userId, set })
+    .returning();
+  return row;
+}
+
+export async function upsertLinkedIn(db: Db, userId: string, input: UpsertLinkedInInput) {
+  const { linkedinEmail, linkedinPassword } = input;
+  const set = {
     linkedinEmailEncrypted: linkedinEmail ? encrypt(linkedinEmail) : null,
     linkedinPasswordEncrypted: linkedinPassword ? encrypt(linkedinPassword) : null,
     updatedAt: new Date(),
   };
-
   const [row] = await db
     .insert(profiles)
-    .values({ ...values, createdAt: new Date() })
-    .onConflictDoUpdate({ target: profiles.userId, set: values })
+    .values({
+      ...set,
+      userId,
+      firstName: "",
+      lastName: "",
+      phone: "",
+      address: "",
+      resumeMarkdown: "",
+      coverLetterMarkdown: "",
+      createdAt: new Date(),
+    })
+    .onConflictDoUpdate({ target: profiles.userId, set })
     .returning();
-
   return row;
 }
 
 export async function upsertCriteria(db: Db, userId: string, input: UpsertCriteriaInput) {
   const values = { ...input, userId };
-
   const [row] = await db
     .insert(jobCriteria)
     .values(values)
     .onConflictDoUpdate({ target: jobCriteria.userId, set: input })
     .returning();
-
   return row;
 }

@@ -44,7 +44,7 @@ export function ProfileContent({ initialData }: { initialData: InitialData }) {
         <CriteriaForm initial={criteria} />
       </TabsContent>
       <TabsContent value="linkedin" className="mt-4">
-        <LinkedInForm initial={profile} />
+        <LinkedInForm />
       </TabsContent>
     </Tabs>
   );

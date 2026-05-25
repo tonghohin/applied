@@ -96,7 +96,7 @@ describe("profile.getProfile", () => {
   });
 });
 
-describe("profile.upsertProfile", () => {
+describe("profile.upsertLinkedIn", () => {
   it("encrypts linkedin credentials before storing", async () => {
     const chain = {
       values: vi.fn().mockReturnThis(),
@@ -106,13 +106,7 @@ describe("profile.upsertProfile", () => {
     mockDb.insert.mockReturnValueOnce(chain);
 
     const caller = profileRouter.createCaller(makeCtx());
-    await caller.upsertProfile({
-      firstName: "Jane",
-      lastName: "Doe",
-      phone: "555-1234",
-      address: "123 Main St",
-      resumeMarkdown: "# Resume",
-      coverLetterMarkdown: "Dear...",
+    await caller.upsertLinkedIn({
       linkedinEmail: "jane@example.com",
       linkedinPassword: "secret",
     });
@@ -134,18 +128,11 @@ describe("profile.upsertProfile", () => {
     mockDb.insert.mockReturnValueOnce(chain);
 
     const caller = profileRouter.createCaller(makeCtx());
-    await caller.upsertProfile({
-      firstName: "Jane",
-      lastName: "Doe",
-      phone: "555-1234",
-      address: "123 Main St",
-      resumeMarkdown: "# Resume",
-      coverLetterMarkdown: "Dear...",
-    });
+    await caller.upsertLinkedIn({});
 
     const stored = chain.values.mock.calls.at(0)?.at(0) as {
-      linkedinEmailEncrypted: string;
-      linkedinPasswordEncrypted: string;
+      linkedinEmailEncrypted: string | null;
+      linkedinPasswordEncrypted: string | null;
     };
     expect(stored.linkedinEmailEncrypted).toBeNull();
     expect(stored.linkedinPasswordEncrypted).toBeNull();
