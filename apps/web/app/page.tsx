@@ -8,7 +8,7 @@ export default function Home() {
       <p className="text-xl text-muted-foreground max-w-md">
         Stop applying manually. Let AI handle it.
       </p>
-      <Button size="lg" render={<Link href="/sign-in" />}>
+      <Button size="lg" nativeButton={false} render={<Link href="/sign-in" />}>
         Get started
       </Button>
     </main>
