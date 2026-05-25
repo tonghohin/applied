@@ -1,7 +1,7 @@
 import type { Page } from "playwright";
 
 export async function loginToLinkedIn(page: Page, email: string, password: string): Promise<void> {
-  await page.goto("https://www.linkedin.com/login", { waitUntil: "networkidle" });
+  await page.goto("https://www.linkedin.com/login", { waitUntil: "domcontentloaded" });
 
   const url = page.url();
   if (url.includes("checkpoint") || url.includes("captcha") || url.includes("challenge")) {
