@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { trpc } from "@/lib/trpc";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { toast } from "sonner";
 import { WORK_TYPES, splitCsv } from "@repo/shared";
 import type { LocationEntry, WorkType } from "@repo/shared";
 import { useFieldArray, useForm, useWatch } from "react-hook-form";
@@ -46,7 +47,10 @@ export function CriteriaForm({
 }) {
   const utils = trpc.useUtils();
   const { mutateAsync, isPending } = trpc.profile.upsertCriteria.useMutation({
-    onSuccess: () => utils.profile.getProfile.invalidate(),
+    onSuccess: () => {
+      toast.success("Job criteria saved");
+      utils.profile.getProfile.invalidate();
+    },
   });
 
   const {
@@ -54,7 +58,6 @@ export function CriteriaForm({
     handleSubmit,
     control,
     setValue,
-    setError,
     formState: { errors, isSubmitting },
   } = useForm<FormValues>({
     resolver: zodResolver(schema),
@@ -92,7 +95,7 @@ export function CriteriaForm({
         minSalary: values.minSalary ? Number(values.minSalary) : undefined,
       });
     } catch {
-      setError("root", { message: "Failed to save criteria" });
+      toast.error("Failed to save job criteria");
     }
   }
 
@@ -199,7 +202,6 @@ export function CriteriaForm({
         <Input id="minSalary" type="number" placeholder="100000" {...register("minSalary")} />
       </div>
 
-      {errors.root && <p className="text-sm text-destructive">{errors.root.message}</p>}
       <Button type="submit" disabled={loading}>
         {loading ? "Saving…" : "Save criteria"}
       </Button>

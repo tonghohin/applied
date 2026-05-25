@@ -60,21 +60,11 @@ Better Auth with Google OAuth, configured in `packages/api/src/auth.ts`. The Dri
 
 ### Job search pipeline
 
-`jobs.search` tRPC mutation enqueues a job to `searchQueue` (BullMQ, defined in `packages/api/src/queues/`). The worker:
-1. Fetches profile and decrypts LinkedIn credentials (AES-256-GCM, key from `LINKEDIN_ENCRYPTION_KEY`)
-2. Calls `runSearch(db, userId, email, password)` from `packages/automation`, which:
-   - Uses repository functions from `packages/db` (`getJobCriteriaForUser`, `insertJobs`)
-   - Logs in to LinkedIn via Playwright and scrapes job listings
-   - Scores each job with `scoreJob` (keyword matching: title worth 4pts, skills worth up to 6pts; ≥7 = strong, ≥3 = potential, else weak)
-   - Inserts results into `jobs` table
+`jobs.search` enqueues to `searchQueue`. Worker decrypts LinkedIn credentials (AES-256-GCM), calls `runSearch` from `packages/automation` which scrapes LinkedIn via Playwright, scores jobs (title 4pts + skills up to 6pts; ≥7 strong, ≥3 potential, else weak), and inserts into `jobs` table.
 
 ### AI apply agent
 
-`jobs.applyJobs` tRPC mutation validates ownership then enqueues one job per `jobId` to `applyQueue` (BullMQ). The worker calls `processApplyJob(db, jobId, userId)` from `packages/ai`, which:
-- Fetches job + profile via repository functions from `packages/db` (`getJobForUser`, `getProfileForUser`)
-- Calls `applyToJob(job, profile)` — spawns a Playwright MCP server via `@playwright/mcp --headless`
-- Uses `generateText` with `stopWhen: stepCountIs(30)` and the MCP tools
-- Returns `SUCCESS` or `FAILURE:<reason>`; updates job status via `updateJobApplied` / `updateJobFailed`
+`jobs.applyJobs` enqueues to `applyQueue`. Worker calls `processApplyJob` from `packages/ai` which spawns a Playwright MCP server (`@playwright/mcp --headless`), uses `generateText` with `stopWhen: stepCountIs(30)` to fill and submit the application, then updates job status to `applied` or `failed`.
 
 ### Environment variables
 
@@ -88,6 +78,15 @@ Each package/app validates only the env vars it uses via its own `src/env.ts` (Z
 - Client in `apps/web/lib/trpc.tsx` — `createTRPCReact<AppRouter>()` with `httpBatchLink` pointing at `/api/trpc` + superjson
 - Use `trpc.x.queryOptions()` syntax (TanStack Query v5)
 - All procedures except `health` require authentication (`protectedProcedure` throws `UNAUTHORIZED` if no session)
+
+### Data fetching pattern (server → client)
+
+All GET requests happen in server components. Pages call services directly (not tRPC), pass results as required `initialData` props to client components, which pass them into `useQuery({ initialData })` — no loading skeleton on first render, TanStack Query takes over for re-fetches and post-mutation invalidation.
+
+- Use `getSession()` from `lib/session.ts` (React `cache()` — one DB hit per request even if called in both proxy and page)
+- Always `redirect("/sign-in")` if session is null — defense-in-depth even though proxy already guards
+- Service functions called server-side must be exported from `packages/api/src/index.ts`
+- Type `initialData` props using `RouterOutputs["router"]["procedure"]` and make them required
 
 ### Testing
 
@@ -111,6 +110,11 @@ export function JobCard({ title, company }: JobCardProps) {}
 
 **Module imports**
 - Never use `.js` extensions on relative imports (e.g. `from "./auth"` not `from "./auth.js"`). The root tsconfig uses `moduleResolution: "bundler"` — Turbopack resolves imports literally and does not remap `.js` → `.ts`.
+
+**Form feedback**
+- Field validation errors (e.g. "Required") go under the input via `{errors.field && <p>...`
+- Submission success and server errors go to Sonner: `toast.success(...)` in `onSuccess`, `toast.error(...)` in the `catch` block
+- Never use `setError("root", ...)` or render `errors.root` in the JSX
 
 **Type safety**
 - No `any`, no type casts (`as Foo`, `as unknown as Foo`)

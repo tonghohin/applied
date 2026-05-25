@@ -1,20 +1,22 @@
+import { auth } from "@repo/api";
+import { headers } from "next/headers";
 import { type NextRequest, NextResponse } from "next/server";
 
-const SESSION_COOKIE = "better-auth.session_token";
-
-export function proxy(request: NextRequest) {
+export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
   const isProtected = pathname.startsWith("/jobs") || pathname.startsWith("/profile");
   const isAuth = pathname.startsWith("/sign-in") || pathname.startsWith("/sign-up");
 
-  const hasSession = request.cookies.has(SESSION_COOKIE);
+  if (isProtected || isAuth) {
+    const session = await auth.api.getSession({ headers: await headers() });
 
-  if (isProtected && !hasSession) {
-    return NextResponse.redirect(new URL("/sign-in", request.url));
-  }
+    if (isProtected && !session) {
+      return NextResponse.redirect(new URL("/sign-in", request.url));
+    }
 
-  if (isAuth && hasSession) {
-    return NextResponse.redirect(new URL("/jobs", request.url));
+    if (isAuth && session) {
+      return NextResponse.redirect(new URL("/jobs", request.url));
+    }
   }
 
   return NextResponse.next();

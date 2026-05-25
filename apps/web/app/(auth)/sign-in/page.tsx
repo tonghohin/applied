@@ -15,6 +15,7 @@ import { authClient } from "@/lib/auth-client";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
+import { toast } from "sonner";
 import { z } from "zod";
 
 const schema = z.object({
@@ -29,14 +30,13 @@ export default function SignInPage() {
   const {
     register,
     handleSubmit,
-    setError,
     formState: { errors, isSubmitting },
   } = useForm<FormValues>({ resolver: zodResolver(schema) });
 
   async function onSubmit(values: FormValues) {
     const { error } = await authClient.signIn.email(values);
     if (error) {
-      setError("root", { message: error.message ?? "Sign in failed" });
+      toast.error(error.message ?? "Sign in failed");
     } else {
       router.push("/jobs");
     }
@@ -72,7 +72,6 @@ export default function SignInPage() {
                 <p className="text-sm text-destructive">{errors.password.message}</p>
               )}
             </div>
-            {errors.root && <p className="text-sm text-destructive">{errors.root.message}</p>}
             <Button type="submit" disabled={isSubmitting} className="w-full">
               {isSubmitting ? "Signing in…" : "Sign in"}
             </Button>

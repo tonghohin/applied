@@ -5,18 +5,31 @@ import { JobListSkeleton } from "@/components/jobs/job-list-skeleton";
 import { JobTabs } from "@/components/jobs/job-tabs";
 import { Button } from "@/components/ui/button";
 import { trpc } from "@/lib/trpc";
+import type { RouterOutputs } from "@repo/api";
 import { getMissingSearchFields } from "@repo/shared";
 import { toast } from "sonner";
 
-export function JobsClient() {
+type InitialJobs = RouterOutputs["jobs"]["list"];
+type InitialProfileData = RouterOutputs["profile"]["getProfile"];
+
+export function JobsClient({
+  initialJobs,
+  initialProfileData,
+}: {
+  initialJobs: InitialJobs;
+  initialProfileData: InitialProfileData;
+}) {
   const { data: jobs = [], isLoading } = trpc.jobs.list.useQuery(undefined, {
+    initialData: initialJobs,
     refetchInterval: (query) => {
       const data = query.state.data ?? [];
       const hasInFlight = data.some((j) => j.status === "pending_review");
       return hasInFlight ? 3000 : false;
     },
   });
-  const { data: profileData } = trpc.profile.getProfile.useQuery();
+  const { data: profileData } = trpc.profile.getProfile.useQuery(undefined, {
+    initialData: initialProfileData,
+  });
   const missingFields = getMissingSearchFields(profileData?.profile, profileData?.criteria);
 
   const searchMutation = trpc.jobs.search.useMutation({
