@@ -6,7 +6,7 @@ import { authEnv as env } from "./auth-env";
 export const auth = betterAuth({
   secret: env.BETTER_AUTH_SECRET,
   baseURL: env.BETTER_AUTH_URL,
-database: drizzleAdapter(db, { provider: "pg", usePlural: true }),
+  database: drizzleAdapter(db, { provider: "pg", usePlural: true }),
   emailAndPassword: { enabled: true },
   socialProviders: {
     google: {
@@ -15,6 +15,10 @@ database: drizzleAdapter(db, { provider: "pg", usePlural: true }),
     },
   },
   account: {
-    accountLinking: { enabled: true },
+    accountLinking: {
+      enabled: true,
+      trustedProviders: ["google"],
+      requireLocalEmailVerified: false,
+    },
   },
 });
