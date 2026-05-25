@@ -119,24 +119,6 @@ describe("profile.upsertLinkedIn", () => {
     expect(decrypt(stored.linkedinPasswordEncrypted)).toBe("secret");
   });
 
-  it("stores null when linkedin credentials are omitted", async () => {
-    const chain = {
-      values: vi.fn().mockReturnThis(),
-      onConflictDoUpdate: vi.fn().mockReturnThis(),
-      returning: vi.fn().mockResolvedValue([{ id: "p1", userId: "user_1" }]),
-    };
-    mockDb.insert.mockReturnValueOnce(chain);
-
-    const caller = profileRouter.createCaller(makeCtx());
-    await caller.upsertLinkedIn({});
-
-    const stored = chain.values.mock.calls.at(0)?.at(0) as {
-      linkedinEmailEncrypted: string | null;
-      linkedinPasswordEncrypted: string | null;
-    };
-    expect(stored.linkedinEmailEncrypted).toBeNull();
-    expect(stored.linkedinPasswordEncrypted).toBeNull();
-  });
 });
 
 describe("profile.upsertCriteria", () => {

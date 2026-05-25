@@ -26,8 +26,8 @@ export const upsertCoverLetterSchema = z.object({
 });
 
 export const upsertLinkedInSchema = z.object({
-  linkedinEmail: z.email().optional().or(z.literal("")),
-  linkedinPassword: z.string().optional(),
+  linkedinEmail: z.email(),
+  linkedinPassword: z.string().min(1),
 });
 
 const locationEntrySchema = z.object({
