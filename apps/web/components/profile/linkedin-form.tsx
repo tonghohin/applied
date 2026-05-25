@@ -2,6 +2,7 @@
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { PasswordInput } from "@/components/ui/password-input";
 import { Label } from "@/components/ui/label";
 import { trpc } from "@/lib/trpc";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -59,7 +60,7 @@ export function LinkedInForm() {
         <Label htmlFor="linkedinPassword">
           LinkedIn password <span className="text-destructive">*</span>
         </Label>
-        <Input id="linkedinPassword" type="password" {...register("linkedinPassword")} />
+        <PasswordInput id="linkedinPassword" {...register("linkedinPassword")} />
         {errors.linkedinPassword && (
           <p className="text-sm text-destructive">{errors.linkedinPassword.message}</p>
         )}
