@@ -22,6 +22,7 @@
     "@playwright/mcp": "^0.0.75",
     "@repo/db": "workspace:*",
     "ai": "^6.0.190",
+    "playwright": "^1.60.0",
     "zod": "^4.4.3"
   }
 }

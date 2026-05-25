@@ -30,8 +30,8 @@ const completeProfile = {
   lastName: "Doe",
   phone: "555",
   address: "123 Main",
-  resumeMarkdown: "# Resume",
-  coverLetterMarkdown: "Dear...",
+  resume: "Resume",
+  coverLetterInstructions: null,
   linkedinEmailEncrypted: "enc_email",
   linkedinPasswordEncrypted: "enc_pass",
 };

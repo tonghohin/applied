@@ -30,13 +30,14 @@ If the page is a LinkedIn job listing:
 
 ## Form filling rules
 - Use the resume content to answer questions about experience, skills, and education.
+- When a cover letter field is required, write a personalized cover letter for the specific company and position based on the applicant's resume. If COVER LETTER INSTRUCTIONS are provided, follow them (tone, length, emphasis, etc.).
 - For yes/no questions about work authorisation or sponsorship, answer based on the profile if stated; otherwise assume "Yes" to work authorisation and "No" to sponsorship.
 - If a required field cannot be answered from the profile, use a reasonable placeholder and note it.
-- Do not upload files — fill text fields only.
+- If a file upload field for a resume appears and a Resume PDF path is provided in the prompt, use browser_file_chooser to upload that file. For any other file upload fields, skip them.
 
 Only respond with SUCCESS or FAILURE:<reason> after attempting the application — nothing else.`;
 
-export async function applyToJob(job: Job, profile: Profile): Promise<ApplyResult> {
+export async function applyToJob(job: Job, profile: Profile, resumePdfPath: string): Promise<ApplyResult> {
   const client = await createPlaywrightMCPClient();
 
   try {
@@ -49,8 +50,10 @@ export async function applyToJob(job: Job, profile: Profile): Promise<ApplyResul
       profile.linkedinUrl ? `LinkedIn: ${profile.linkedinUrl}` : null,
       profile.githubUrl ? `GitHub: ${profile.githubUrl}` : null,
       profile.websiteUrl ? `Website: ${profile.websiteUrl}` : null,
-      `\n--- RESUME ---\n${profile.resumeMarkdown}`,
-      `\n--- COVER LETTER ---\n${profile.coverLetterMarkdown}`,
+      `\n--- RESUME ---\n${profile.resume}`,
+      profile.coverLetterInstructions
+        ? `\n--- COVER LETTER INSTRUCTIONS ---\n${profile.coverLetterInstructions}`
+        : null,
     ]
       .filter(Boolean)
       .join("\n");
@@ -60,7 +63,7 @@ export async function applyToJob(job: Job, profile: Profile): Promise<ApplyResul
       tools,
       stopWhen: stepCountIs(30),
       system: SYSTEM_PROMPT,
-      prompt: `Apply to this job:\nURL: ${job.url}\nTitle: ${job.title} at ${job.company}\n\nApplicant profile:\n${profileSummary}`,
+      prompt: `Apply to this job:\nURL: ${job.url}\nTitle: ${job.title} at ${job.company}\n\nApplicant profile:\n${profileSummary}${resumePdfPath ? `\n\nResume PDF path: ${resumePdfPath}` : ""}`,
     });
 
     const result = text.trim();

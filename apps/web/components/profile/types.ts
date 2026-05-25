@@ -6,6 +6,6 @@ export type InitialProfile = {
   linkedinUrl?: string | null;
   githubUrl?: string | null;
   websiteUrl?: string | null;
-  resumeMarkdown?: string;
-  coverLetterMarkdown?: string;
+  resume?: string;
+  coverLetterInstructions?: string | null;
 } | null;

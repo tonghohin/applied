@@ -18,11 +18,11 @@ export const upsertPersonalSchema = z.object({
 });
 
 export const upsertResumeSchema = z.object({
-  resumeMarkdown: z.string().min(1),
+  resume: z.string().min(1),
 });
 
 export const upsertCoverLetterSchema = z.object({
-  coverLetterMarkdown: z.string().min(1),
+  coverLetterInstructions: z.string().optional(),
 });
 
 export const upsertLinkedInSchema = z.object({
@@ -69,7 +69,7 @@ export async function upsertPersonal(db: Db, userId: string, input: UpsertPerson
   const set = { ...input, updatedAt: new Date() };
   const [row] = await db
     .insert(profiles)
-    .values({ ...set, userId, resumeMarkdown: "", coverLetterMarkdown: "", createdAt: new Date() })
+    .values({ ...set, userId, resume: "", createdAt: new Date() })
     .onConflictDoUpdate({ target: profiles.userId, set })
     .returning();
   return row;
@@ -86,7 +86,6 @@ export async function upsertResume(db: Db, userId: string, input: UpsertResumeIn
       lastName: "",
       phone: "",
       address: "",
-      coverLetterMarkdown: "",
       createdAt: new Date(),
     })
     .onConflictDoUpdate({ target: profiles.userId, set })
@@ -105,7 +104,7 @@ export async function upsertCoverLetter(db: Db, userId: string, input: UpsertCov
       lastName: "",
       phone: "",
       address: "",
-      resumeMarkdown: "",
+      resume: "",
       createdAt: new Date(),
     })
     .onConflictDoUpdate({ target: profiles.userId, set })
@@ -129,8 +128,7 @@ export async function upsertLinkedIn(db: Db, userId: string, input: UpsertLinked
       lastName: "",
       phone: "",
       address: "",
-      resumeMarkdown: "",
-      coverLetterMarkdown: "",
+      resume: "",
       createdAt: new Date(),
     })
     .onConflictDoUpdate({ target: profiles.userId, set })

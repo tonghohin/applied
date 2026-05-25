@@ -64,7 +64,7 @@ Better Auth with Google OAuth, configured in `packages/api/src/auth.ts`. The Dri
 
 ### AI apply agent
 
-`jobs.applyJobs` enqueues to `applyQueue`. Worker calls `processApplyJob` from `packages/ai` which spawns a Playwright MCP server (`@playwright/mcp --headless`), uses `generateText` with `stopWhen: stepCountIs(30)` to fill and submit the application, then updates job status to `applied` or `failed`.
+`jobs.applyJobs` enqueues to `applyQueue`. Worker calls `processApplyJob` from `packages/ai` which generates a PDF from the user's resume text (`generateResumePdf`), spawns a Playwright MCP server (`@playwright/mcp --headless`), uses `generateText` with `stopWhen: stepCountIs(30)` to fill and submit the application (uploading the PDF if the form has a file upload field), then updates job status to `applied` or `failed`.
 
 ### Environment variables
 
@@ -79,6 +79,8 @@ Each package/app validates only the env vars it uses via its own `src/env.ts` (Z
 - Use `trpc.x.queryOptions()` syntax (TanStack Query v5)
 - All procedures except `health` require authentication (`protectedProcedure` throws `UNAUTHORIZED` if no session)
 - Profile mutations are split by tab: `upsertPersonal`, `upsertResume`, `upsertCoverLetter`, `upsertLinkedIn`, `upsertCriteria` — each only validates and updates its own fields
+- `resume` is plain text (`profiles.resume`); the agent generates a PDF from it on the fly per application
+- `coverLetterInstructions` is optional free-text (tone, length, emphasis hints); the agent writes a personalised cover letter per job using the resume and job details, following the instructions if provided
 
 ### Data fetching pattern (server → client)
 

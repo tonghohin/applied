@@ -11,7 +11,7 @@ import { z } from "zod";
 import type { InitialProfile } from "./types";
 
 const schema = z.object({
-  resumeMarkdown: z.string().min(1, "Required"),
+  resume: z.string().min(1, "Required"),
 });
 
 type FormValues = z.infer<typeof schema>;
@@ -31,7 +31,7 @@ export function ResumeForm({ initial }: { initial?: InitialProfile }) {
     formState: { errors, isSubmitting },
   } = useForm<FormValues>({
     resolver: zodResolver(schema),
-    defaultValues: { resumeMarkdown: initial?.resumeMarkdown ?? "" },
+    defaultValues: { resume: initial?.resume ?? "" },
   });
 
   async function onSubmit(values: FormValues) {
@@ -46,18 +46,18 @@ export function ResumeForm({ initial }: { initial?: InitialProfile }) {
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-4">
-      <Field data-invalid={!!errors.resumeMarkdown}>
-        <FieldLabel htmlFor="resumeMarkdown">
-          Resume (Markdown) <span className="text-destructive">*</span>
+      <Field data-invalid={!!errors.resume}>
+        <FieldLabel htmlFor="resume">
+          Resume <span className="text-destructive">*</span>
         </FieldLabel>
         <Textarea
-          id="resumeMarkdown"
+          id="resume"
           rows={20}
-          placeholder="# Your Name&#10;&#10;## Experience..."
-          {...register("resumeMarkdown")}
-          aria-invalid={!!errors.resumeMarkdown}
+          placeholder="Paste your resume here..."
+          {...register("resume")}
+          aria-invalid={!!errors.resume}
         />
-        <FieldError errors={[errors.resumeMarkdown]} />
+        <FieldError errors={[errors.resume]} />
       </Field>
       <Button type="submit" disabled={loading}>
         {loading ? "Saving…" : "Save"}
