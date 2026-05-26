@@ -45,7 +45,7 @@ export async function runSearch(
 
     if (scraped.length === 0) return 0;
 
-    await insertJobs(
+    return await insertJobs(
       db,
       scraped.map((job) => ({
         userId,
@@ -62,8 +62,6 @@ export async function runSearch(
         updatedAt: new Date(),
       }))
     );
-
-    return scraped.length;
   } finally {
     await page.close();
   }
