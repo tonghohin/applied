@@ -1,6 +1,3 @@
-import { rm, writeFile } from "node:fs/promises";
-import { tmpdir } from "node:os";
-import { join } from "node:path";
 import type { Job, Profile } from "@repo/db";
 import { generateText, stepCountIs } from "ai";
 import { createPlaywrightMCPClient } from "../mcp";
@@ -46,14 +43,8 @@ export async function applyToJob(
   linkedinSessionJson?: string,
   log: (msg: string) => void = () => {},
 ): Promise<ApplyResult> {
-  let storageStatePath: string | undefined;
-  if (linkedinSessionJson) {
-    storageStatePath = join(tmpdir(), `linkedin-session-${Date.now()}.json`);
-    await writeFile(storageStatePath, linkedinSessionJson, "utf8");
-  }
-
   log("Initializing Playwright session");
-  const client = await createPlaywrightMCPClient(storageStatePath);
+  const client = await createPlaywrightMCPClient(linkedinSessionJson);
 
   try {
     const tools = await client.tools();
@@ -79,11 +70,11 @@ export async function applyToJob(
       .filter(Boolean)
       .join("\n");
 
-    log("AI agent running (up to 30 steps)");
+    log("AI agent running (up to 50 steps)");
     const { text } = await generateText({
       model: "google/gemini-2.5-flash",
       tools,
-      stopWhen: stepCountIs(30),
+      stopWhen: stepCountIs(50),
       system: SYSTEM_PROMPT,
       prompt: `Apply to this job:\nURL: ${job.url}\nTitle: ${job.title} at ${job.company}\n\nApplicant profile:\n${profileSummary}${resumePdfPath ? `\n\nResume PDF path: ${resumePdfPath}` : ""}`,
     });
@@ -92,12 +83,12 @@ export async function applyToJob(
     const result = text.trim();
     if (result === "SUCCESS") return { success: true };
     if (result.startsWith("FAILURE:")) return { success: false, reason: result.slice(8).trim() };
+    if (!result) return { success: false, reason: "Agent reached step limit without completing the application" };
     return {
       success: false,
       reason: `Unexpected agent response: ${result.slice(0, 100)}`,
     };
   } finally {
     await client.close();
-    if (storageStatePath) await rm(storageStatePath, { force: true });
   }
 }

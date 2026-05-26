@@ -64,7 +64,7 @@ Better Auth with Google OAuth, configured in `packages/api/src/auth.ts`. The Dri
 
 ### AI apply agent
 
-`jobs.applyJobs` enqueues to `applyQueue`. Worker calls `processApplyJob` from `packages/ai` which generates a PDF from the user's resume text (`generateResumePdf`), spawns a Playwright MCP server (`@playwright/mcp --headless`), uses `generateText` with `stopWhen: stepCountIs(30)` to fill and submit the application (uploading the PDF if the form has a file upload field), then updates job status to `applied` or `failed`.
+`jobs.applyJobs` enqueues to `applyQueue`. Worker calls `processApplyJob` from `packages/ai` which generates a PDF from the user's resume text (`generateResumePdf`), then calls `applyToJob` which launches a stealth browser (playwright-extra + StealthPlugin, `--disable-blink-features=AutomationControlled`) and loads the saved LinkedIn session into a browser context. The `@playwright/mcp` MCP server runs in-process against that context via `InMemoryTransport`, and `generateText` with `stopWhen: stepCountIs(50)` drives the agent to fill and submit the application (uploading the PDF if the form has a file upload field). Job status is updated to `applied` or `failed`.
 
 ### Environment variables
 

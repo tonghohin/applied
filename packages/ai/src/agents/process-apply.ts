@@ -1,4 +1,3 @@
-import { rm } from "node:fs/promises";
 import {
   type Db,
   getJobForUser,
@@ -6,6 +5,7 @@ import {
   updateJobApplied,
   updateJobFailed,
 } from "@repo/db";
+import { rm } from "node:fs/promises";
 import { applyToJob } from "./apply-agent";
 import { generateResumePdf } from "./generate-resume-pdf";
 
@@ -29,7 +29,13 @@ export async function processApplyJob(
   const resumePdfPath = await generateResumePdf(profileRow.resume);
   try {
     log("Launching AI agent");
-    const result = await applyToJob(jobRow, profileRow, resumePdfPath, linkedinSessionJson, log);
+    const result = await applyToJob(
+      jobRow,
+      profileRow,
+      resumePdfPath,
+      linkedinSessionJson,
+      log,
+    );
     if (result.success) {
       log("Application submitted successfully");
       await updateJobApplied(db, jobId);
@@ -37,6 +43,7 @@ export async function processApplyJob(
       log(`Application failed: ${result.reason}`);
       await updateJobFailed(db, jobId, result.reason);
     }
+    return result;
   } finally {
     await rm(resumePdfPath, { recursive: true, force: true });
   }
