@@ -17,7 +17,7 @@
     "vitest": "^4.1.7"
   },
   "dependencies": {
-    "@ai-sdk/google": "^3.0.79",
+    "@ai-sdk/gateway": "^3.0.119",
     "@ai-sdk/mcp": "^1.0.43",
     "@playwright/mcp": "^0.0.75",
     "@repo/db": "workspace:*",

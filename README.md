@@ -65,7 +65,7 @@ REDIS_URL=redis://localhost:6379
 ```
 DATABASE_URL=postgresql://applied:applied@localhost:5432/applied
 REDIS_URL=redis://localhost:6379
-GEMINI_API_KEY=<from Google AI Studio>
+AI_GATEWAY_API_KEY=<from Vercel AI Gateway dashboard>
 LINKEDIN_ENCRYPTION_KEY=<64 hex chars — same as above>
 ```
 

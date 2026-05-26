@@ -1,6 +1,6 @@
 import type { Job, Profile } from "@repo/db";
 import { generateText, stepCountIs } from "ai";
-import { gemini } from "../gemini";
+import { model } from "../model";
 import { createPlaywrightMCPClient } from "../mcp";
 
 export type ApplyResult = { success: true } | { success: false; reason: string };
@@ -63,7 +63,7 @@ export async function applyToJob(
       .join("\n");
 
     const { text } = await generateText({
-      model: gemini,
+      model: model,
       tools,
       stopWhen: stepCountIs(30),
       system: SYSTEM_PROMPT,

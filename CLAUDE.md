@@ -70,7 +70,7 @@ Better Auth with Google OAuth, configured in `packages/api/src/auth.ts`. The Dri
 
 Each package/app validates only the env vars it uses via its own `src/env.ts` (Zod parse at startup). Loading is handled by the entry point:
 - `apps/web`: Next.js auto-loads `.env.local` — holds all server-side vars (`DATABASE_URL`, `BETTER_AUTH_*`, `GOOGLE_*`, `LINKEDIN_ENCRYPTION_KEY`, `REDIS_URL`) plus `NEXT_PUBLIC_BASE_URL`
-- `apps/worker`: `tsx --env-file .env src/index.ts` — holds `DATABASE_URL`, `REDIS_URL`, `GEMINI_API_KEY`, `LINKEDIN_ENCRYPTION_KEY`
+- `apps/worker`: `tsx --env-file .env src/index.ts` — holds `DATABASE_URL`, `REDIS_URL`, `AI_GATEWAY_API_KEY`, `LINKEDIN_ENCRYPTION_KEY`
 - `packages/db`: drizzle-kit auto-loads `packages/db/.env`
 
 ### tRPC patterns
