@@ -41,6 +41,7 @@ const mockJob = {
   platform: "linkedin" as const,
   fitTier: "strong" as const,
   status: "pending_review" as const,
+  listedAt: null,
   appliedAt: null,
   failureReason: null,
   createdAt: new Date(),

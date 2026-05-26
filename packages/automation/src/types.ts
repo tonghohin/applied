@@ -10,6 +10,7 @@ export interface ScrapedJob {
   url: string;
   description: string;
   platform: Platform;
+  listedAt: string;
 }
 
 export interface SearchCriteria {
