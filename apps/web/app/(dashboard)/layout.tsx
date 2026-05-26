@@ -1,3 +1,4 @@
+import { Footer } from "@/components/footer";
 import { AppSidebar } from "@/components/nav/sidebar";
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
 
@@ -5,7 +6,10 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   return (
     <SidebarProvider>
       <AppSidebar />
-      <SidebarInset>{children}</SidebarInset>
+      <SidebarInset>
+        {children}
+        <Footer />
+      </SidebarInset>
     </SidebarProvider>
   );
 }
