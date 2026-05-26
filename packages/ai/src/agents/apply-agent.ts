@@ -1,10 +1,11 @@
+import { rm, writeFile } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import type { Job, Profile } from "@repo/db";
 import { generateText, stepCountIs } from "ai";
 import { createPlaywrightMCPClient } from "../mcp";
 
-export type ApplyResult =
-  | { success: true }
-  | { success: false; reason: string };
+export type ApplyResult = { success: true } | { success: false; reason: string };
 
 const SYSTEM_PROMPT = `You are an automated job application agent. Your job is to navigate to a job application page and fill out the form using the applicant's profile information.
 
@@ -42,8 +43,14 @@ export async function applyToJob(
   job: Job,
   profile: Profile,
   resumePdfPath: string,
+  linkedinSessionJson?: string
 ): Promise<ApplyResult> {
-  const client = await createPlaywrightMCPClient();
+  let storageStatePath: string | undefined;
+  if (linkedinSessionJson) {
+    storageStatePath = join(tmpdir(), `linkedin-session-${Date.now()}.json`);
+    await writeFile(storageStatePath, linkedinSessionJson, "utf8");
+  }
+  const client = await createPlaywrightMCPClient(storageStatePath);
 
   try {
     const tools = await client.tools();
@@ -73,13 +80,13 @@ export async function applyToJob(
 
     const result = text.trim();
     if (result === "SUCCESS") return { success: true };
-    if (result.startsWith("FAILURE:"))
-      return { success: false, reason: result.slice(8).trim() };
+    if (result.startsWith("FAILURE:")) return { success: false, reason: result.slice(8).trim() };
     return {
       success: false,
       reason: `Unexpected agent response: ${result.slice(0, 100)}`,
     };
   } finally {
     await client.close();
+    if (storageStatePath) await rm(storageStatePath, { force: true });
   }
 }

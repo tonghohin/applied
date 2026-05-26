@@ -1,9 +1,14 @@
-import { jobCriteria, profiles } from "@repo/db";
-import { WORK_TYPES } from "@repo/shared";
+import {
+  getLinkedInAccount,
+  jobCriteria,
+  profiles,
+  upsertLinkedInAccount,
+} from "@repo/db";
+import { WORK_TYPES, encrypt } from "@repo/shared";
 import { eq } from "drizzle-orm";
 import { z } from "zod";
 import type { Context } from "../context";
-import { encrypt } from "../lib/encrypt";
+import { env } from "../env";
 
 type Db = Context["db"];
 
@@ -50,7 +55,7 @@ export type UpsertLinkedInInput = z.infer<typeof upsertLinkedInSchema>;
 export type UpsertCriteriaInput = z.infer<typeof upsertCriteriaSchema>;
 
 export async function getProfile(db: Db, userId: string) {
-  const [profile, criteria] = await Promise.all([
+  const [profile, criteria, linkedinAccount] = await Promise.all([
     db
       .select()
       .from(profiles)
@@ -61,11 +66,16 @@ export async function getProfile(db: Db, userId: string) {
       .from(jobCriteria)
       .where(eq(jobCriteria.userId, userId))
       .then((r) => r[0] ?? null),
+    getLinkedInAccount(db, userId),
   ]);
-  return { profile, criteria };
+  return { profile, criteria, linkedinAccount };
 }
 
-export async function upsertPersonal(db: Db, userId: string, input: UpsertPersonalInput) {
+export async function upsertPersonal(
+  db: Db,
+  userId: string,
+  input: UpsertPersonalInput,
+) {
   const set = { ...input, updatedAt: new Date() };
   const [row] = await db
     .insert(profiles)
@@ -75,7 +85,11 @@ export async function upsertPersonal(db: Db, userId: string, input: UpsertPerson
   return row;
 }
 
-export async function upsertResume(db: Db, userId: string, input: UpsertResumeInput) {
+export async function upsertResume(
+  db: Db,
+  userId: string,
+  input: UpsertResumeInput,
+) {
   const set = { ...input, updatedAt: new Date() };
   const [row] = await db
     .insert(profiles)
@@ -93,7 +107,11 @@ export async function upsertResume(db: Db, userId: string, input: UpsertResumeIn
   return row;
 }
 
-export async function upsertCoverLetter(db: Db, userId: string, input: UpsertCoverLetterInput) {
+export async function upsertCoverLetter(
+  db: Db,
+  userId: string,
+  input: UpsertCoverLetterInput,
+) {
   const set = { ...input, updatedAt: new Date() };
   const [row] = await db
     .insert(profiles)
@@ -112,31 +130,23 @@ export async function upsertCoverLetter(db: Db, userId: string, input: UpsertCov
   return row;
 }
 
-export async function upsertLinkedIn(db: Db, userId: string, input: UpsertLinkedInInput) {
+export async function upsertLinkedIn(
+  db: Db,
+  userId: string,
+  input: UpsertLinkedInInput,
+) {
   const { linkedinEmail, linkedinPassword } = input;
-  const set = {
-    linkedinEmail,
-    linkedinPasswordEncrypted: encrypt(linkedinPassword),
-    updatedAt: new Date(),
-  };
-  const [row] = await db
-    .insert(profiles)
-    .values({
-      ...set,
-      userId,
-      firstName: "",
-      lastName: "",
-      phone: "",
-      address: "",
-      resume: "",
-      createdAt: new Date(),
-    })
-    .onConflictDoUpdate({ target: profiles.userId, set })
-    .returning();
-  return row;
+  await upsertLinkedInAccount(db, userId, {
+    email: linkedinEmail,
+    passwordEncrypted: encrypt(linkedinPassword, env.LINKEDIN_ENCRYPTION_KEY),
+  });
 }
 
-export async function upsertCriteria(db: Db, userId: string, input: UpsertCriteriaInput) {
+export async function upsertCriteria(
+  db: Db,
+  userId: string,
+  input: UpsertCriteriaInput,
+) {
   const values = { ...input, userId };
   const [row] = await db
     .insert(jobCriteria)

@@ -15,6 +15,20 @@
       "when": 1779752907072,
       "tag": "0001_next_slyde",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1779814011173,
+      "tag": "0002_pretty_cassandra_nova",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1779815325779,
+      "tag": "0003_youthful_mentor",
+      "breakpoints": true
     }
   ]
 }

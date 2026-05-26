@@ -4,6 +4,14 @@ vi.mock("../env", () => ({
   env: { LINKEDIN_ENCRYPTION_KEY: "a".repeat(64) },
 }));
 
+const {
+  mockGetLinkedInAccount,
+  mockUpsertLinkedInAccount,
+} = vi.hoisted(() => ({
+  mockGetLinkedInAccount: vi.fn().mockResolvedValue(null),
+  mockUpsertLinkedInAccount: vi.fn().mockResolvedValue(undefined),
+}));
+
 const mockInsertChain = {
   values: vi.fn().mockReturnThis(),
   onConflictDoUpdate: vi.fn().mockReturnThis(),
@@ -28,10 +36,12 @@ vi.mock("@repo/db", () => ({
   profiles: { userId: "userId_col" },
   jobCriteria: { userId: "userId_col" },
   WORK_TYPES: ["on-site", "remote", "hybrid"],
+  getLinkedInAccount: mockGetLinkedInAccount,
+  upsertLinkedInAccount: mockUpsertLinkedInAccount,
 }));
 
+import { decrypt } from "@repo/shared";
 import type { Context } from "../context";
-import { decrypt } from "../lib/encrypt";
 import { profileRouter } from "./profile";
 
 function makeCtx(userId = "user_1") {
@@ -65,6 +75,7 @@ describe("profile.getProfile", () => {
   it("returns profile and criteria for the user", async () => {
     const fakeProfile = { id: "p1", userId: "user_1", firstName: "Jane" };
     const fakeCriteria = { id: "c1", userId: "user_1", jobTitles: ["SWE"] };
+    const fakeAccount = { id: "la1", userId: "user_1", email: "jane@example.com" };
 
     const selectChain1 = {
       from: vi.fn().mockReturnThis(),
@@ -75,35 +86,34 @@ describe("profile.getProfile", () => {
       where: vi.fn().mockResolvedValue([fakeCriteria]),
     };
     mockDb.select.mockReturnValueOnce(selectChain1).mockReturnValueOnce(selectChain2);
+    mockGetLinkedInAccount.mockResolvedValueOnce(fakeAccount);
 
     const caller = profileRouter.createCaller(makeCtx());
     const result = await caller.getProfile();
 
     expect(result.profile).toMatchObject({ firstName: "Jane" });
     expect(result.criteria).toMatchObject({ jobTitles: ["SWE"] });
+    expect(result.linkedinAccount).toMatchObject({ email: "jane@example.com" });
   });
 
   it("returns null when no data exists", async () => {
     const empty1 = { from: vi.fn().mockReturnThis(), where: vi.fn().mockResolvedValue([]) };
     const empty2 = { from: vi.fn().mockReturnThis(), where: vi.fn().mockResolvedValue([]) };
     mockDb.select.mockReturnValueOnce(empty1).mockReturnValueOnce(empty2);
+    mockGetLinkedInAccount.mockResolvedValueOnce(null);
 
     const caller = profileRouter.createCaller(makeCtx());
     const result = await caller.getProfile();
 
     expect(result.profile).toBeNull();
     expect(result.criteria).toBeNull();
+    expect(result.linkedinAccount).toBeNull();
   });
 });
 
 describe("profile.upsertLinkedIn", () => {
   it("encrypts linkedin credentials before storing", async () => {
-    const chain = {
-      values: vi.fn().mockReturnThis(),
-      onConflictDoUpdate: vi.fn().mockReturnThis(),
-      returning: vi.fn().mockResolvedValue([{ id: "p1", userId: "user_1" }]),
-    };
-    mockDb.insert.mockReturnValueOnce(chain);
+    mockUpsertLinkedInAccount.mockClear();
 
     const caller = profileRouter.createCaller(makeCtx());
     await caller.upsertLinkedIn({
@@ -111,12 +121,14 @@ describe("profile.upsertLinkedIn", () => {
       linkedinPassword: "secret",
     });
 
-    const stored = chain.values.mock.calls.at(0)?.at(0) as {
-      linkedinEmail: string;
-      linkedinPasswordEncrypted: string;
-    };
-    expect(stored.linkedinEmail).toBe("jane@example.com");
-    expect(decrypt(stored.linkedinPasswordEncrypted)).toBe("secret");
+    expect(mockUpsertLinkedInAccount).toHaveBeenCalledOnce();
+    const [, , { email, passwordEncrypted }] = mockUpsertLinkedInAccount.mock.calls[0] as [
+      unknown,
+      unknown,
+      { email: string; passwordEncrypted: string },
+    ];
+    expect(email).toBe("jane@example.com");
+    expect(decrypt(passwordEncrypted, "a".repeat(64))).toBe("secret");
   });
 });
 

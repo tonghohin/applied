@@ -3,8 +3,8 @@ import type { WorkType } from "@repo/shared";
 import type { Page } from "playwright";
 import type { ScrapedJob, SearchCriteria } from "../types";
 
-const DELAY_MS = 1500;
 const MAX_PAGES = 5;
+const randomDelay = () => Math.floor(Math.random() * 2000) + 1500;
 const CUTOFF_MS = 7 * 24 * 60 * 60 * 1000;
 
 const WT_MAP: Record<WorkType, string> = { "on-site": "1", remote: "2", hybrid: "3" };
@@ -49,7 +49,7 @@ async function scrapeJobsPage(page: Page): Promise<ScrapedJob[]> {
 
 async function fetchDescription(page: Page, url: string): Promise<string> {
   await page.goto(url, { waitUntil: "domcontentloaded" });
-  await page.waitForTimeout(DELAY_MS);
+  await page.waitForTimeout(randomDelay());
   return page.evaluate(() => {
     // Primary: LinkedIn usually wraps the description with an "About the job" header
     const aboutJobEl = Array.from(document.querySelectorAll("div, section, article")).find((el) => {
@@ -85,7 +85,7 @@ export async function scrapeLinkedInJobs(
       for (let pageNum = 0; pageNum < MAX_PAGES; pageNum++) {
         const url = pageNum === 0 ? searchUrl : `${searchUrl}&start=${pageNum * 25}`;
         await page.goto(url, { waitUntil: "domcontentloaded" });
-        await page.waitForTimeout(DELAY_MS);
+        await page.waitForTimeout(randomDelay());
 
         const jobs = await scrapeJobsPage(page);
         if (jobs.length === 0) break;

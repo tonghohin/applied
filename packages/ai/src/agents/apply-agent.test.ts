@@ -60,8 +60,6 @@ const mockProfile = {
   websiteUrl: null,
   resume: "Jane Doe\n5 years experience",
   coverLetterInstructions: null,
-  linkedinEmail: null,
-  linkedinPasswordEncrypted: null,
   createdAt: new Date(),
   updatedAt: new Date(),
 } satisfies Profile;

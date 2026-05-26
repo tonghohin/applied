@@ -9,7 +9,12 @@ import {
 import { applyToJob } from "./apply-agent";
 import { generateResumePdf } from "./generate-resume-pdf";
 
-export async function processApplyJob(db: Db, jobId: string, userId: string) {
+export async function processApplyJob(
+  db: Db,
+  jobId: string,
+  userId: string,
+  linkedinSessionJson?: string
+) {
   const [jobRow, profileRow] = await Promise.all([
     getJobForUser(db, jobId, userId),
     getProfileForUser(db, userId),
@@ -20,7 +25,7 @@ export async function processApplyJob(db: Db, jobId: string, userId: string) {
 
   const resumePdfPath = await generateResumePdf(profileRow.resume);
   try {
-    const result = await applyToJob(jobRow, profileRow, resumePdfPath);
+    const result = await applyToJob(jobRow, profileRow, resumePdfPath, linkedinSessionJson);
     if (result.success) {
       await updateJobApplied(db, jobId);
     } else {

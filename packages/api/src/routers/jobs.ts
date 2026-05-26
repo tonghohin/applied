@@ -1,4 +1,4 @@
-import { getJobCriteriaForUser, getProfileForUser } from "@repo/db";
+import { getJobCriteriaForUser, getLinkedInAccount, getProfileForUser } from "@repo/db";
 import { getMissingSearchFields } from "@repo/shared";
 import { TRPCError } from "@trpc/server";
 import { z } from "zod";
@@ -14,12 +14,13 @@ import { protectedProcedure, router } from "../trpc";
 export const jobsRouter = router({
   search: protectedProcedure.mutation(async ({ ctx }) => {
     const userId = ctx.session.user.id;
-    const [profile, criteria] = await Promise.all([
+    const [profile, criteria, linkedinAccount] = await Promise.all([
       getProfileForUser(ctx.db, userId),
       getJobCriteriaForUser(ctx.db, userId),
+      getLinkedInAccount(ctx.db, userId),
     ]);
 
-    const missingFields = getMissingSearchFields(profile, criteria);
+    const missingFields = getMissingSearchFields(profile, criteria, linkedinAccount);
 
     if (missingFields.length > 0) {
       throw new TRPCError({ code: "PRECONDITION_FAILED", message: missingFields.join(", ") });

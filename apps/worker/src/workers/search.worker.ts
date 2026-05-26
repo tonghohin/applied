@@ -1,25 +1,26 @@
 import { runSearch } from "@repo/automation";
-import { db, insertSearchRun, profiles, updateSearchRun } from "@repo/db";
+import {
+  clearLinkedInSession,
+  db,
+  getLinkedInAccount,
+  insertSearchRun,
+  saveLinkedInSession,
+  updateSearchRun,
+} from "@repo/db";
 import { Worker } from "bullmq";
-import { eq } from "drizzle-orm";
-import { decrypt } from "../decrypt";
+import { decrypt, encrypt } from "@repo/shared";
 import { env } from "../env";
 
 type SearchJobData = { userId: string };
 
 async function processSearch(userId: string) {
-  const profileRow = await db
-    .select()
-    .from(profiles)
-    .where(eq(profiles.userId, userId))
-    .then((r) => r[0]);
+  const account = await getLinkedInAccount(db, userId);
+  if (!account) throw new Error("LinkedIn credentials not configured");
 
-  if (!profileRow?.linkedinEmail || !profileRow?.linkedinPasswordEncrypted) {
-    throw new Error("LinkedIn credentials not set");
-  }
-
-  const email = profileRow.linkedinEmail;
-  const password = decrypt(profileRow.linkedinPasswordEncrypted);
+  const password = decrypt(account.passwordEncrypted, env.LINKEDIN_ENCRYPTION_KEY);
+  const existingSessionJson = account.sessionEncrypted
+    ? decrypt(account.sessionEncrypted, env.LINKEDIN_ENCRYPTION_KEY)
+    : undefined;
 
   const run = await insertSearchRun(db, {
     userId,
@@ -30,18 +31,30 @@ async function processSearch(userId: string) {
   if (!run) throw new Error("Failed to create search run");
 
   try {
-    const jobCount = await runSearch(db, userId, email, password, run.id);
+    const { jobCount, newSessionJson } = await runSearch(
+      db,
+      userId,
+      account.email,
+      password,
+      run.id,
+      existingSessionJson
+    );
+    if (newSessionJson) {
+      await saveLinkedInSession(db, userId, encrypt(newSessionJson, env.LINKEDIN_ENCRYPTION_KEY));
+    }
     await updateSearchRun(db, run.id, {
       status: "completed",
       completedAt: new Date(),
       jobCount,
     });
   } catch (err) {
+    const isCaptcha = err instanceof Error && err.message.toLowerCase().includes("captcha");
     await updateSearchRun(db, run.id, {
       status: "failed",
       completedAt: new Date(),
       errorMessage: err instanceof Error ? err.message : String(err),
     });
+    if (isCaptcha) await clearLinkedInSession(db, userId);
     throw err;
   }
 }

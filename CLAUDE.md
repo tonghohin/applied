@@ -60,7 +60,7 @@ Better Auth with Google OAuth, configured in `packages/api/src/auth.ts`. The Dri
 
 ### Job search pipeline
 
-`jobs.search` enqueues to `searchQueue`. Worker reads `linkedinEmail` (plaintext) and decrypts `linkedinPasswordEncrypted` (AES-256-GCM), calls `runSearch` from `packages/automation` which scrapes LinkedIn via Playwright, scores jobs (title 4pts + skills up to 6pts; ≥7 strong, ≥3 potential, else weak), and inserts into `jobs` table.
+`jobs.search` enqueues to `searchQueue`. Worker fetches the user's `linkedin_accounts` row, decrypts `passwordEncrypted` (AES-256-GCM), and reuses `sessionEncrypted` (Playwright storage state) if present to skip re-login. Calls `runSearch` from `packages/automation` which scrapes LinkedIn via Playwright, scores jobs (title 4pts + skills up to 6pts; ≥7 strong, ≥3 potential, else weak), and inserts into `jobs` table. On success the fresh session is saved back; on captcha error the stale session is cleared so the next run forces a fresh login.
 
 ### AI apply agent
 

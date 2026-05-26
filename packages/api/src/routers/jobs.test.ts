@@ -4,12 +4,14 @@ vi.mock("../env", () => ({
   env: { LINKEDIN_ENCRYPTION_KEY: "a".repeat(64), REDIS_URL: "redis://localhost:6379" },
 }));
 
-const { mockSearchAdd, mockApplyAdd, mockGetProfile, mockGetCriteria } = vi.hoisted(() => ({
-  mockSearchAdd: vi.fn().mockResolvedValue(undefined),
-  mockApplyAdd: vi.fn().mockResolvedValue(undefined),
-  mockGetProfile: vi.fn(),
-  mockGetCriteria: vi.fn(),
-}));
+const { mockSearchAdd, mockApplyAdd, mockGetProfile, mockGetCriteria, mockGetLinkedInAccount } =
+  vi.hoisted(() => ({
+    mockSearchAdd: vi.fn().mockResolvedValue(undefined),
+    mockApplyAdd: vi.fn().mockResolvedValue(undefined),
+    mockGetProfile: vi.fn(),
+    mockGetCriteria: vi.fn(),
+    mockGetLinkedInAccount: vi.fn(),
+  }));
 
 vi.mock("../queues/index", () => ({
   searchQueue: { add: mockSearchAdd },
@@ -32,8 +34,14 @@ const completeProfile = {
   address: "123 Main",
   resume: "Resume",
   coverLetterInstructions: null,
-  linkedinEmail: "jane@example.com",
-  linkedinPasswordEncrypted: "enc_pass",
+};
+
+const completeLinkedInAccount = {
+  id: "la1",
+  userId: "user_1",
+  email: "jane@example.com",
+  passwordEncrypted: "enc_pass",
+  sessionEncrypted: null,
 };
 
 const completeCriteria = {
@@ -53,6 +61,7 @@ vi.mock("@repo/db", () => ({
   WORK_TYPES: ["on-site", "remote", "hybrid"],
   getProfileForUser: mockGetProfile,
   getJobCriteriaForUser: mockGetCriteria,
+  getLinkedInAccount: mockGetLinkedInAccount,
 }));
 
 import type { Context } from "../context";
@@ -140,6 +149,7 @@ describe("jobs.search", () => {
     mockSearchAdd.mockClear();
     mockGetProfile.mockResolvedValue(completeProfile);
     mockGetCriteria.mockResolvedValue(completeCriteria);
+    mockGetLinkedInAccount.mockResolvedValue(completeLinkedInAccount);
 
     const caller = jobsRouter.createCaller(makeCtx());
     const result = await caller.search();
@@ -153,6 +163,7 @@ describe("jobs.search", () => {
     mockSearchAdd.mockClear();
     mockGetProfile.mockResolvedValue(null);
     mockGetCriteria.mockResolvedValue(null);
+    mockGetLinkedInAccount.mockResolvedValue(null);
 
     const caller = jobsRouter.createCaller(makeCtx());
     await expect(caller.search()).rejects.toMatchObject({ code: "PRECONDITION_FAILED" });
