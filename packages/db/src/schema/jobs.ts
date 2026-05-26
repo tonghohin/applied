@@ -5,28 +5,31 @@ import { searchRuns } from "./search-runs";
 
 export { fitTierEnum, jobStatusEnum, platformEnum };
 
-export const jobs = pgTable("jobs", {
-  id: uuid("id").primaryKey().defaultRandom(),
-  userId: text("user_id")
-    .notNull()
-    .references(() => users.id, { onDelete: "cascade" }),
-  title: text("title").notNull(),
-  company: text("company").notNull(),
-  location: text("location"),
-  description: text("description"),
-  url: text("url").notNull(),
-  platform: platformEnum("platform").notNull(),
-  fitTier: fitTierEnum("fit_tier").notNull(),
-  status: jobStatusEnum("status").notNull().default("pending_review"),
-  runId: uuid("run_id")
-    .notNull()
-    .references(() => searchRuns.id, { onDelete: "cascade" }),
-  listedAt: timestamp("listed_at"),
-  appliedAt: timestamp("applied_at"),
-  failureReason: text("failure_reason"),
-  createdAt: timestamp("created_at").notNull().defaultNow(),
-  updatedAt: timestamp("updated_at").notNull().defaultNow(),
-},
-(t) => [uniqueIndex("jobs_user_id_url_unique").on(t.userId, t.url)]);
+export const jobs = pgTable(
+  "jobs",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: text("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    title: text("title").notNull(),
+    company: text("company").notNull(),
+    location: text("location"),
+    description: text("description"),
+    url: text("url").notNull(),
+    platform: platformEnum("platform").notNull(),
+    fitTier: fitTierEnum("fit_tier").notNull(),
+    status: jobStatusEnum("status").notNull().default("pending_review"),
+    runId: uuid("run_id")
+      .notNull()
+      .references(() => searchRuns.id, { onDelete: "cascade" }),
+    listedAt: timestamp("listed_at"),
+    appliedAt: timestamp("applied_at"),
+    failureReason: text("failure_reason"),
+    createdAt: timestamp("created_at").notNull().defaultNow(),
+    updatedAt: timestamp("updated_at").notNull().defaultNow(),
+  },
+  (t) => [uniqueIndex("jobs_user_id_url_unique").on(t.userId, t.url)]
+);
 
 export type Job = typeof jobs.$inferSelect;

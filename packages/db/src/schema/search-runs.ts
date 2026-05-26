@@ -1,5 +1,5 @@
-import { integer, jsonb, pgTable, text, timestamp, uuid } from "drizzle-orm/pg-core";
 import type { LocationEntry } from "@repo/shared";
+import { integer, jsonb, pgTable, text, timestamp, uuid } from "drizzle-orm/pg-core";
 import { users } from "./auth";
 import { platformEnum, searchRunStatusEnum } from "./enums";
 

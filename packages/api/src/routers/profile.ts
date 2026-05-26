@@ -1,9 +1,9 @@
 import {
   getProfile,
-  upsertCriteria,
-  upsertCriteriaSchema,
   upsertCoverLetter,
   upsertCoverLetterSchema,
+  upsertCriteria,
+  upsertCriteriaSchema,
   upsertLinkedIn,
   upsertLinkedInSchema,
   upsertPersonal,

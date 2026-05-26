@@ -37,7 +37,11 @@ If the page is a LinkedIn job listing:
 
 Only respond with SUCCESS or FAILURE:<reason> after attempting the application — nothing else.`;
 
-export async function applyToJob(job: Job, profile: Profile, resumePdfPath: string): Promise<ApplyResult> {
+export async function applyToJob(
+  job: Job,
+  profile: Profile,
+  resumePdfPath: string
+): Promise<ApplyResult> {
   const client = await createPlaywrightMCPClient();
 
   try {

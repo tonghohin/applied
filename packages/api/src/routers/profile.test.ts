@@ -118,7 +118,6 @@ describe("profile.upsertLinkedIn", () => {
     expect(stored.linkedinEmail).toBe("jane@example.com");
     expect(decrypt(stored.linkedinPasswordEncrypted)).toBe("secret");
   });
-
 });
 
 describe("profile.upsertCriteria", () => {

@@ -1,5 +1,5 @@
-import { integer, jsonb, pgTable, text, uuid } from "drizzle-orm/pg-core";
 import type { LocationEntry } from "@repo/shared";
+import { integer, jsonb, pgTable, text, uuid } from "drizzle-orm/pg-core";
 import { users } from "./auth";
 
 export const jobCriteria = pgTable("job_criteria", {

@@ -1,3 +1,5 @@
+import { getJobCriteriaForUser, getProfileForUser } from "@repo/db";
+import { getMissingSearchFields } from "@repo/shared";
 import { TRPCError } from "@trpc/server";
 import { z } from "zod";
 import { applyQueue, searchQueue } from "../queues/index";
@@ -8,8 +10,6 @@ import {
   validateApplyJobs,
 } from "../services/jobs.service";
 import { protectedProcedure, router } from "../trpc";
-import { getJobCriteriaForUser, getProfileForUser } from "@repo/db";
-import { getMissingSearchFields } from "@repo/shared";
 
 export const jobsRouter = router({
   search: protectedProcedure.mutation(async ({ ctx }) => {

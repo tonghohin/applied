@@ -1,5 +1,11 @@
 import { rm } from "node:fs/promises";
-import { type Db, getJobForUser, getProfileForUser, updateJobApplied, updateJobFailed } from "@repo/db";
+import {
+  type Db,
+  getJobForUser,
+  getProfileForUser,
+  updateJobApplied,
+  updateJobFailed,
+} from "@repo/db";
 import { applyToJob } from "./apply-agent";
 import { generateResumePdf } from "./generate-resume-pdf";
 

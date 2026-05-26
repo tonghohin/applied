@@ -44,8 +44,8 @@ function makePage(evaluateResponses: unknown[]): Page {
 describe("scrapeLinkedInJobs", () => {
   it("stops pagination when listedAt is older than the 30-day cutoff", async () => {
     const page = makePage([
-      [makeJob("1")],               // page 1 job list
-      "description 1",              // fetchDescription for job 1
+      [makeJob("1")], // page 1 job list
+      "description 1", // fetchDescription for job 1
       [makeJob("2", sixtyDaysAgo)], // page 2: old job → hitCutoff
     ]);
 
@@ -61,7 +61,7 @@ describe("scrapeLinkedInJobs", () => {
 
     const page = makePage([
       [makeJob("1", twelveHoursAgo), makeJob("2", twoDaysAgo)], // job1 new, job2 old vs sinceDate
-      "description 1",                                           // fetchDescription for job1 only
+      "description 1", // fetchDescription for job1 only
     ]);
 
     const results = await scrapeLinkedInJobs(page, criteria, sinceDate);
@@ -73,9 +73,9 @@ describe("scrapeLinkedInJobs", () => {
 
   it("includes job with empty description when fetchDescription fails", async () => {
     const page = makePage([
-      [makeJob("1")],          // page 1 job list
-      new Error("timeout"),    // fetchDescription throws
-      [],                      // page 2: empty → break
+      [makeJob("1")], // page 1 job list
+      new Error("timeout"), // fetchDescription throws
+      [], // page 2: empty → break
     ]);
 
     const results = await scrapeLinkedInJobs(page, criteria);
@@ -87,10 +87,10 @@ describe("scrapeLinkedInJobs", () => {
 
   it("deduplicates the same URL appearing on multiple pages", async () => {
     const page = makePage([
-      [makeJob("1")],      // page 1
-      "description 1",     // fetchDescription
-      [makeJob("1")],      // page 2: same URL → skipped by seen Set
-      [],                  // page 3: empty → break
+      [makeJob("1")], // page 1
+      "description 1", // fetchDescription
+      [makeJob("1")], // page 2: same URL → skipped by seen Set
+      [], // page 3: empty → break
     ]);
 
     const results = await scrapeLinkedInJobs(page, criteria);

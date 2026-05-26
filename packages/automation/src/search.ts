@@ -1,4 +1,10 @@
-import { type Db, getJobCriteriaForUser, getLatestListedAtForUser, insertJobs, updateSearchRun } from "@repo/db";
+import {
+  type Db,
+  getJobCriteriaForUser,
+  getLatestListedAtForUser,
+  insertJobs,
+  updateSearchRun,
+} from "@repo/db";
 import { browserManager } from "./browser";
 import { loginToLinkedIn } from "./linkedin/login";
 import { scrapeLinkedInJobs } from "./linkedin/scraper";
@@ -9,7 +15,7 @@ export async function runSearch(
   userId: string,
   email: string,
   password: string,
-  runId: string,
+  runId: string
 ): Promise<number> {
   const criteriaRow = await getJobCriteriaForUser(db, userId);
   if (!criteriaRow) throw new Error("No job criteria found");
@@ -34,7 +40,7 @@ export async function runSearch(
     const scraped = await scrapeLinkedInJobs(
       page,
       { jobTitles: criteriaRow.jobTitles, locations: criteriaRow.locations },
-      sinceDate ?? undefined,
+      sinceDate ?? undefined
     );
 
     if (scraped.length === 0) return 0;
@@ -54,7 +60,7 @@ export async function runSearch(
         listedAt: new Date(job.listedAt),
         createdAt: new Date(),
         updatedAt: new Date(),
-      })),
+      }))
     );
 
     return scraped.length;

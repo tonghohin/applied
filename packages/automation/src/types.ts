@@ -1,5 +1,5 @@
-import type { LocationEntry } from "@repo/shared";
 import type { platformEnum } from "@repo/db";
+import type { LocationEntry } from "@repo/shared";
 
 export type Platform = (typeof platformEnum.enumValues)[number];
 

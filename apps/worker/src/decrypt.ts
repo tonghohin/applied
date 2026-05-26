@@ -7,5 +7,7 @@ export function decrypt(token: string): string {
   const key = Buffer.from(env.LINKEDIN_ENCRYPTION_KEY, "hex");
   const decipher = createDecipheriv("aes-256-gcm", key, Buffer.from(ivHex, "hex"));
   decipher.setAuthTag(Buffer.from(authTagHex, "hex"));
-  return decipher.update(Buffer.from(ciphertextHex, "hex")).toString("utf8") + decipher.final("utf8");
+  return (
+    decipher.update(Buffer.from(ciphertextHex, "hex")).toString("utf8") + decipher.final("utf8")
+  );
 }

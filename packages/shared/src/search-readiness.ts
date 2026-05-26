@@ -16,7 +16,7 @@ type CriteriaReadiness = {
 
 export function getMissingSearchFields(
   profile: ProfileReadiness | null | undefined,
-  criteria: CriteriaReadiness | null | undefined,
+  criteria: CriteriaReadiness | null | undefined
 ): string[] {
   const checks: [unknown, string][] = [
     [profile?.firstName, "First name"],

@@ -10,7 +10,10 @@ const CUTOFF_MS = 7 * 24 * 60 * 60 * 1000;
 const WT_MAP: Record<WorkType, string> = { "on-site": "1", remote: "2", hybrid: "3" };
 
 function buildSearchUrl(jobTitle: string, location: string, workTypes: WorkType[]): string {
-  const f_WT = workTypes.map((w) => WT_MAP[w]).filter(Boolean).join(",");
+  const f_WT = workTypes
+    .map((w) => WT_MAP[w])
+    .filter(Boolean)
+    .join(",");
   const params = new URLSearchParams({ keywords: jobTitle, location, sortBy: "DD" });
   if (f_WT) params.set("f_WT", f_WT);
   return `https://www.linkedin.com/jobs/search/?${params.toString()}`;
@@ -34,7 +37,10 @@ async function scrapeJobsPage(page: Page): Promise<ScrapedJob[]> {
           url: jobId ? `https://www.linkedin.com/jobs/view/${jobId}/` : "",
           description: "",
           platform: "linkedin" as const,
-          listedAt: timeEl !== null ? (timeEl.getAttribute("datetime") ?? new Date().toISOString()) : new Date().toISOString(),
+          listedAt:
+            timeEl !== null
+              ? (timeEl.getAttribute("datetime") ?? new Date().toISOString())
+              : new Date().toISOString(),
         };
       })
       .filter((j) => j.title && j.url);
@@ -65,7 +71,7 @@ async function fetchDescription(page: Page, url: string): Promise<string> {
 export async function scrapeLinkedInJobs(
   page: Page,
   criteria: SearchCriteria,
-  sinceDate?: Date,
+  sinceDate?: Date
 ): Promise<ScrapedJob[]> {
   const results: ScrapedJob[] = [];
   const seen = new Set<string>();
