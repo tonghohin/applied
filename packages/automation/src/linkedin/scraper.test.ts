@@ -85,6 +85,19 @@ describe("scrapeLinkedInJobs", () => {
     expect(first?.description).toBe("");
   });
 
+  it("strips ' with verification' suffix from job titles", async () => {
+    const jobWithBadge = { ...makeJob("1"), title: "Senior Engineer with verification" };
+    const page = makePage([
+      [jobWithBadge],
+      "description 1",
+      [],
+    ]);
+
+    const results = await scrapeLinkedInJobs(page, criteria);
+
+    expect(results[0]?.title).toBe("Senior Engineer");
+  });
+
   it("deduplicates the same URL appearing on multiple pages", async () => {
     const page = makePage([
       [makeJob("1")], // page 1

@@ -7,31 +7,52 @@ const MAX_PAGES = 5;
 const randomDelay = () => Math.floor(Math.random() * 2000) + 1500;
 const CUTOFF_MS = 7 * 24 * 60 * 60 * 1000;
 
-const WT_MAP: Record<WorkType, string> = { "on-site": "1", remote: "2", hybrid: "3" };
+const WT_MAP: Record<WorkType, string> = {
+  "on-site": "1",
+  remote: "2",
+  hybrid: "3",
+};
 
-function buildSearchUrl(jobTitle: string, location: string, workTypes: WorkType[]): string {
+function buildSearchUrl(
+  jobTitle: string,
+  location: string,
+  workTypes: WorkType[],
+): string {
   const f_WT = workTypes
     .map((w) => WT_MAP[w])
     .filter(Boolean)
     .join(",");
-  const params = new URLSearchParams({ keywords: jobTitle, location, sortBy: "DD" });
+  const params = new URLSearchParams({
+    keywords: jobTitle,
+    location,
+    sortBy: "DD",
+  });
   if (f_WT) params.set("f_WT", f_WT);
   return `https://www.linkedin.com/jobs/search/?${params.toString()}`;
 }
 
 async function scrapeJobsPage(page: Page): Promise<ScrapedJob[]> {
-  return page.evaluate(() => {
-    const cards = Array.from(document.querySelectorAll("[data-occludable-job-id]"));
+  const jobs = await page.evaluate(() => {
+    const cards = Array.from(
+      document.querySelectorAll("[data-occludable-job-id]"),
+    );
     return cards
       .map((card) => {
         const linkEl = card.querySelector("a.job-card-container__link");
-        const companyEl = card.querySelector(".artdeco-entity-lockup__subtitle");
-        const locationEl = card.querySelector(".artdeco-entity-lockup__caption");
+        const companyEl = card.querySelector(
+          ".artdeco-entity-lockup__subtitle",
+        );
+        const locationEl = card.querySelector(
+          ".artdeco-entity-lockup__caption",
+        );
 
         const jobId = card.getAttribute("data-occludable-job-id");
         const timeEl = card.querySelector("time[datetime]");
         return {
-          title: linkEl?.getAttribute("aria-label") ?? linkEl?.textContent?.trim() ?? "",
+          title:
+            linkEl?.getAttribute("aria-label") ??
+            linkEl?.textContent?.trim() ??
+            "",
           company: companyEl?.textContent?.trim() ?? "",
           location: locationEl?.textContent?.trim() ?? "",
           url: jobId ? `https://www.linkedin.com/jobs/view/${jobId}/` : "",
@@ -45,6 +66,10 @@ async function scrapeJobsPage(page: Page): Promise<ScrapedJob[]> {
       })
       .filter((j) => j.title && j.url);
   });
+  return jobs.map((j) => ({
+    ...j,
+    title: j.title.replace(/ with verification$/i, "").trim(),
+  }));
 }
 
 async function fetchDescription(page: Page, url: string): Promise<string> {
@@ -52,9 +77,15 @@ async function fetchDescription(page: Page, url: string): Promise<string> {
   await page.waitForTimeout(randomDelay());
   return page.evaluate(() => {
     // Primary: LinkedIn usually wraps the description with an "About the job" header
-    const aboutJobEl = Array.from(document.querySelectorAll("div, section, article")).find((el) => {
+    const aboutJobEl = Array.from(
+      document.querySelectorAll("div, section, article"),
+    ).find((el) => {
       const text = el.textContent?.trim() ?? "";
-      return text.startsWith("About the job") && text.length > 100 && text.length < 8000;
+      return (
+        text.startsWith("About the job") &&
+        text.length > 100 &&
+        text.length < 8000
+      );
     });
     if (aboutJobEl) return aboutJobEl.textContent?.trim() ?? "";
 
@@ -71,7 +102,7 @@ async function fetchDescription(page: Page, url: string): Promise<string> {
 export async function scrapeLinkedInJobs(
   page: Page,
   criteria: SearchCriteria,
-  sinceDate?: Date
+  sinceDate?: Date,
 ): Promise<ScrapedJob[]> {
   const results: ScrapedJob[] = [];
   const seen = new Set<string>();
@@ -79,11 +110,16 @@ export async function scrapeLinkedInJobs(
 
   for (const jobTitle of criteria.jobTitles.slice(0, 2)) {
     for (const locationEntry of criteria.locations) {
-      const searchUrl = buildSearchUrl(jobTitle, locationEntry.location, locationEntry.workTypes);
+      const searchUrl = buildSearchUrl(
+        jobTitle,
+        locationEntry.location,
+        locationEntry.workTypes,
+      );
       let hitCutoff = false;
 
       for (let pageNum = 0; pageNum < MAX_PAGES; pageNum++) {
-        const url = pageNum === 0 ? searchUrl : `${searchUrl}&start=${pageNum * 25}`;
+        const url =
+          pageNum === 0 ? searchUrl : `${searchUrl}&start=${pageNum * 25}`;
         await page.goto(url, { waitUntil: "domcontentloaded" });
         await page.waitForTimeout(randomDelay());
 
