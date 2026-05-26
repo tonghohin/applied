@@ -112,10 +112,10 @@ describe("profile.upsertLinkedIn", () => {
     });
 
     const stored = chain.values.mock.calls.at(0)?.at(0) as {
-      linkedinEmailEncrypted: string;
+      linkedinEmail: string;
       linkedinPasswordEncrypted: string;
     };
-    expect(decrypt(stored.linkedinEmailEncrypted)).toBe("jane@example.com");
+    expect(stored.linkedinEmail).toBe("jane@example.com");
     expect(decrypt(stored.linkedinPasswordEncrypted)).toBe("secret");
   });
 

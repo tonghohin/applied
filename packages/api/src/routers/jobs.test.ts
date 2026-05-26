@@ -32,7 +32,7 @@ const completeProfile = {
   address: "123 Main",
   resume: "Resume",
   coverLetterInstructions: null,
-  linkedinEmailEncrypted: "enc_email",
+  linkedinEmail: "jane@example.com",
   linkedinPasswordEncrypted: "enc_pass",
 };
 
