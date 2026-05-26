@@ -1,4 +1,3 @@
-export { model } from "./model";
 export { createPlaywrightMCPClient } from "./mcp";
 export { applyToJob } from "./agents/apply-agent";
 export type { ApplyResult } from "./agents/apply-agent";

@@ -21,6 +21,8 @@ const TABS = JOB_STATUSES.map((value) => ({
   label: TAB_LABELS[value],
 }));
 
+const SELECTABLE_STATUSES = new Set<JobStatus>(["pending_review", "failed"]);
+
 export function JobTabs({
   jobs,
 }: {
@@ -44,8 +46,6 @@ export function JobTabs({
     });
   }
 
-  const pendingJobs = jobs.filter((j) => j.status === "pending_review");
-
   return (
     <Tabs defaultValue="pending_review">
       <TabsList>
@@ -59,47 +59,42 @@ export function JobTabs({
         ))}
       </TabsList>
 
-      <TabsContent value="pending_review" className="mt-4">
-        {selectedIds.size > 0 && (
-          <div className="flex justify-end mb-3">
-            <Button
-              size="sm"
-              disabled={applyMutation.isPending}
-              onClick={() => applyMutation.mutate({ jobIds: Array.from(selectedIds) })}
-            >
-              {applyMutation.isPending ? "Applying…" : `Apply to Selected (${selectedIds.size})`}
-            </Button>
-          </div>
-        )}
-        <div className="flex flex-col gap-3">
-          {pendingJobs.map((job) => (
-            <JobCard
-              key={job.id}
-              job={job}
-              selected={selectedIds.has(job.id)}
-              onToggleSelect={() => toggleSelect(job.id)}
-            />
-          ))}
-          {pendingJobs.length === 0 && (
-            <p className="text-sm text-muted-foreground py-8 text-center">No jobs here yet.</p>
-          )}
-        </div>
-      </TabsContent>
+      {TABS.map((tab) => {
+        const tabJobs = jobs.filter((j) => j.status === tab.value);
+        const selectable = SELECTABLE_STATUSES.has(tab.value);
+        const tabSelected = tabJobs.filter((j) => selectedIds.has(j.id));
 
-      {TABS.filter((t) => t.value !== "pending_review").map((tab) => (
-        <TabsContent key={tab.value} value={tab.value} className="mt-4">
-          <div className="flex flex-col gap-3">
-            {jobs
-              .filter((j) => j.status === tab.value)
-              .map((job) => (
-                <JobCard key={job.id} job={job} />
-              ))}
-            {jobs.filter((j) => j.status === tab.value).length === 0 && (
-              <p className="text-sm text-muted-foreground py-8 text-center">No jobs here yet.</p>
+        return (
+          <TabsContent key={tab.value} value={tab.value} className="mt-4">
+            {selectable && tabSelected.length > 0 && (
+              <div className="flex justify-end mb-3">
+                <Button
+                  size="sm"
+                  disabled={applyMutation.isPending}
+                  onClick={() => applyMutation.mutate({ jobIds: tabSelected.map((j) => j.id) })}
+                >
+                  {applyMutation.isPending
+                    ? "Applying…"
+                    : `Apply to Selected (${tabSelected.length})`}
+                </Button>
+              </div>
             )}
-          </div>
-        </TabsContent>
-      ))}
+            <div className="flex flex-col gap-3">
+              {tabJobs.map((job) => (
+                <JobCard
+                  key={job.id}
+                  job={job}
+                  selected={selectedIds.has(job.id)}
+                  onToggleSelect={selectable ? () => toggleSelect(job.id) : undefined}
+                />
+              ))}
+              {tabJobs.length === 0 && (
+                <p className="text-sm text-muted-foreground py-8 text-center">No jobs here yet.</p>
+              )}
+            </div>
+          </TabsContent>
+        );
+      })}
     </Tabs>
   );
 }

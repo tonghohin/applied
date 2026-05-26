@@ -16,7 +16,7 @@ export async function validateApplyJobs(db: Db, userId: string, jobIds: string[]
     throw new TRPCError({ code: "FORBIDDEN", message: "One or more jobs not found" });
   }
 
-  return owned.filter((j) => j.status === "pending_review");
+  return owned.filter((j) => j.status === "pending_review" || j.status === "failed");
 }
 
 export async function listJobs(db: Db, userId: string) {

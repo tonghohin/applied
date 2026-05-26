@@ -104,6 +104,24 @@ describe("jobs.applyJobs", () => {
     expect(mockApplyAdd).toHaveBeenCalledWith("apply", { jobId, userId: "user_1" });
   });
 
+  it("enqueues apply job for a failed job", async () => {
+    const jobId = "550e8400-e29b-41d4-a716-446655440003";
+    mockApplyAdd.mockClear();
+
+    const selectChain = {
+      from: vi.fn().mockReturnThis(),
+      where: vi.fn().mockResolvedValue([{ id: jobId, userId: "user_1", status: "failed" }]),
+    };
+    mockDb.select.mockReturnValueOnce(selectChain);
+
+    const caller = jobsRouter.createCaller(makeCtx());
+    const result = await caller.applyJobs({ jobIds: [jobId] });
+
+    expect(result).toEqual({ queued: true });
+    expect(mockApplyAdd).toHaveBeenCalledOnce();
+    expect(mockApplyAdd).toHaveBeenCalledWith("apply", { jobId, userId: "user_1" });
+  });
+
   it("throws FORBIDDEN when job belongs to another user", async () => {
     const jobId = "550e8400-e29b-41d4-a716-446655440002";
     const selectChain = {

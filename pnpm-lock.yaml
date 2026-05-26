@@ -148,9 +148,6 @@ importers:
 
   packages/ai:
     dependencies:
-      '@ai-sdk/gateway':
-        specifier: ^3.0.119
-        version: 3.0.119(zod@4.4.3)
       '@ai-sdk/mcp':
         specifier: ^1.0.43
         version: 1.0.43(zod@4.4.3)

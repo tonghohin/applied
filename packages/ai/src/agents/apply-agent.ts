@@ -1,9 +1,10 @@
 import type { Job, Profile } from "@repo/db";
 import { generateText, stepCountIs } from "ai";
-import { model } from "../model";
 import { createPlaywrightMCPClient } from "../mcp";
 
-export type ApplyResult = { success: true } | { success: false; reason: string };
+export type ApplyResult =
+  | { success: true }
+  | { success: false; reason: string };
 
 const SYSTEM_PROMPT = `You are an automated job application agent. Your job is to navigate to a job application page and fill out the form using the applicant's profile information.
 
@@ -40,7 +41,7 @@ Only respond with SUCCESS or FAILURE:<reason> after attempting the application â
 export async function applyToJob(
   job: Job,
   profile: Profile,
-  resumePdfPath: string
+  resumePdfPath: string,
 ): Promise<ApplyResult> {
   const client = await createPlaywrightMCPClient();
 
@@ -63,7 +64,7 @@ export async function applyToJob(
       .join("\n");
 
     const { text } = await generateText({
-      model: model,
+      model: "google/gemini-2.5-flash",
       tools,
       stopWhen: stepCountIs(30),
       system: SYSTEM_PROMPT,
@@ -72,8 +73,12 @@ export async function applyToJob(
 
     const result = text.trim();
     if (result === "SUCCESS") return { success: true };
-    if (result.startsWith("FAILURE:")) return { success: false, reason: result.slice(8).trim() };
-    return { success: false, reason: `Unexpected agent response: ${result.slice(0, 100)}` };
+    if (result.startsWith("FAILURE:"))
+      return { success: false, reason: result.slice(8).trim() };
+    return {
+      success: false,
+      reason: `Unexpected agent response: ${result.slice(0, 100)}`,
+    };
   } finally {
     await client.close();
   }

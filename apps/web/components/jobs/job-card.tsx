@@ -47,11 +47,15 @@ export function JobCard({
           {job.location ? ` · ${job.location}` : ""}
         </p>
       </div>
+      {(job.status === "pending_review" || job.status === "failed") && onToggleSelect && (
+        <Checkbox
+          checked={selected ?? false}
+          onCheckedChange={onToggleSelect}
+          className="shrink-0"
+        />
+      )}
       {job.status === "pending_review" && (
         <div className="flex items-center gap-2 shrink-0">
-          {onToggleSelect && (
-            <Checkbox checked={selected ?? false} onCheckedChange={onToggleSelect} />
-          )}
           <Button
             size="sm"
             variant="outline"
