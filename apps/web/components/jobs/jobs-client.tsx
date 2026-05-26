@@ -21,11 +21,6 @@ export function JobsClient({
 }) {
   const { data: jobs = [], isLoading } = trpc.jobs.list.useQuery(undefined, {
     initialData: initialJobs,
-    refetchInterval: (query) => {
-      const data = query.state.data ?? [];
-      const hasInFlight = data.some((j) => j.status === "pending_review");
-      return hasInFlight ? 3000 : false;
-    },
   });
   const { data: profileData } = trpc.profile.getProfile.useQuery(undefined, {
     initialData: initialProfileData,
