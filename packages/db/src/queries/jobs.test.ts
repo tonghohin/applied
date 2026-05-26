@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 
-const onConflictDoNothing = vi.fn().mockResolvedValue(undefined);
+const mockReturning = vi.fn();
+const onConflictDoNothing = vi.fn().mockReturnValue({ returning: mockReturning });
 const values = vi.fn().mockReturnValue({ onConflictDoNothing });
 const mockInsert = vi.fn().mockReturnValue({ values });
 
@@ -41,20 +42,28 @@ const baseJob: NewJob = {
 };
 
 describe("insertJobs", () => {
-  it("inserts rows with onConflictDoNothing", async () => {
+  it("inserts rows with onConflictDoNothing and returning", async () => {
+    mockReturning.mockResolvedValueOnce([{ id: "job-1" }]);
+
     await insertJobs(mockDb, [baseJob]);
 
     expect(mockInsert).toHaveBeenCalled();
     expect(values).toHaveBeenCalledWith([baseJob]);
     expect(onConflictDoNothing).toHaveBeenCalled();
+    expect(mockReturning).toHaveBeenCalled();
   });
 
-  it("does not throw when called with an empty array", async () => {
-    await expect(insertJobs(mockDb, [])).resolves.toBeUndefined();
+  it("returns 0 when called with an empty array", async () => {
+    mockReturning.mockResolvedValueOnce([]);
+
+    const result = await insertJobs(mockDb, []);
+
     expect(values).toHaveBeenCalledWith([]);
+    expect(result).toBe(0);
   });
 
   it("includes listedAt in the inserted values", async () => {
+    mockReturning.mockResolvedValueOnce([{ id: "job-1" }]);
     const job = { ...baseJob, listedAt: new Date("2025-05-01T00:00:00Z") };
     await insertJobs(mockDb, [job]);
 

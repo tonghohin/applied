@@ -68,7 +68,7 @@ describe("applyToJob", () => {
   it("returns success when agent responds SUCCESS", async () => {
     vi.mocked(generateText).mockResolvedValueOnce({ text: "SUCCESS" } as never);
 
-    const result = await applyToJob(mockJob, mockProfile, "/tmp/resume.pdf");
+    const result = await applyToJob(mockJob, mockProfile, "/tmp/resume.pdf", undefined);
 
     expect(result).toEqual({ success: true });
   });
@@ -76,7 +76,7 @@ describe("applyToJob", () => {
   it("returns failure when agent responds FAILURE:<reason>", async () => {
     vi.mocked(generateText).mockResolvedValueOnce({ text: "FAILURE:CAPTCHA detected" } as never);
 
-    const result = await applyToJob(mockJob, mockProfile, "/tmp/resume.pdf");
+    const result = await applyToJob(mockJob, mockProfile, "/tmp/resume.pdf", undefined);
 
     expect(result).toEqual({ success: false, reason: "CAPTCHA detected" });
   });
@@ -84,7 +84,7 @@ describe("applyToJob", () => {
   it("returns failure for unexpected agent response", async () => {
     vi.mocked(generateText).mockResolvedValueOnce({ text: "I navigated to the page" } as never);
 
-    const result = await applyToJob(mockJob, mockProfile, "/tmp/resume.pdf");
+    const result = await applyToJob(mockJob, mockProfile, "/tmp/resume.pdf", undefined);
 
     expect(result.success).toBe(false);
     expect((result as { success: false; reason: string }).reason).toContain("Unexpected");
@@ -94,7 +94,9 @@ describe("applyToJob", () => {
     mockClose.mockClear();
     vi.mocked(generateText).mockRejectedValueOnce(new Error("network error"));
 
-    await expect(applyToJob(mockJob, mockProfile, "/tmp/resume.pdf")).rejects.toThrow(
+    await expect(
+      applyToJob(mockJob, mockProfile, "/tmp/resume.pdf", undefined),
+    ).rejects.toThrow(
       "network error"
     );
 

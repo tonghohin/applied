@@ -43,17 +43,26 @@ export async function applyToJob(
   job: Job,
   profile: Profile,
   resumePdfPath: string,
-  linkedinSessionJson?: string
+  linkedinSessionJson?: string,
+  log: (msg: string) => void = () => {},
 ): Promise<ApplyResult> {
   let storageStatePath: string | undefined;
   if (linkedinSessionJson) {
     storageStatePath = join(tmpdir(), `linkedin-session-${Date.now()}.json`);
     await writeFile(storageStatePath, linkedinSessionJson, "utf8");
   }
+
+  log("Initializing Playwright session");
   const client = await createPlaywrightMCPClient(storageStatePath);
 
   try {
     const tools = await client.tools();
+
+    if (linkedinSessionJson) {
+      log("Session restored from saved state");
+    } else {
+      log("Starting fresh session");
+    }
 
     const profileSummary = [
       `Name: ${profile.firstName} ${profile.lastName}`,
@@ -70,6 +79,7 @@ export async function applyToJob(
       .filter(Boolean)
       .join("\n");
 
+    log("AI agent running (up to 30 steps)");
     const { text } = await generateText({
       model: "google/gemini-2.5-flash",
       tools,
@@ -77,6 +87,7 @@ export async function applyToJob(
       system: SYSTEM_PROMPT,
       prompt: `Apply to this job:\nURL: ${job.url}\nTitle: ${job.title} at ${job.company}\n\nApplicant profile:\n${profileSummary}${resumePdfPath ? `\n\nResume PDF path: ${resumePdfPath}` : ""}`,
     });
+    log("AI agent finished");
 
     const result = text.trim();
     if (result === "SUCCESS") return { success: true };

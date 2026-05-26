@@ -14,3 +14,9 @@ export const searchRunStatusEnum = pgEnum("search_run_status", [
   "completed",
   "failed",
 ]);
+export const applyRunStatusEnum = pgEnum("apply_run_status", [
+  "pending",
+  "running",
+  "completed",
+  "failed",
+]);

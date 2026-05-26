@@ -129,3 +129,4 @@ export function JobCard({ title, company }: JobCardProps) {}
 - No `any`, no type casts (`as Foo`, `as unknown as Foo`)
 - Prefer enum values (Drizzle `pgEnum`, `z.enum`, or `as const` objects) over plain `string` for fields with a fixed set of values — e.g. `fitTier`, `jobStatus`, `platform`
 - Reuse existing types and constants exported from workspace packages rather than redefining them inline
+- Use `date-fns` for all date/time formatting and manipulation — never `toLocaleDateString`, `toLocaleTimeString`, or manual date arithmetic

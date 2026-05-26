@@ -5,12 +5,41 @@ import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { trpc } from "@/lib/trpc";
 import type { Job } from "@/lib/trpc";
+import { format } from "date-fns";
 
 const FIT_TIER_VARIANT: Record<Job["fitTier"], BadgeVariant> = {
   strong: "success",
   potential: "warning",
   weak: "muted",
 };
+
+type ApplyRun = NonNullable<Job["latestApplyRun"]>;
+
+function ApplyRunLog({ applyRun }: { applyRun: ApplyRun }) {
+  return (
+    <details className="text-xs">
+      <summary className="cursor-pointer text-muted-foreground hover:text-foreground select-none">
+        View apply log ({applyRun.logs.length} steps)
+      </summary>
+      <div className="mt-2 rounded-md bg-muted/50 p-3 font-mono space-y-1">
+        {applyRun.errorMessage && (
+          <p className="text-destructive mb-2">Error: {applyRun.errorMessage}</p>
+        )}
+        {applyRun.logs.map((entry, i) => (
+          <div key={`${i}:${entry.timestamp}`} className="flex gap-3">
+            <span className="shrink-0 text-muted-foreground/60">
+              {format(new Date(entry.timestamp), "h:mm:ss a")}
+            </span>
+            <span className="text-foreground">{entry.message}</span>
+          </div>
+        ))}
+        {applyRun.logs.length === 0 && (
+          <p className="text-muted-foreground italic">No log entries recorded.</p>
+        )}
+      </div>
+    </details>
+  );
+}
 
 export function JobCard({
   job,
@@ -26,46 +55,53 @@ export function JobCard({
     onSuccess: () => utils.jobs.list.invalidate(),
   });
 
+  const showLog =
+    job.latestApplyRun !== null && (job.status === "applied" || job.status === "failed");
+
   return (
     <div
-      className={`rounded-lg border p-4 flex items-start justify-between gap-4 ${selected ? "border-primary bg-primary/5" : ""}`}
+      className={`rounded-lg border p-4 flex flex-col gap-3 ${selected ? "border-primary bg-primary/5" : ""}`}
     >
-      <div className="flex-1 min-w-0">
-        <div className="flex items-center gap-2 mb-1">
-          <a
-            href={job.url}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="font-medium hover:underline truncate"
-          >
-            {job.title}
-          </a>
-          <Badge variant={FIT_TIER_VARIANT[job.fitTier]}>{job.fitTier}</Badge>
+      <div className="flex items-start justify-between gap-4">
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2 mb-1">
+            <a
+              href={job.url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="font-medium hover:underline truncate"
+            >
+              {job.title}
+            </a>
+            <Badge variant={FIT_TIER_VARIANT[job.fitTier]}>{job.fitTier}</Badge>
+          </div>
+          <p className="text-sm text-muted-foreground">
+            {job.company}
+            {job.location ? ` · ${job.location}` : ""}
+          </p>
         </div>
-        <p className="text-sm text-muted-foreground">
-          {job.company}
-          {job.location ? ` · ${job.location}` : ""}
-        </p>
+        {(job.status === "pending_review" || job.status === "failed") && onToggleSelect && (
+          <Checkbox
+            checked={selected ?? false}
+            onCheckedChange={onToggleSelect}
+            className="shrink-0"
+          />
+        )}
+        {job.status === "pending_review" && (
+          <div className="flex items-center gap-2 shrink-0">
+            <Button
+              size="sm"
+              variant="outline"
+              disabled={updateStatus.isPending}
+              onClick={() => updateStatus.mutate({ jobId: job.id, status: "skipped" })}
+            >
+              Skip
+            </Button>
+          </div>
+        )}
       </div>
-      {(job.status === "pending_review" || job.status === "failed") && onToggleSelect && (
-        <Checkbox
-          checked={selected ?? false}
-          onCheckedChange={onToggleSelect}
-          className="shrink-0"
-        />
-      )}
-      {job.status === "pending_review" && (
-        <div className="flex items-center gap-2 shrink-0">
-          <Button
-            size="sm"
-            variant="outline"
-            disabled={updateStatus.isPending}
-            onClick={() => updateStatus.mutate({ jobId: job.id, status: "skipped" })}
-          >
-            Skip
-          </Button>
-        </div>
-      )}
+
+      {showLog && job.latestApplyRun && <ApplyRunLog applyRun={job.latestApplyRun} />}
     </div>
   );
 }

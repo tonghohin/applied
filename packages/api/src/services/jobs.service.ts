@@ -1,4 +1,4 @@
-import { jobStatusEnum, jobs } from "@repo/db";
+import { jobStatusEnum, jobs, listLatestApplyRunsByJobIds } from "@repo/db";
 import { TRPCError } from "@trpc/server";
 import { and, eq, inArray } from "drizzle-orm";
 import { z } from "zod";
@@ -20,7 +20,13 @@ export async function validateApplyJobs(db: Db, userId: string, jobIds: string[]
 }
 
 export async function listJobs(db: Db, userId: string) {
-  return db.select().from(jobs).where(eq(jobs.userId, userId));
+  const jobRows = await db.select().from(jobs).where(eq(jobs.userId, userId));
+  const applyRuns = await listLatestApplyRunsByJobIds(
+    db,
+    jobRows.map((j) => j.id),
+  );
+  const applyRunByJobId = new Map(applyRuns.map((r) => [r.jobId, r]));
+  return jobRows.map((job) => ({ ...job, latestApplyRun: applyRunByJobId.get(job.id) ?? null }));
 }
 
 export const updateStatusSchema = z.object({
