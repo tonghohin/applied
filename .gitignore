@@ -32,3 +32,6 @@ next-env.d.ts
 
 # pnpm
 .pnpm-store
+
+# Playwright
+.playwright-mcp
