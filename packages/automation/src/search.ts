@@ -34,14 +34,16 @@ async function manualHeadedLogin(): Promise<string> {
     "[linkedin] CAPTCHA detected — opening browser for manual login. Complete the login and the run will continue automatically.",
   );
   const headedBrowser = await chromium.launch({ headless: false });
-  const ctx = await headedBrowser.newContext(contextOptions);
-  const pg = await ctx.newPage();
-  await pg.addInitScript(webdriverPatch);
-  await pg.goto("https://www.linkedin.com/login", { waitUntil: "domcontentloaded" });
-  await pg.waitForURL("**/feed**", { timeout: 5 * 60 * 1000 });
-  const sessionJson = JSON.stringify(await ctx.storageState());
-  await headedBrowser.close();
-  return sessionJson;
+  try {
+    const ctx = await headedBrowser.newContext(contextOptions);
+    const pg = await ctx.newPage();
+    await pg.addInitScript(webdriverPatch);
+    await pg.goto("https://www.linkedin.com/login", { waitUntil: "domcontentloaded" });
+    await pg.waitForURL("**/feed**", { timeout: 5 * 60 * 1000 });
+    return JSON.stringify(await ctx.storageState());
+  } finally {
+    await headedBrowser.close();
+  }
 }
 
 async function loginOrManual(

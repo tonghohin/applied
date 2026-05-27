@@ -23,39 +23,40 @@ type MCPClient = Awaited<ReturnType<typeof createMCPClient>>;
 export async function createPlaywrightMCPClient(storageStateJson?: string): Promise<MCPClient> {
   const browser = await chromium.launch({ headless: true, args: BROWSER_ARGS });
 
-  const contextOptions: BrowserContextOptions = {
-    userAgent: USER_AGENT,
-    viewport: { width: 1280, height: 800 },
-  };
-  if (storageStateJson) {
-    contextOptions.storageState = JSON.parse(storageStateJson) as StorageState;
+  try {
+    const contextOptions: BrowserContextOptions = {
+      userAgent: USER_AGENT,
+      viewport: { width: 1280, height: 800 },
+    };
+    if (storageStateJson) {
+      contextOptions.storageState = JSON.parse(storageStateJson) as StorageState;
+    }
+
+    const context = await browser.newContext(contextOptions);
+    await context.addInitScript(() => {
+      Object.defineProperty(navigator, "webdriver", { get: () => undefined });
+    });
+
+    // playwright-extra types reference playwright-core directly; pnpm resolves that to
+    // 1.60.0 while @playwright/mcp uses 1.61-alpha. The types are identical at runtime.
+    // biome-ignore lint/suspicious/noExplicitAny: playwright-core version mismatch between playwright-extra and @playwright/mcp
+    const mcpServer = await (createConnection as any)({}, () => Promise.resolve(context));
+
+    const [serverTransport, clientTransport] = InMemoryTransport.createLinkedPair();
+    await mcpServer.connect(serverTransport);
+
+    const client = await createMCPClient({ transport: clientTransport });
+
+    return {
+      tools: () => client.tools(),
+      close: async () => {
+        await client.close();
+        await context.close();
+        await browser.close();
+      },
+    } as unknown as MCPClient;
+  } catch (err) {
+    await browser.close();
+    throw err;
   }
-
-  const context = await browser.newContext(contextOptions);
-  await context.addInitScript(() => {
-    Object.defineProperty(navigator, "webdriver", { get: () => undefined });
-  });
-
-  const mcpServer = await createConnection(
-    {},
-    () => Promise.resolve(context as Parameters<typeof createConnection>[1] extends ((...args: infer A) => unknown) ? Awaited<ReturnType<(...args: A) => unknown>> : never),
-  );
-
-  const [serverTransport, clientTransport] = InMemoryTransport.createLinkedPair();
-  await mcpServer.connect(serverTransport);
-
-  const client = await createMCPClient({ transport: clientTransport });
-
-  const origClose = client.close.bind(client);
-  Object.defineProperty(client, "close", {
-    value: async () => {
-      await origClose();
-      await context.close();
-      await browser.close();
-    },
-    writable: true,
-    configurable: true,
-  });
-
-  return client;
 }

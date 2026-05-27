@@ -6,6 +6,7 @@ import {
   updateJobFailed,
 } from "@repo/db";
 import { rm } from "node:fs/promises";
+import { dirname } from "node:path";
 import { applyToJob } from "./apply-agent";
 import { generateResumePdf } from "./generate-resume-pdf";
 
@@ -45,6 +46,6 @@ export async function processApplyJob(
     }
     return result;
   } finally {
-    await rm(resumePdfPath, { recursive: true, force: true });
+    await rm(dirname(resumePdfPath), { recursive: true, force: true });
   }
 }
