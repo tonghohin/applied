@@ -17,10 +17,10 @@ type Runs = RouterOutputs["runs"]["list"];
 type RunStatus = Runs[number]["status"];
 
 const STATUS_VARIANT: Record<RunStatus, BadgeVariant> = {
-  completed: "success",
+  completed: "default",
   failed: "destructive",
   running: "warning",
-  pending: "muted",
+  pending: "secondary",
 };
 
 export function RunsClient({ initialRuns }: { initialRuns: Runs }) {
