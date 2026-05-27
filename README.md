@@ -7,18 +7,18 @@ Automated job application tool. Scrapes LinkedIn for matching positions, scores 
 1. You fill in your profile (target job titles, skills, resume, location preferences)
 2. Click **Search Jobs** — the scraper finds matching LinkedIn postings and scores each one
 3. Review the results in the dashboard (Strong / Potential / Weak fit)
-4. Select the jobs you want and click **Apply to Selected** — a Gemini-powered agent fills out and submits each application, generating a personalised cover letter and a PDF resume on the fly
+4. Select the jobs you want and click **Apply to Selected** — a Gemini-powered agent fills out and submits each application, generating a personalized cover letter and a PDF resume on the fly
 
 ## Stack
 
-| Layer | Tech |
-|---|---|
-| Frontend + API | Next.js 16 App Router |
-| Auth | Better Auth (Google OAuth) |
-| Job queue | BullMQ + Redis |
-| Database | PostgreSQL + Drizzle ORM |
-| Scraper | Playwright (LinkedIn) |
-| AI Agent | Gemini 2.5 Flash + Playwright MCP |
+| Layer          | Tech                              |
+| -------------- | --------------------------------- |
+| Frontend + API | Next.js 16 App Router             |
+| Auth           | Better Auth (Google OAuth)        |
+| Job queue      | BullMQ + Redis                    |
+| Database       | PostgreSQL + Drizzle ORM          |
+| Scraper        | Playwright (LinkedIn)             |
+| AI Agent       | Gemini 2.5 Flash + Playwright MCP |
 
 ## Monorepo structure
 
@@ -49,6 +49,7 @@ pnpm --filter @repo/automation exec playwright install chromium
 ### 2. Set up environment variables
 
 **`apps/web/.env.local`** — Next.js frontend + API
+
 ```
 NEXT_PUBLIC_BASE_URL=http://localhost:3000
 
@@ -62,6 +63,7 @@ REDIS_URL=redis://localhost:6379
 ```
 
 **`apps/worker/.env`** — BullMQ worker
+
 ```
 DATABASE_URL=postgresql://applied:applied@localhost:5432/applied
 REDIS_URL=redis://localhost:6379
@@ -70,6 +72,7 @@ LINKEDIN_ENCRYPTION_KEY=<64 hex chars — same as above>
 ```
 
 **`packages/db/.env`** — drizzle-kit migrations
+
 ```
 DATABASE_URL=postgresql://applied:applied@localhost:5432/applied
 ```
