@@ -24,8 +24,17 @@ If the page is a LinkedIn job listing:
 - The modal is a multi-step wizard. Use browser_snapshot after each action to see the current step.
 - Fill each required field on the current step before clicking "Next" or "Review".
 - On the final review step, click "Submit application".
-- If only an "Apply" button (not "Easy Apply") is present, it links to an external site — click it and continue applying on the external page.
+- If only an "Apply" button (not "Easy Apply") is present, click it — it will open an external application page. Continue applying there following the External application rules below.
 - If a CAPTCHA or verification challenge appears, respond with FAILURE:CAPTCHA detected.
+
+## External application rules
+- After navigating to an external site, immediately take a snapshot to assess the form.
+- If the site requires creating an account before applying, create one using the applicant's email and a generated password (FirstName + LastName + 2024!).
+- Fill required fields only — skip optional fields to save steps.
+- For multi-step forms, complete each step in sequence without re-reading fields you already filled.
+- Do not take an extra snapshot after every single keystroke — batch related fields and snapshot only when you need to see the current state before acting.
+- If the form redirects to a third-party ATS (Greenhouse, Lever, Workday, iCIMS, etc.), continue filling it out — these are standard and completable.
+- If you reach a page that requires information you cannot supply (e.g., a work permit number, background check consent gate, or government ID), respond with FAILURE:<specific blocker>.
 
 ## Form filling rules
 - Use the resume content to answer questions about experience, skills, and education.
@@ -70,11 +79,11 @@ export async function applyToJob(
       .filter(Boolean)
       .join("\n");
 
-    log("AI agent running (up to 50 steps)");
+    log("AI agent running (up to 100 steps)");
     const { text } = await generateText({
       model: "google/gemini-2.5-flash",
       tools,
-      stopWhen: stepCountIs(50),
+      stopWhen: stepCountIs(100),
       system: SYSTEM_PROMPT,
       prompt: `Apply to this job:\nURL: ${job.url}\nTitle: ${job.title} at ${job.company}\n\nApplicant profile:\n${profileSummary}${resumePdfPath ? `\n\nResume PDF path: ${resumePdfPath}` : ""}`,
     });
