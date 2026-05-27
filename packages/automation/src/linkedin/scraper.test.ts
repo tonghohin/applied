@@ -13,7 +13,7 @@ const twoDaysAgo = new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString();
 const sixtyDaysAgo = new Date(Date.now() - 60 * 24 * 60 * 60 * 1000).toISOString();
 
 const criteria: SearchCriteria = {
-  jobTitles: ["Software Engineer"],
+  jobTitle: "Software Engineer",
   locations: [{ location: "Remote", workTypes: ["remote"] }],
 };
 

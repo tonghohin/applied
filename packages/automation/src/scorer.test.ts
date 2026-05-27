@@ -20,16 +20,16 @@ function makeJob(title: string, description: string): ScrapedJob {
 }
 
 const criteria = {
-  jobTitles: ["Software Engineer", "Frontend Developer"],
+  jobTitle: "Software Engineer",
   skills: ["TypeScript", "React", "Node.js", "GraphQL", "PostgreSQL", "Docker"],
 };
 
 describe("scoreJob", () => {
-  it("returns strong when title + 5+ skills match (score ≥7)", () => {
+  it("returns strong when title + 5 skills match (score ≥7)", () => {
     // title match = 2pts, 5 skill matches = 5pts → score 7
     const job = makeJob(
       "Senior Software Engineer",
-      "We use TypeScript, React, Node.js, GraphQL, and PostgreSQL every day."
+      "We use TypeScript, React, Node.js, GraphQL, and PostgreSQL every day.",
     );
     expect(scoreJob(job, criteria)).toBe("strong");
   });
@@ -43,20 +43,20 @@ describe("scoreJob", () => {
   it("returns weak when no title or skill match (score 0)", () => {
     const job = makeJob(
       "Marketing Manager",
-      "Drive brand awareness and lead generation campaigns."
+      "Drive brand awareness and lead generation campaigns.",
     );
     expect(scoreJob(job, criteria)).toBe("weak");
   });
 
   it("returns weak when criteria is empty", () => {
     const job = makeJob("Software Engineer", "TypeScript React Node.js");
-    expect(scoreJob(job, { jobTitles: [], skills: [] })).toBe("weak");
+    expect(scoreJob(job, { jobTitle: "", skills: [] })).toBe("weak");
   });
 
-  it("caps score at strong tier regardless of many matches", () => {
+  it("caps score at strong tier regardless of many skill matches", () => {
     const job = makeJob(
-      "Software Engineer Frontend Developer",
-      "TypeScript React Node.js GraphQL PostgreSQL Docker TypeScript React"
+      "Software Engineer",
+      "TypeScript React Node.js GraphQL PostgreSQL Docker TypeScript React",
     );
     expect(scoreJob(job, criteria)).toBe("strong");
   });

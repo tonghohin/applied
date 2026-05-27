@@ -74,7 +74,7 @@ function makeCtx(userId = "user_1") {
 describe("profile.getProfile", () => {
   it("returns profile and criteria for the user", async () => {
     const fakeProfile = { id: "p1", userId: "user_1", firstName: "Jane" };
-    const fakeCriteria = { id: "c1", userId: "user_1", jobTitles: ["SWE"] };
+    const fakeCriteria = { id: "c1", userId: "user_1", jobTitle: "SWE" };
     const fakeAccount = { id: "la1", userId: "user_1", email: "jane@example.com" };
 
     const selectChain1 = {
@@ -92,7 +92,7 @@ describe("profile.getProfile", () => {
     const result = await caller.getProfile();
 
     expect(result.profile).toMatchObject({ firstName: "Jane" });
-    expect(result.criteria).toMatchObject({ jobTitles: ["SWE"] });
+    expect(result.criteria).toMatchObject({ jobTitle: "SWE" });
     expect(result.linkedinAccount).toMatchObject({ email: "jane@example.com" });
   });
 
@@ -143,7 +143,7 @@ describe("profile.upsertCriteria", () => {
 
     const caller = profileRouter.createCaller(makeCtx());
     const result = await caller.upsertCriteria({
-      jobTitles: ["Software Engineer"],
+      jobTitle: "Software Engineer",
       skills: ["TypeScript"],
       locations: [{ location: "Toronto", workTypes: ["hybrid", "remote"] }],
       seniority: ["Senior"],

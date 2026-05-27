@@ -47,7 +47,7 @@ const completeLinkedInAccount = {
 const completeCriteria = {
   id: "c1",
   userId: "user_1",
-  jobTitles: ["SWE"],
+  jobTitle: "SWE",
   skills: ["TypeScript"],
   locations: [{ location: "Toronto", workTypes: ["remote"] }],
 };

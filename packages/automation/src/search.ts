@@ -88,7 +88,7 @@ export async function runSearch(
   await updateSearchRun(db, runId, {
     status: "running",
     searchCriteria: {
-      jobTitles: criteriaRow.jobTitles,
+      jobTitle: criteriaRow.jobTitle,
       skills: criteriaRow.skills,
       locations: criteriaRow.locations,
     },
@@ -121,7 +121,7 @@ export async function runSearch(
     const sinceDate = await getLatestListedAtForUser(db, userId);
     const scraped = await scrapeLinkedInJobs(
       page,
-      { jobTitles: criteriaRow.jobTitles, locations: criteriaRow.locations },
+      { jobTitle: criteriaRow.jobTitle, locations: criteriaRow.locations },
       sinceDate ?? undefined,
     );
 
@@ -138,7 +138,7 @@ export async function runSearch(
         description: job.description,
         url: job.url,
         platform: job.platform,
-        fitTier: scoreJob(job, { jobTitles: criteriaRow.jobTitles, skills: criteriaRow.skills }),
+        fitTier: scoreJob(job, { jobTitle: criteriaRow.jobTitle, skills: criteriaRow.skills }),
         listedAt: new Date(job.listedAt),
         createdAt: new Date(),
         updatedAt: new Date(),

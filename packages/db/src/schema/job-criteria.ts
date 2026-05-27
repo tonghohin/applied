@@ -8,7 +8,7 @@ export const jobCriteria = pgTable("job_criteria", {
     .notNull()
     .unique()
     .references(() => users.id, { onDelete: "cascade" }),
-  jobTitles: text("job_titles").array().notNull().default([]),
+  jobTitle: text("job_title").notNull().default(""),
   skills: text("skills").array().notNull().default([]),
   locations: jsonb("locations").notNull().default([]).$type<LocationEntry[]>(),
   seniority: text("seniority").array().notNull().default([]),

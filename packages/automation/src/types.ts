@@ -14,6 +14,6 @@ export interface ScrapedJob {
 }
 
 export interface SearchCriteria {
-  jobTitles: string[];
+  jobTitle: string;
   locations: LocationEntry[];
 }

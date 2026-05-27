@@ -25,7 +25,7 @@ const locationSchema = z.object({
 });
 
 const schema = z.object({
-  jobTitles: z.string().min(1, "Required"),
+  jobTitle: z.string().min(1, "Required"),
   skills: z.string().min(1, "Required"),
   locations: z.array(locationSchema).min(1, "Add at least one location"),
   seniority: z.string(),
@@ -38,7 +38,7 @@ export function CriteriaForm({
   initial,
 }: {
   initial?: {
-    jobTitles?: string[];
+    jobTitle?: string;
     skills?: string[];
     locations?: LocationEntry[] | null;
     seniority?: string[];
@@ -62,7 +62,7 @@ export function CriteriaForm({
   } = useForm<FormValues>({
     resolver: zodResolver(schema),
     defaultValues: {
-      jobTitles: initial?.jobTitles?.join(", ") ?? "",
+      jobTitle: initial?.jobTitle ?? "",
       skills: initial?.skills?.join(", ") ?? "",
       locations: initial?.locations ?? [],
       seniority: initial?.seniority?.join(", ") ?? "",
@@ -88,7 +88,7 @@ export function CriteriaForm({
   async function onSubmit(values: FormValues) {
     try {
       await mutateAsync({
-        jobTitles: splitCsv(values.jobTitles),
+        jobTitle: values.jobTitle,
         skills: splitCsv(values.skills),
         locations: values.locations,
         seniority: splitCsv(values.seniority),
@@ -103,17 +103,17 @@ export function CriteriaForm({
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-4">
-      <Field data-invalid={!!errors.jobTitles}>
-        <FieldLabel htmlFor="jobTitles">
-          Job titles (comma-separated) <span className="text-destructive">*</span>
+      <Field data-invalid={!!errors.jobTitle}>
+        <FieldLabel htmlFor="jobTitle">
+          Job title <span className="text-destructive">*</span>
         </FieldLabel>
         <Input
-          id="jobTitles"
-          placeholder="Software Engineer, Frontend Developer"
-          {...register("jobTitles")}
-          aria-invalid={!!errors.jobTitles}
+          id="jobTitle"
+          placeholder="Software Engineer"
+          {...register("jobTitle")}
+          aria-invalid={!!errors.jobTitle}
         />
-        <FieldError errors={[errors.jobTitles]} />
+        <FieldError errors={[errors.jobTitle]} />
       </Field>
 
       <Field data-invalid={!!errors.skills}>

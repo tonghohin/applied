@@ -108,43 +108,41 @@ export async function scrapeLinkedInJobs(
   const seen = new Set<string>();
   const effectiveCutoff = sinceDate ?? new Date(Date.now() - CUTOFF_MS);
 
-  for (const jobTitle of criteria.jobTitles.slice(0, 2)) {
-    for (const locationEntry of criteria.locations) {
-      const searchUrl = buildSearchUrl(
-        jobTitle,
-        locationEntry.location,
-        locationEntry.workTypes,
-      );
-      let hitCutoff = false;
+  for (const locationEntry of criteria.locations) {
+    const searchUrl = buildSearchUrl(
+      criteria.jobTitle,
+      locationEntry.location,
+      locationEntry.workTypes,
+    );
+    let hitCutoff = false;
 
-      for (let pageNum = 0; pageNum < MAX_PAGES; pageNum++) {
-        const url =
-          pageNum === 0 ? searchUrl : `${searchUrl}&start=${pageNum * 25}`;
-        await page.goto(url, { waitUntil: "domcontentloaded" });
-        await page.waitForTimeout(randomDelay());
+    for (let pageNum = 0; pageNum < MAX_PAGES; pageNum++) {
+      const url =
+        pageNum === 0 ? searchUrl : `${searchUrl}&start=${pageNum * 25}`;
+      await page.goto(url, { waitUntil: "domcontentloaded" });
+      await page.waitForTimeout(randomDelay());
 
-        const jobs = await scrapeJobsPage(page);
-        if (jobs.length === 0) break;
+      const jobs = await scrapeJobsPage(page);
+      if (jobs.length === 0) break;
 
-        for (const job of jobs) {
-          if (job.listedAt && new Date(job.listedAt) < effectiveCutoff) {
-            hitCutoff = true;
-            continue;
-          }
-          if (seen.has(job.url)) continue;
-          seen.add(job.url);
-
-          let description = "";
-          try {
-            description = await fetchDescription(page, job.url);
-          } catch (err) {
-            console.error(`Failed to fetch description for ${job.url}:`, err);
-          }
-          results.push({ ...job, description });
+      for (const job of jobs) {
+        if (job.listedAt && new Date(job.listedAt) < effectiveCutoff) {
+          hitCutoff = true;
+          continue;
         }
+        if (seen.has(job.url)) continue;
+        seen.add(job.url);
 
-        if (hitCutoff) break;
+        let description = "";
+        try {
+          description = await fetchDescription(page, job.url);
+        } catch (err) {
+          console.error(`Failed to fetch description for ${job.url}:`, err);
+        }
+        results.push({ ...job, description });
       }
+
+      if (hitCutoff) break;
     }
   }
 

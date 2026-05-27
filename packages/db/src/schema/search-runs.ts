@@ -4,7 +4,7 @@ import { users } from "./auth";
 import { platformEnum, searchRunStatusEnum } from "./enums";
 
 export type SearchCriteriaSnapshot = {
-  jobTitles: string[];
+  jobTitle: string;
   skills: string[];
   locations: LocationEntry[];
 };

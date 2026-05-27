@@ -15,15 +15,16 @@ function countMatches(haystack: string, needles: string[]): number {
 
 export function scoreJob(
   job: ScrapedJob,
-  criteria: Pick<SearchCriteria, "jobTitles"> & { skills?: string[] }
+  // Note: with a single title, max title score is 2 pts (match = 2, no match = 0).
+  // "strong" (≥7) therefore requires 1 title match + 5 skill matches.
+  criteria: Pick<SearchCriteria, "jobTitle"> & { skills?: string[] },
 ): FitTier {
   const text = normalize(`${job.title} ${job.description}`);
   let score = 0;
 
-  // Title match (worth 4 points)
-  if (criteria.jobTitles.length > 0) {
-    const titleMatches = countMatches(text, criteria.jobTitles);
-    score += Math.min(titleMatches * 2, 4);
+  // Title match (worth 2 points)
+  if (criteria.jobTitle && text.includes(normalize(criteria.jobTitle))) {
+    score += 2;
   }
 
   // Skills match (worth up to 6 points)
