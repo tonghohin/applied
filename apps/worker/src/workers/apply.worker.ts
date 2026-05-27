@@ -1,9 +1,9 @@
 import { processApplyJob } from "@repo/ai";
 import { db, getLinkedInAccount, insertApplyRun, updateApplyRun } from "@repo/db";
-import { Worker } from "bullmq";
-import { decrypt } from "@repo/shared";
-import { env } from "../env";
 import type { ApplyRunLog } from "@repo/db";
+import { decrypt } from "@repo/shared";
+import { Worker } from "bullmq";
+import { env } from "../env";
 
 type ApplyJobData = { jobId: string; userId: string };
 

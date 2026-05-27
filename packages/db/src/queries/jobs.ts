@@ -21,10 +21,7 @@ export async function insertJobs(db: Db, rows: NewJob[]) {
   return result.length;
 }
 
-export async function getLatestListedAtForUser(
-  db: Db,
-  userId: string,
-): Promise<Date | null> {
+export async function getLatestListedAtForUser(db: Db, userId: string): Promise<Date | null> {
   const result = await db
     .select({ latest: max(jobs.listedAt) })
     .from(jobs)

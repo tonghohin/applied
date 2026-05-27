@@ -13,7 +13,7 @@ export default async function JobsPage() {
   ]);
 
   return (
-    <div className="p-8 max-w-4xl mx-auto">
+    <div className="mx-auto max-w-4xl p-8">
       <JobsClient initialJobs={jobs} initialProfileData={profileData} />
     </div>
   );

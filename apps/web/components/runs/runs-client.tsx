@@ -28,9 +28,11 @@ export function RunsClient({ initialRuns }: { initialRuns: Runs }) {
 
   return (
     <>
-      <h1 className="text-2xl font-semibold mb-6">Runs</h1>
+      <h1 className="mb-6 font-semibold text-2xl">Runs</h1>
       {runs.length === 0 ? (
-        <p className="text-muted-foreground text-sm">No runs yet. Start a job search to see results here.</p>
+        <p className="text-muted-foreground text-sm">
+          No runs yet. Start a job search to see results here.
+        </p>
       ) : (
         <Table>
           <TableHeader>
@@ -52,10 +54,18 @@ export function RunsClient({ initialRuns }: { initialRuns: Runs }) {
                   <Badge variant={STATUS_VARIANT[run.status]}>{run.status}</Badge>
                 </TableCell>
                 <TableCell>{format(run.startedAt, "MMM d, yyyy h:mm a")}</TableCell>
-                <TableCell>{run.completedAt ? format(run.completedAt, "MMM d, yyyy h:mm a") : "—"}</TableCell>
-                <TableCell>{run.completedAt ? formatDuration(intervalToDuration({ start: run.startedAt, end: run.completedAt })) : "—"}</TableCell>
+                <TableCell>
+                  {run.completedAt ? format(run.completedAt, "MMM d, yyyy h:mm a") : "—"}
+                </TableCell>
+                <TableCell>
+                  {run.completedAt
+                    ? formatDuration(
+                        intervalToDuration({ start: run.startedAt, end: run.completedAt })
+                      )
+                    : "—"}
+                </TableCell>
                 <TableCell>{run.status === "failed" ? "—" : run.jobCount}</TableCell>
-                <TableCell className="text-destructive text-xs max-w-xs truncate">
+                <TableCell className="max-w-xs truncate text-destructive text-xs">
                   {run.errorMessage ?? ""}
                 </TableCell>
               </TableRow>

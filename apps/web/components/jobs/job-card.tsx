@@ -18,14 +18,12 @@ type ApplyRun = NonNullable<Job["latestApplyRun"]>;
 function ApplyRunLog({ applyRun }: { applyRun: ApplyRun }) {
   return (
     <details className="text-xs">
-      <summary className="cursor-pointer text-muted-foreground hover:text-foreground select-none">
+      <summary className="cursor-pointer select-none text-muted-foreground hover:text-foreground">
         View apply log ({applyRun.logs.length} steps)
       </summary>
-      <div className="mt-2 rounded-md bg-muted/50 p-3 font-mono space-y-1">
+      <div className="mt-2 space-y-1 rounded-md bg-muted/50 p-3 font-mono">
         {applyRun.errorMessage && (
-          <p className="text-destructive mb-2">
-            Error: {applyRun.errorMessage}
-          </p>
+          <p className="mb-2 text-destructive">Error: {applyRun.errorMessage}</p>
         )}
         {applyRun.logs.map((entry, i) => (
           <div key={`${i}:${entry.timestamp}`} className="flex gap-3">
@@ -36,9 +34,7 @@ function ApplyRunLog({ applyRun }: { applyRun: ApplyRun }) {
           </div>
         ))}
         {applyRun.logs.length === 0 && (
-          <p className="text-muted-foreground italic">
-            No log entries recorded.
-          </p>
+          <p className="text-muted-foreground italic">No log entries recorded.</p>
         )}
       </div>
     </details>
@@ -60,48 +56,44 @@ export function JobCard({
   });
 
   const showLog =
-    job.latestApplyRun !== null &&
-    (job.status === "applied" || job.status === "failed");
+    job.latestApplyRun !== null && (job.status === "applied" || job.status === "failed");
 
   return (
     <div
-      className={`rounded-lg border p-4 flex flex-col gap-3 ${selected ? "border-primary bg-primary/5" : ""}`}
+      className={`flex flex-col gap-3 rounded-lg border p-4 ${selected ? "border-primary bg-primary/5" : ""}`}
     >
       <div className="flex items-start justify-between gap-4">
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2 mb-1">
+        <div className="min-w-0 flex-1">
+          <div className="mb-1 flex items-center gap-2">
             <a
               href={job.url}
               target="_blank"
               rel="noopener noreferrer"
-              className="font-medium hover:underline truncate"
+              className="truncate font-medium hover:underline"
             >
               {job.title}
             </a>
             <Badge variant={FIT_TIER_VARIANT[job.fitTier]}>{job.fitTier}</Badge>
           </div>
-          <p className="text-sm text-muted-foreground">
+          <p className="text-muted-foreground text-sm">
             {job.company}
             {job.location ? ` · ${job.location}` : ""}
           </p>
         </div>
-        {(job.status === "pending_review" || job.status === "failed") &&
-          onToggleSelect && (
-            <Checkbox
-              checked={selected ?? false}
-              onCheckedChange={onToggleSelect}
-              className="shrink-0"
-            />
-          )}
+        {(job.status === "pending_review" || job.status === "failed") && onToggleSelect && (
+          <Checkbox
+            checked={selected ?? false}
+            onCheckedChange={onToggleSelect}
+            className="shrink-0"
+          />
+        )}
         {job.status === "pending_review" && (
-          <div className="flex items-center gap-2 shrink-0">
+          <div className="flex shrink-0 items-center gap-2">
             <Button
               size="sm"
               variant="outline"
               disabled={updateStatus.isPending}
-              onClick={() =>
-                updateStatus.mutate({ jobId: job.id, status: "skipped" })
-              }
+              onClick={() => updateStatus.mutate({ jobId: job.id, status: "skipped" })}
             >
               Skip
             </Button>
@@ -109,9 +101,7 @@ export function JobCard({
         )}
       </div>
 
-      {showLog && job.latestApplyRun && (
-        <ApplyRunLog applyRun={job.latestApplyRun} />
-      )}
+      {showLog && job.latestApplyRun && <ApplyRunLog applyRun={job.latestApplyRun} />}
     </div>
   );
 }

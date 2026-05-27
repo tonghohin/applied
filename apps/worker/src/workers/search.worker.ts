@@ -7,8 +7,8 @@ import {
   saveLinkedInSession,
   updateSearchRun,
 } from "@repo/db";
-import { Worker } from "bullmq";
 import { decrypt, encrypt } from "@repo/shared";
+import { Worker } from "bullmq";
 import { env } from "../env";
 
 type SearchJobData = { userId: string };

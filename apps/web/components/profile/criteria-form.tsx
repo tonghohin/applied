@@ -7,10 +7,10 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { trpc } from "@/lib/trpc";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { toast } from "sonner";
 import { WORK_TYPES, splitCsv } from "@repo/shared";
 import type { LocationEntry, WorkType } from "@repo/shared";
 import { useFieldArray, useForm, useWatch } from "react-hook-form";
+import { toast } from "sonner";
 import { z } from "zod";
 
 const WORK_TYPE_OPTIONS: { value: WorkType; label: string }[] = [
@@ -79,9 +79,7 @@ export function CriteriaForm({
 
   function toggleWorkType(index: number, type: WorkType) {
     const current = locations[index]?.workTypes ?? [];
-    const next = current.includes(type)
-      ? current.filter((t) => t !== type)
-      : [...current, type];
+    const next = current.includes(type) ? current.filter((t) => t !== type) : [...current, type];
     setValue(`locations.${index}.workTypes`, next as WorkType[], { shouldValidate: true });
   }
 
@@ -140,7 +138,7 @@ export function CriteriaForm({
         </div>
 
         {fields.length === 0 && (
-          <p className="text-sm text-muted-foreground">No locations added yet.</p>
+          <p className="text-muted-foreground text-sm">No locations added yet.</p>
         )}
 
         {fields.map((field, index) => (
@@ -174,7 +172,7 @@ export function CriteriaForm({
                       checked={locations[index]?.workTypes?.includes(value) ?? false}
                       onCheckedChange={() => toggleWorkType(index, value)}
                     />
-                    <Label htmlFor={id} className="cursor-pointer text-sm font-normal">
+                    <Label htmlFor={id} className="cursor-pointer font-normal text-sm">
                       {label}
                     </Label>
                   </div>

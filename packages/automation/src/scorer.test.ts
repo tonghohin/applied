@@ -29,7 +29,7 @@ describe("scoreJob", () => {
     // title match = 2pts, 5 skill matches = 5pts → score 7
     const job = makeJob(
       "Senior Software Engineer",
-      "We use TypeScript, React, Node.js, GraphQL, and PostgreSQL every day.",
+      "We use TypeScript, React, Node.js, GraphQL, and PostgreSQL every day."
     );
     expect(scoreJob(job, criteria)).toBe("strong");
   });
@@ -43,7 +43,7 @@ describe("scoreJob", () => {
   it("returns weak when no title or skill match (score 0)", () => {
     const job = makeJob(
       "Marketing Manager",
-      "Drive brand awareness and lead generation campaigns.",
+      "Drive brand awareness and lead generation campaigns."
     );
     expect(scoreJob(job, criteria)).toBe("weak");
   });
@@ -56,7 +56,7 @@ describe("scoreJob", () => {
   it("caps score at strong tier regardless of many skill matches", () => {
     const job = makeJob(
       "Software Engineer",
-      "TypeScript React Node.js GraphQL PostgreSQL Docker TypeScript React",
+      "TypeScript React Node.js GraphQL PostgreSQL Docker TypeScript React"
     );
     expect(scoreJob(job, criteria)).toBe("strong");
   });

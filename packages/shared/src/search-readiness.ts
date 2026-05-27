@@ -12,15 +12,18 @@ type CriteriaReadiness = {
   locations?: unknown[] | null;
 };
 
-type LinkedInAccountReadiness = {
-  email?: string | null;
-  passwordEncrypted?: string | null;
-} | null | undefined;
+type LinkedInAccountReadiness =
+  | {
+      email?: string | null;
+      passwordEncrypted?: string | null;
+    }
+  | null
+  | undefined;
 
 export function getMissingSearchFields(
   profile: ProfileReadiness | null | undefined,
   criteria: CriteriaReadiness | null | undefined,
-  linkedinAccount: LinkedInAccountReadiness = null,
+  linkedinAccount: LinkedInAccountReadiness = null
 ): string[] {
   const checks: [unknown, string][] = [
     [profile?.firstName, "First name"],

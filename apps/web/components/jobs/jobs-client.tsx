@@ -25,7 +25,11 @@ export function JobsClient({
   const { data: profileData } = trpc.profile.getProfile.useQuery(undefined, {
     initialData: initialProfileData,
   });
-  const missingFields = getMissingSearchFields(profileData?.profile, profileData?.criteria, profileData?.linkedinAccount);
+  const missingFields = getMissingSearchFields(
+    profileData?.profile,
+    profileData?.criteria,
+    profileData?.linkedinAccount
+  );
 
   const searchMutation = trpc.jobs.search.useMutation({
     onSuccess: () => {
@@ -45,8 +49,8 @@ export function JobsClient({
 
   return (
     <>
-      <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-semibold">Jobs</h1>
+      <div className="mb-6 flex items-center justify-between">
+        <h1 className="font-semibold text-2xl">Jobs</h1>
         <Button
           onClick={() => {
             if (!isReady) {

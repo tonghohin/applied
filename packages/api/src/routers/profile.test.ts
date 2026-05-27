@@ -4,10 +4,7 @@ vi.mock("../env", () => ({
   env: { LINKEDIN_ENCRYPTION_KEY: "a".repeat(64) },
 }));
 
-const {
-  mockGetLinkedInAccount,
-  mockUpsertLinkedInAccount,
-} = vi.hoisted(() => ({
+const { mockGetLinkedInAccount, mockUpsertLinkedInAccount } = vi.hoisted(() => ({
   mockGetLinkedInAccount: vi.fn().mockResolvedValue(null),
   mockUpsertLinkedInAccount: vi.fn().mockResolvedValue(undefined),
 }));

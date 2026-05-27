@@ -11,19 +11,20 @@ function FieldSkeleton() {
 
 export function ProfileSkeleton() {
   return (
-    <div className="p-8 max-w-2xl mx-auto">
+    <div className="mx-auto max-w-2xl p-8">
       {/* Title */}
-      <Skeleton className="h-8 w-24 mb-6" />
+      <Skeleton className="mb-6 h-8 w-24" />
 
       {/* Tabs list */}
-      <div className="flex gap-1 h-8 mb-4">
+      <div className="mb-4 flex h-8 gap-1">
         {Array.from({ length: 5 }).map((_, i) => (
+          // biome-ignore lint/suspicious/noArrayIndexKey: static array, order never changes
           <Skeleton key={i} className="h-full w-24 rounded-md" />
         ))}
       </div>
 
       {/* Personal tab fields */}
-      <div className="flex flex-col gap-4 mt-4">
+      <div className="mt-4 flex flex-col gap-4">
         <div className="grid grid-cols-2 gap-4">
           <FieldSkeleton />
           <FieldSkeleton />

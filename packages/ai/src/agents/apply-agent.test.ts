@@ -94,9 +94,7 @@ describe("applyToJob", () => {
     mockClose.mockClear();
     vi.mocked(generateText).mockRejectedValueOnce(new Error("network error"));
 
-    await expect(
-      applyToJob(mockJob, mockProfile, "/tmp/resume.pdf", undefined),
-    ).rejects.toThrow(
+    await expect(applyToJob(mockJob, mockProfile, "/tmp/resume.pdf", undefined)).rejects.toThrow(
       "network error"
     );
 

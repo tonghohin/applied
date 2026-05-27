@@ -48,7 +48,7 @@ export function LinkedInForm({ savedEmail }: { savedEmail: string | null }) {
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-4">
-      <p className="text-sm text-muted-foreground">Password is encrypted and never logged.</p>
+      <p className="text-muted-foreground text-sm">Password is encrypted and never logged.</p>
       <Field data-invalid={!!errors.linkedinEmail}>
         <FieldLabel htmlFor="linkedinEmail">
           LinkedIn email <span className="text-destructive">*</span>

@@ -17,7 +17,7 @@ export function scoreJob(
   job: ScrapedJob,
   // Note: with a single title, max title score is 2 pts (match = 2, no match = 0).
   // "strong" (≥7) therefore requires 1 title match + 5 skill matches.
-  criteria: Pick<SearchCriteria, "jobTitle"> & { skills?: string[] },
+  criteria: Pick<SearchCriteria, "jobTitle"> & { skills?: string[] }
 ): FitTier {
   const text = normalize(`${job.title} ${job.description}`);
   let score = 0;

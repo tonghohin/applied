@@ -87,11 +87,7 @@ describe("scrapeLinkedInJobs", () => {
 
   it("strips ' with verification' suffix from job titles", async () => {
     const jobWithBadge = { ...makeJob("1"), title: "Senior Engineer with verification" };
-    const page = makePage([
-      [jobWithBadge],
-      "description 1",
-      [],
-    ]);
+    const page = makePage([[jobWithBadge], "description 1", []]);
 
     const results = await scrapeLinkedInJobs(page, criteria);
 

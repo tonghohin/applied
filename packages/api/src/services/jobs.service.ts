@@ -23,7 +23,7 @@ export async function listJobs(db: Db, userId: string) {
   const jobRows = await db.select().from(jobs).where(eq(jobs.userId, userId));
   const applyRuns = await listLatestApplyRunsByJobIds(
     db,
-    jobRows.map((j) => j.id),
+    jobRows.map((j) => j.id)
   );
   const applyRunByJobId = new Map(applyRuns.map((r) => [r.jobId, r]));
   return jobRows.map((job) => ({ ...job, latestApplyRun: applyRunByJobId.get(job.id) ?? null }));

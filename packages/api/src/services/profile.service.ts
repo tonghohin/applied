@@ -1,9 +1,4 @@
-import {
-  getLinkedInAccount,
-  jobCriteria,
-  profiles,
-  upsertLinkedInAccount,
-} from "@repo/db";
+import { getLinkedInAccount, jobCriteria, profiles, upsertLinkedInAccount } from "@repo/db";
 import { WORK_TYPES, encrypt } from "@repo/shared";
 import { eq } from "drizzle-orm";
 import { z } from "zod";
@@ -71,11 +66,7 @@ export async function getProfile(db: Db, userId: string) {
   return { profile, criteria, linkedinAccount };
 }
 
-export async function upsertPersonal(
-  db: Db,
-  userId: string,
-  input: UpsertPersonalInput,
-) {
+export async function upsertPersonal(db: Db, userId: string, input: UpsertPersonalInput) {
   const set = { ...input, updatedAt: new Date() };
   const [row] = await db
     .insert(profiles)
@@ -85,11 +76,7 @@ export async function upsertPersonal(
   return row;
 }
 
-export async function upsertResume(
-  db: Db,
-  userId: string,
-  input: UpsertResumeInput,
-) {
+export async function upsertResume(db: Db, userId: string, input: UpsertResumeInput) {
   const set = { ...input, updatedAt: new Date() };
   const [row] = await db
     .insert(profiles)
@@ -107,11 +94,7 @@ export async function upsertResume(
   return row;
 }
 
-export async function upsertCoverLetter(
-  db: Db,
-  userId: string,
-  input: UpsertCoverLetterInput,
-) {
+export async function upsertCoverLetter(db: Db, userId: string, input: UpsertCoverLetterInput) {
   const set = { ...input, updatedAt: new Date() };
   const [row] = await db
     .insert(profiles)
@@ -130,11 +113,7 @@ export async function upsertCoverLetter(
   return row;
 }
 
-export async function upsertLinkedIn(
-  db: Db,
-  userId: string,
-  input: UpsertLinkedInInput,
-) {
+export async function upsertLinkedIn(db: Db, userId: string, input: UpsertLinkedInInput) {
   const { linkedinEmail, linkedinPassword } = input;
   await upsertLinkedInAccount(db, userId, {
     email: linkedinEmail,
@@ -142,11 +121,7 @@ export async function upsertLinkedIn(
   });
 }
 
-export async function upsertCriteria(
-  db: Db,
-  userId: string,
-  input: UpsertCriteriaInput,
-) {
+export async function upsertCriteria(db: Db, userId: string, input: UpsertCriteriaInput) {
   const values = { ...input, userId };
   const [row] = await db
     .insert(jobCriteria)

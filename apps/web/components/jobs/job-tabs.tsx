@@ -67,7 +67,7 @@ export function JobTabs({
         return (
           <TabsContent key={tab.value} value={tab.value} className="mt-4">
             {selectable && tabSelected.length > 0 && (
-              <div className="flex justify-end mb-3">
+              <div className="mb-3 flex justify-end">
                 <Button
                   size="sm"
                   disabled={applyMutation.isPending}
@@ -89,7 +89,7 @@ export function JobTabs({
                 />
               ))}
               {tabJobs.length === 0 && (
-                <p className="text-sm text-muted-foreground py-8 text-center">No jobs here yet.</p>
+                <p className="py-8 text-center text-muted-foreground text-sm">No jobs here yet.</p>
               )}
             </div>
           </TabsContent>

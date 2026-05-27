@@ -1,5 +1,6 @@
 "use client";
 
+import { AppliedLockup } from "@/components/applied-logo";
 import {
   Sidebar,
   SidebarContent,
@@ -10,12 +11,7 @@ import {
   SidebarMenuItem,
 } from "@/components/ui/sidebar";
 import { authClient } from "@/lib/auth-client";
-import {
-  RiBriefcaseLine,
-  RiHistoryLine,
-  RiLogoutBoxLine,
-  RiUserLine,
-} from "@remixicon/react";
+import { RiBriefcaseLine, RiHistoryLine, RiLogoutBoxLine, RiUserLine } from "@remixicon/react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 
@@ -36,17 +32,14 @@ export function AppSidebar() {
 
   return (
     <Sidebar>
-      <SidebarHeader className="p-4">
-        <span className="font-semibold text-lg">Applied</span>
+      <SidebarHeader>
+        <AppliedLockup />
       </SidebarHeader>
-      <SidebarContent>
+      <SidebarContent className="p-2 pt-0">
         <SidebarMenu>
           {NAV_LINKS.map(({ href, label, icon: Icon }) => (
             <SidebarMenuItem key={href}>
-              <SidebarMenuButton
-                render={<Link href={href} />}
-                isActive={pathname.startsWith(href)}
-              >
+              <SidebarMenuButton render={<Link href={href} />} isActive={pathname.startsWith(href)}>
                 <Icon />
                 {label}
               </SidebarMenuButton>

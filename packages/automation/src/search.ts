@@ -31,7 +31,7 @@ const contextOptions: ContextOptions = {
 
 async function manualHeadedLogin(): Promise<string> {
   console.log(
-    "[linkedin] CAPTCHA detected — opening browser for manual login. Complete the login and the run will continue automatically.",
+    "[linkedin] CAPTCHA detected — opening browser for manual login. Complete the login and the run will continue automatically."
   );
   const headedBrowser = await chromium.launch({ headless: false });
   try {
@@ -49,7 +49,7 @@ async function manualHeadedLogin(): Promise<string> {
 async function loginOrManual(
   browser: Browser,
   email: string,
-  password: string,
+  password: string
 ): Promise<{ context: BrowserContext; page: Page; newSessionJson: string }> {
   const context = await browser.newContext(contextOptions);
   const page = await context.newPage();
@@ -80,7 +80,7 @@ export async function runSearch(
   email: string,
   password: string,
   runId: string,
-  existingSessionJson?: string,
+  existingSessionJson?: string
 ): Promise<{ jobCount: number; newSessionJson: string | null }> {
   const criteriaRow = await getJobCriteriaForUser(db, userId);
   if (!criteriaRow) throw new Error("No job criteria found");
@@ -122,7 +122,7 @@ export async function runSearch(
     const scraped = await scrapeLinkedInJobs(
       page,
       { jobTitle: criteriaRow.jobTitle, locations: criteriaRow.locations },
-      sinceDate ?? undefined,
+      sinceDate ?? undefined
     );
 
     if (scraped.length === 0) return { jobCount: 0, newSessionJson };
@@ -142,7 +142,7 @@ export async function runSearch(
         listedAt: new Date(job.listedAt),
         createdAt: new Date(),
         updatedAt: new Date(),
-      })),
+      }))
     );
     return { jobCount, newSessionJson };
   } finally {

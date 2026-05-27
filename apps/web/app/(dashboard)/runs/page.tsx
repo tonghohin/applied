@@ -10,7 +10,7 @@ export default async function RunsPage() {
   const runs = await listSearchRuns(db, session.user.id);
 
   return (
-    <div className="p-8 max-w-4xl mx-auto">
+    <div className="mx-auto max-w-4xl p-8">
       <RunsClient initialRuns={runs} />
     </div>
   );

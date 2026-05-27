@@ -10,8 +10,8 @@ export default async function ProfilePage() {
   const data = await getProfile(db, session.user.id);
 
   return (
-    <div className="p-8 max-w-2xl mx-auto">
-      <h1 className="text-2xl font-semibold mb-6">Profile</h1>
+    <div className="mx-auto max-w-2xl p-8">
+      <h1 className="mb-6 font-semibold text-2xl">Profile</h1>
       <ProfileContent initialData={data} />
     </div>
   );

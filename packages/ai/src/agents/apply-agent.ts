@@ -41,7 +41,7 @@ export async function applyToJob(
   profile: Profile,
   resumePdfPath: string,
   linkedinSessionJson?: string,
-  log: (msg: string) => void = () => {},
+  log: (msg: string) => void = () => {}
 ): Promise<ApplyResult> {
   log("Initializing Playwright session");
   const client = await createPlaywrightMCPClient(linkedinSessionJson);
@@ -83,7 +83,11 @@ export async function applyToJob(
     const result = text.trim();
     if (result === "SUCCESS") return { success: true };
     if (result.startsWith("FAILURE:")) return { success: false, reason: result.slice(8).trim() };
-    if (!result) return { success: false, reason: "Agent reached step limit without completing the application" };
+    if (!result)
+      return {
+        success: false,
+        reason: "Agent reached step limit without completing the application",
+      };
     return {
       success: false,
       reason: `Unexpected agent response: ${result.slice(0, 100)}`,

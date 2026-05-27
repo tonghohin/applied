@@ -13,7 +13,7 @@ export async function getLinkedInAccount(db: Db, userId: string) {
 export async function upsertLinkedInAccount(
   db: Db,
   userId: string,
-  values: { email: string; passwordEncrypted: string },
+  values: { email: string; passwordEncrypted: string }
 ): Promise<void> {
   await db
     .insert(linkedinAccounts)
@@ -31,7 +31,7 @@ export async function upsertLinkedInAccount(
 export async function saveLinkedInSession(
   db: Db,
   userId: string,
-  sessionEncrypted: string,
+  sessionEncrypted: string
 ): Promise<void> {
   await db
     .update(linkedinAccounts)
@@ -39,10 +39,7 @@ export async function saveLinkedInSession(
     .where(eq(linkedinAccounts.userId, userId));
 }
 
-export async function clearLinkedInSession(
-  db: Db,
-  userId: string,
-): Promise<void> {
+export async function clearLinkedInSession(db: Db, userId: string): Promise<void> {
   await db
     .update(linkedinAccounts)
     .set({ sessionEncrypted: null, updatedAt: new Date() })
