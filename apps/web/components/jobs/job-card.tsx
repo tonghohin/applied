@@ -3,14 +3,14 @@
 import { Badge, type BadgeVariant } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
-import { trpc } from "@/lib/trpc";
 import type { Job } from "@/lib/trpc";
+import { trpc } from "@/lib/trpc";
 import { format } from "date-fns";
 
 const FIT_TIER_VARIANT: Record<Job["fitTier"], BadgeVariant> = {
-  strong: "success",
+  strong: "default",
   potential: "warning",
-  weak: "muted",
+  weak: "secondary",
 };
 
 type ApplyRun = NonNullable<Job["latestApplyRun"]>;
@@ -23,7 +23,9 @@ function ApplyRunLog({ applyRun }: { applyRun: ApplyRun }) {
       </summary>
       <div className="mt-2 rounded-md bg-muted/50 p-3 font-mono space-y-1">
         {applyRun.errorMessage && (
-          <p className="text-destructive mb-2">Error: {applyRun.errorMessage}</p>
+          <p className="text-destructive mb-2">
+            Error: {applyRun.errorMessage}
+          </p>
         )}
         {applyRun.logs.map((entry, i) => (
           <div key={`${i}:${entry.timestamp}`} className="flex gap-3">
@@ -34,7 +36,9 @@ function ApplyRunLog({ applyRun }: { applyRun: ApplyRun }) {
           </div>
         ))}
         {applyRun.logs.length === 0 && (
-          <p className="text-muted-foreground italic">No log entries recorded.</p>
+          <p className="text-muted-foreground italic">
+            No log entries recorded.
+          </p>
         )}
       </div>
     </details>
@@ -56,7 +60,8 @@ export function JobCard({
   });
 
   const showLog =
-    job.latestApplyRun !== null && (job.status === "applied" || job.status === "failed");
+    job.latestApplyRun !== null &&
+    (job.status === "applied" || job.status === "failed");
 
   return (
     <div
@@ -80,20 +85,23 @@ export function JobCard({
             {job.location ? ` · ${job.location}` : ""}
           </p>
         </div>
-        {(job.status === "pending_review" || job.status === "failed") && onToggleSelect && (
-          <Checkbox
-            checked={selected ?? false}
-            onCheckedChange={onToggleSelect}
-            className="shrink-0"
-          />
-        )}
+        {(job.status === "pending_review" || job.status === "failed") &&
+          onToggleSelect && (
+            <Checkbox
+              checked={selected ?? false}
+              onCheckedChange={onToggleSelect}
+              className="shrink-0"
+            />
+          )}
         {job.status === "pending_review" && (
           <div className="flex items-center gap-2 shrink-0">
             <Button
               size="sm"
               variant="outline"
               disabled={updateStatus.isPending}
-              onClick={() => updateStatus.mutate({ jobId: job.id, status: "skipped" })}
+              onClick={() =>
+                updateStatus.mutate({ jobId: job.id, status: "skipped" })
+              }
             >
               Skip
             </Button>
@@ -101,7 +109,9 @@ export function JobCard({
         )}
       </div>
 
-      {showLog && job.latestApplyRun && <ApplyRunLog applyRun={job.latestApplyRun} />}
+      {showLog && job.latestApplyRun && (
+        <ApplyRunLog applyRun={job.latestApplyRun} />
+      )}
     </div>
   );
 }
