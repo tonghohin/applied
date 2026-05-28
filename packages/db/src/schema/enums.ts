@@ -4,6 +4,7 @@ export const platformEnum = pgEnum("platform", ["linkedin"]);
 export const fitTierEnum = pgEnum("fit_tier", ["strong", "potential", "weak"]);
 export const jobStatusEnum = pgEnum("job_status", [
   "pending_review",
+  "applying",
   "applied",
   "failed",
   "skipped",

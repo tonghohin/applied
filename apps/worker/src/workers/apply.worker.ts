@@ -1,18 +1,18 @@
 import { propagateAttributes } from "@langfuse/tracing";
 import { processApplyJob } from "@repo/ai";
-import { db, getLinkedInAccount, insertApplyRun, updateApplyRun } from "@repo/db";
+import { db, getLinkedInAccount, updateApplyRun } from "@repo/db";
 import type { ApplyRunLog } from "@repo/db";
 import { decrypt } from "@repo/shared";
 import { Worker } from "bullmq";
 import { env } from "../env";
 import { langfuseSpanProcessor } from "../otel";
 
-type ApplyJobData = { jobId: string; userId: string };
+type ApplyJobData = { jobId: string; userId: string; runId: string };
 
 export const applyWorker = new Worker<ApplyJobData>(
   "apply",
   async (job) => {
-    const { jobId, userId } = job.data;
+    const { jobId, userId, runId } = job.data;
     const account = await getLinkedInAccount(db, userId);
     const linkedinSessionJson = account?.sessionEncrypted
       ? decrypt(account.sessionEncrypted, env.LINKEDIN_ENCRYPTION_KEY)
@@ -21,34 +21,28 @@ export const applyWorker = new Worker<ApplyJobData>(
     const logs: ApplyRunLog[] = [];
     const log = (message: string) => logs.push({ timestamp: new Date().toISOString(), message });
 
-    const run = await insertApplyRun(db, {
-      jobId,
-      userId,
-      status: "running",
-      startedAt: new Date(),
-    });
-    if (!run) throw new Error("Failed to create apply run");
+    await updateApplyRun(db, runId, { status: "running" });
 
     try {
       await propagateAttributes(
         {
           traceName: "apply-job",
           userId,
-          metadata: { jobId, runId: run.id },
+          metadata: { jobId, runId },
           tags: ["apply"],
         },
         async () => {
           await processApplyJob(db, jobId, userId, linkedinSessionJson, log);
         }
       );
-      await updateApplyRun(db, run.id, {
+      await updateApplyRun(db, runId, {
         status: "completed",
         completedAt: new Date(),
         logs,
       });
     } catch (err) {
       log(`Unexpected error: ${err instanceof Error ? err.message : String(err)}`);
-      await updateApplyRun(db, run.id, {
+      await updateApplyRun(db, runId, {
         status: "failed",
         completedAt: new Date(),
         errorMessage: err instanceof Error ? err.message : String(err),

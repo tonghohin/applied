@@ -29,6 +29,13 @@ export async function getLatestListedAtForUser(db: Db, userId: string): Promise<
   return result[0]?.latest ?? null;
 }
 
+export async function updateJobApplying(db: Db, jobId: string) {
+  await db
+    .update(jobs)
+    .set({ status: "applying", updatedAt: new Date() })
+    .where(eq(jobs.id, jobId));
+}
+
 export async function updateJobApplied(db: Db, jobId: string) {
   await db
     .update(jobs)

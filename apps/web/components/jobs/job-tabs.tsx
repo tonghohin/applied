@@ -7,10 +7,11 @@ import type { Job, JobStatus } from "@/lib/trpc";
 import { useState } from "react";
 import { JobCard } from "./job-card";
 
-const JOB_STATUSES = ["pending_review", "applied", "failed", "skipped"] satisfies JobStatus[];
+const JOB_STATUSES = ["pending_review", "applying", "applied", "failed", "skipped"] satisfies JobStatus[];
 
 const TAB_LABELS: Record<JobStatus, string> = {
   pending_review: "Pending",
+  applying: "Applying",
   applied: "Applied",
   failed: "Failed",
   skipped: "Skipped",

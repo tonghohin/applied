@@ -3,7 +3,6 @@ import {
   clearLinkedInSession,
   db,
   getLinkedInAccount,
-  insertSearchRun,
   saveLinkedInSession,
   updateSearchRun,
 } from "@repo/db";
@@ -11,9 +10,9 @@ import { decrypt, encrypt } from "@repo/shared";
 import { Worker } from "bullmq";
 import { env } from "../env";
 
-type SearchJobData = { userId: string };
+type SearchJobData = { userId: string; runId: string };
 
-async function processSearch(userId: string) {
+async function processSearch(userId: string, runId: string) {
   const account = await getLinkedInAccount(db, userId);
   if (!account) throw new Error("LinkedIn credentials not configured");
 
@@ -22,13 +21,7 @@ async function processSearch(userId: string) {
     ? decrypt(account.sessionEncrypted, env.LINKEDIN_ENCRYPTION_KEY)
     : undefined;
 
-  const run = await insertSearchRun(db, {
-    userId,
-    platform: "linkedin",
-    status: "pending",
-    startedAt: new Date(),
-  });
-  if (!run) throw new Error("Failed to create search run");
+  await updateSearchRun(db, runId, { status: "running" });
 
   try {
     const { jobCount, newSessionJson } = await runSearch(
@@ -36,20 +29,20 @@ async function processSearch(userId: string) {
       userId,
       account.email,
       password,
-      run.id,
+      runId,
       existingSessionJson
     );
     if (newSessionJson) {
       await saveLinkedInSession(db, userId, encrypt(newSessionJson, env.LINKEDIN_ENCRYPTION_KEY));
     }
-    await updateSearchRun(db, run.id, {
+    await updateSearchRun(db, runId, {
       status: "completed",
       completedAt: new Date(),
       jobCount,
     });
   } catch (err) {
     const isCaptcha = err instanceof Error && err.message.toLowerCase().includes("captcha");
-    await updateSearchRun(db, run.id, {
+    await updateSearchRun(db, runId, {
       status: "failed",
       completedAt: new Date(),
       errorMessage: err instanceof Error ? err.message : String(err),
@@ -62,7 +55,7 @@ async function processSearch(userId: string) {
 export const searchWorker = new Worker<SearchJobData>(
   "search",
   async (job) => {
-    await processSearch(job.data.userId);
+    await processSearch(job.data.userId, job.data.runId);
   },
   { connection: { url: env.REDIS_URL }, concurrency: 1, lockDuration: 5 * 60 * 1000 }
 );
