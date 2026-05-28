@@ -19,6 +19,7 @@ Automated job application tool. Scrapes LinkedIn for matching positions, scores 
 | Database       | PostgreSQL + Drizzle ORM          |
 | Scraper        | Playwright (LinkedIn)             |
 | AI Agent       | Gemini 2.5 Flash + Playwright MCP |
+| Observability  | Langfuse (self-hosted)            |
 
 ## Monorepo structure
 
@@ -69,6 +70,9 @@ DATABASE_URL=postgresql://applied:applied@localhost:5432/applied
 REDIS_URL=redis://localhost:6379
 AI_GATEWAY_API_KEY=<from Vercel AI Gateway dashboard>
 LINKEDIN_ENCRYPTION_KEY=<64 hex chars — same as above>
+LANGFUSE_PUBLIC_KEY=pk-lf-local-public-key
+LANGFUSE_SECRET_KEY=sk-lf-local-secret-key
+LANGFUSE_BASE_URL=http://localhost:3001
 ```
 
 **`packages/db/.env`** — drizzle-kit migrations
@@ -80,10 +84,14 @@ DATABASE_URL=postgresql://applied:applied@localhost:5432/applied
 ### 3. Start infrastructure
 
 ```bash
+# Project services (Postgres + Redis)
 docker compose up -d
+
+# Langfuse observability (ClickHouse + MinIO + Langfuse)
+docker compose -p langfuse -f docker-compose.langfuse.yml up -d
 ```
 
-This starts PostgreSQL and Redis.
+Langfuse UI: [http://localhost:3001](http://localhost:3001) — login `admin@local.dev` / `admin123`.
 
 ### 4. Run migrations
 

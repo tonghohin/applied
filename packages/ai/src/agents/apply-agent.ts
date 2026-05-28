@@ -86,6 +86,7 @@ export async function applyToJob(
       stopWhen: stepCountIs(100),
       system: SYSTEM_PROMPT,
       prompt: `Apply to this job:\nURL: ${job.url}\nTitle: ${job.title} at ${job.company}\n\nApplicant profile:\n${profileSummary}${resumePdfPath ? `\n\nResume PDF path: ${resumePdfPath}` : ""}`,
+      experimental_telemetry: { isEnabled: true },
     });
     log("AI agent finished");
 

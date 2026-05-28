@@ -1,3 +1,5 @@
+import "./otel"; // must be first — registers LangfuseSpanProcessor before other imports
+
 import { browserManager } from "@repo/automation";
 import { applyWorker } from "./workers/apply.worker";
 import { searchWorker } from "./workers/search.worker";

@@ -66,11 +66,24 @@ Better Auth with Google OAuth, configured in `packages/api/src/auth.ts`. The Dri
 
 `jobs.applyJobs` enqueues to `applyQueue`. Worker calls `processApplyJob` from `packages/ai` which generates a PDF from the user's resume text (`generateResumePdf`), then calls `applyToJob` which launches a stealth browser (playwright-extra + StealthPlugin, `--disable-blink-features=AutomationControlled`) and loads the saved LinkedIn session into a browser context. The `@playwright/mcp` MCP server runs in-process against that context via `InMemoryTransport`, and `generateText` with `stopWhen: stepCountIs(50)` drives the agent to fill and submit the application (uploading the PDF if the form has a file upload field). Job status is updated to `applied` or `failed`.
 
+### Observability (Langfuse)
+
+The apply agent is instrumented with [Langfuse](https://langfuse.com) for LLM observability. Self-hosted via `docker compose -p langfuse -f docker-compose.langfuse.yml up -d` (uses the official Langfuse compose with `CLICKHOUSE_CLUSTER_ENABLED=false` for single-node setup). UI at `http://localhost:3001`.
+
+**How it works:**
+- `apps/worker/src/otel.ts` — initializes the OTEL SDK with `LangfuseSpanProcessor` at worker startup (must be the first import in `index.ts`)
+- `apps/worker/src/workers/apply.worker.ts` — wraps each apply job with `propagateAttributes({ traceName, userId, metadata })` from `@langfuse/tracing`; this attaches user/job context to all OTEL spans created inside the callback, then `forceFlush()` ships the trace before BullMQ marks the job done
+- `packages/ai/src/agents/apply-agent.ts` — `experimental_telemetry: { isEnabled: true }` on `generateText` causes the AI SDK to emit OTEL spans (one generation per call, one child span per tool call/step) which are intercepted by the span processor
+
+**Local credentials** (pre-seeded by Docker Compose `LANGFUSE_INIT_*`):
+- UI login: `admin@local.dev` / `admin123`
+- API keys in `apps/worker/.env`: `LANGFUSE_PUBLIC_KEY=pk-lf-local-public-key`, `LANGFUSE_SECRET_KEY=sk-lf-local-secret-key`
+
 ### Environment variables
 
 Each package/app validates only the env vars it uses via its own `src/env.ts` (Zod parse at startup). Loading is handled by the entry point:
 - `apps/web`: Next.js auto-loads `.env.local` — holds all server-side vars (`DATABASE_URL`, `BETTER_AUTH_*`, `GOOGLE_*`, `LINKEDIN_ENCRYPTION_KEY`, `REDIS_URL`) plus `NEXT_PUBLIC_BASE_URL`
-- `apps/worker`: `tsx --env-file .env src/index.ts` — holds `DATABASE_URL`, `REDIS_URL`, `AI_GATEWAY_API_KEY`, `LINKEDIN_ENCRYPTION_KEY`
+- `apps/worker`: `tsx --env-file .env src/index.ts` — holds `DATABASE_URL`, `REDIS_URL`, `AI_GATEWAY_API_KEY`, `LINKEDIN_ENCRYPTION_KEY`, `LANGFUSE_PUBLIC_KEY`, `LANGFUSE_SECRET_KEY`, `LANGFUSE_BASE_URL`
 - `packages/db`: drizzle-kit auto-loads `packages/db/.env`
 
 ### tRPC patterns

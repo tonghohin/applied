@@ -1,9 +1,11 @@
+import { propagateAttributes } from "@langfuse/tracing";
 import { processApplyJob } from "@repo/ai";
 import { db, getLinkedInAccount, insertApplyRun, updateApplyRun } from "@repo/db";
 import type { ApplyRunLog } from "@repo/db";
 import { decrypt } from "@repo/shared";
 import { Worker } from "bullmq";
 import { env } from "../env";
+import { langfuseSpanProcessor } from "../otel";
 
 type ApplyJobData = { jobId: string; userId: string };
 
@@ -28,7 +30,17 @@ export const applyWorker = new Worker<ApplyJobData>(
     if (!run) throw new Error("Failed to create apply run");
 
     try {
-      await processApplyJob(db, jobId, userId, linkedinSessionJson, log);
+      await propagateAttributes(
+        {
+          traceName: "apply-job",
+          userId,
+          metadata: { jobId, runId: run.id },
+          tags: ["apply"],
+        },
+        async () => {
+          await processApplyJob(db, jobId, userId, linkedinSessionJson, log);
+        }
+      );
       await updateApplyRun(db, run.id, {
         status: "completed",
         completedAt: new Date(),
@@ -43,6 +55,8 @@ export const applyWorker = new Worker<ApplyJobData>(
         logs,
       });
       throw err;
+    } finally {
+      await langfuseSpanProcessor.forceFlush();
     }
   },
   { connection: { url: env.REDIS_URL }, concurrency: 1, lockDuration: 10 * 60 * 1000 }
