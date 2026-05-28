@@ -1,4 +1,4 @@
-import { getJobCriteriaForUser, getLinkedInAccount, getProfileForUser, insertSearchRun, insertApplyRun } from "@repo/db";
+import { getJobCriteriaForUser, getLinkedInAccount, getProfileForUser, insertSearchRun, insertApplyRun, updateJobApplying } from "@repo/db";
 import { getMissingSearchFields } from "@repo/shared";
 import { TRPCError } from "@trpc/server";
 import { z } from "zod";
@@ -47,6 +47,7 @@ export const jobsRouter = router({
         pending.map(async (j) => {
           const run = await insertApplyRun(ctx.db, { jobId: j.id, userId, status: "pending", startedAt: new Date() });
           if (!run) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Failed to create apply run" });
+          await updateJobApplying(ctx.db, j.id);
           await applyQueue.add("apply", { jobId: j.id, userId, runId: run.id });
         })
       );

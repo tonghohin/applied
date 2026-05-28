@@ -5,7 +5,6 @@ import {
   getJobForUser,
   getProfileForUser,
   updateJobApplied,
-  updateJobApplying,
   updateJobFailed,
 } from "@repo/db";
 import { applyToJob } from "./apply-agent";
@@ -29,7 +28,6 @@ export async function processApplyJob(
 
   log("Generating resume PDF");
   const resumePdfPath = await generateResumePdf(profileRow.resume);
-  await updateJobApplying(db, jobId);
   try {
     log("Launching AI agent");
     const result = await applyToJob(jobRow, profileRow, resumePdfPath, linkedinSessionJson, log);
