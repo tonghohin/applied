@@ -138,6 +138,9 @@ export function JobCard({ title, company }: JobCardProps) {}
 - Submission success and server errors go to Sonner: `toast.success(...)` in `onSuccess`, `toast.error(...)` in the `catch` block
 - Never use `setError("root", ...)` or render `errors.root` in the JSX
 
+**Naming**
+- Never use single-character variable names (e.g. `s`, `f`, `l`, `t`, `d`). Use descriptive names even in short callbacks — `step`, `feature`, `entry`, etc.
+
 **Type safety**
 - No `any`, no type casts (`as Foo`, `as unknown as Foo`)
 - Prefer enum values (Drizzle `pgEnum`, `z.enum`, or `as const` objects) over plain `string` for fields with a fixed set of values — e.g. `fitTier`, `jobStatus`, `platform`
