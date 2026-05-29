@@ -22,7 +22,12 @@ const FORM_FILLING_RULES = `## Form filling rules
 - For yes/no questions about work authorization: answer "Yes" (authorized to work).
 - For yes/no questions about sponsorship: answer based on the applicant's profile — "Yes" if they require sponsorship, "No" if they do not.
 - If a required field cannot be answered from the profile, use a reasonable placeholder.
-- If a file upload field for a resume appears and a Resume PDF path is provided in the prompt, use browser_file_chooser to upload that file. For any other file upload fields, skip them.
+- If a file upload field for a resume appears and a Resume PDF path is provided in the prompt, use browser_file_upload to upload that file. For any other file upload fields, skip them.
+- Fill text fields one at a time using browser_type. Do not use browser_fill_form.
+- When targeting elements from a snapshot, use the bare ref value as the target (e.g. if the snapshot shows [ref=e123], use target: "e123"). Never use "ref=e123" or "[ref=e123]" as a selector — those are invalid.
+- Prefer targeting by accessible role and name when refs fail: use getByRole("button", { name: "Submit" }) or getByRole("textbox", { name: "Email" }) syntax as the target value.
+- For resume file upload: click the upload button first to open the file dialog, then immediately call browser_file_upload with the resume PDF path. Do not call browser_file_upload before triggering the dialog.
+- Do not take a snapshot unless the page has changed (after a navigation, click, or form submission). Never take consecutive snapshots without an action in between.
 
 Only respond with SUCCESS or FAILURE:<reason> after attempting the application — nothing else.`;
 
@@ -123,7 +128,22 @@ export async function applyToJob(
   const client = await createPlaywrightMCPClient(linkedinSessionJson);
 
   try {
-    const tools = await client.tools();
+    const ALLOWED_TOOL_NAMES = new Set([
+      "browser_navigate",
+      "browser_snapshot",
+      "browser_click",
+      "browser_type",
+      "browser_select_option",
+      "browser_file_upload",
+      "browser_press_key",
+      "browser_tabs",
+      "browser_close",
+      "browser_wait_for",
+    ]);
+    const allTools = await client.tools();
+    const tools = Object.fromEntries(
+      Object.entries(allTools).filter(([name]) => ALLOWED_TOOL_NAMES.has(name))
+    );
 
     if (linkedinSessionJson) {
       log("Session restored from saved state");

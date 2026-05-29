@@ -40,7 +40,10 @@ export async function createPlaywrightMCPClient(storageStateJson?: string): Prom
     // playwright-extra types reference playwright-core directly; pnpm resolves that to
     // 1.60.0 while @playwright/mcp uses 1.61-alpha. The types are identical at runtime.
     // biome-ignore lint/suspicious/noExplicitAny: playwright-core version mismatch between playwright-extra and @playwright/mcp
-    const mcpServer = await (createConnection as any)({}, () => Promise.resolve(context));
+    const mcpServer = await (createConnection as any)(
+      { imageResponses: "omit", allowUnrestrictedFileAccess: true },
+      () => Promise.resolve(context)
+    );
 
     const [serverTransport, clientTransport] = InMemoryTransport.createLinkedPair();
     await mcpServer.connect(serverTransport);
