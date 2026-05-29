@@ -48,11 +48,6 @@ export function CoverLetterForm({ initial }: { initial?: InitialProfile }) {
     <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-4">
       <Field data-invalid={!!errors.coverLetterInstructions}>
         <FieldLabel htmlFor="coverLetterInstructions">Cover letter instructions</FieldLabel>
-        <FieldDescription>
-          Optionally describe your preferred tone, length, or things to emphasize. The AI will write
-          a personalized cover letter for each company and role using your resume — no instructions
-          needed to get started.
-        </FieldDescription>
         <Textarea
           id="coverLetterInstructions"
           rows={6}
@@ -60,6 +55,11 @@ export function CoverLetterForm({ initial }: { initial?: InitialProfile }) {
           {...register("coverLetterInstructions")}
           aria-invalid={!!errors.coverLetterInstructions}
         />
+        <FieldDescription>
+          Optionally describe your preferred tone, length, or things to emphasize. The AI will write
+          a personalized cover letter for each company and role using your resume — no instructions
+          needed to get started.
+        </FieldDescription>
         <FieldError errors={[errors.coverLetterInstructions]} />
       </Field>
       <Button type="submit" disabled={loading}>

@@ -4,7 +4,6 @@ import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Field, FieldError, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { trpc } from "@/lib/trpc";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { WORK_TYPES, splitCsv } from "@repo/shared";
@@ -129,9 +128,9 @@ export function CriteriaForm({
 
       <div className="flex flex-col gap-2">
         <div className="flex items-center justify-between">
-          <Label>
+          <FieldLabel>
             Locations <span className="text-destructive">*</span>
-          </Label>
+          </FieldLabel>
           <Button type="button" variant="outline" size="sm" onClick={addLocation}>
             Add location
           </Button>
@@ -162,20 +161,20 @@ export function CriteriaForm({
                 Remove
               </Button>
             </div>
-            <div className="flex gap-4">
+            <div className="flex gap-2">
               {WORK_TYPE_OPTIONS.map(({ value, label }) => {
                 const id = `wt-${index}-${value}`;
                 return (
-                  <div key={value} className="flex cursor-pointer items-center gap-1.5">
+                  <Field key={value} orientation="horizontal">
                     <Checkbox
                       id={id}
                       checked={locations[index]?.workTypes?.includes(value) ?? false}
                       onCheckedChange={() => toggleWorkType(index, value)}
                     />
-                    <Label htmlFor={id} className="cursor-pointer font-normal text-sm">
+                    <FieldLabel htmlFor={id} className="cursor-pointer font-normal">
                       {label}
-                    </Label>
-                  </div>
+                    </FieldLabel>
+                  </Field>
                 );
               })}
             </div>
@@ -183,9 +182,7 @@ export function CriteriaForm({
           </div>
         ))}
 
-        {typeof errors.locations?.message === "string" && (
-          <FieldError errors={[errors.locations]} />
-        )}
+        <FieldError errors={[errors.locations as { message?: string } | undefined]} />
       </div>
 
       <Field>

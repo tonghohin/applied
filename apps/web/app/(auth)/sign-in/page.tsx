@@ -70,15 +70,7 @@ export default function SignInPage() {
               <FieldError errors={[errors.email]} />
             </Field>
             <Field data-invalid={!!errors.password}>
-              <div className="flex items-center justify-between">
-                <FieldLabel htmlFor="password">Password</FieldLabel>
-                <Link
-                  href="/forgot-password"
-                  className="text-sm underline-offset-4 hover:underline"
-                >
-                  Forgot your password?
-                </Link>
-              </div>
+              <FieldLabel htmlFor="password">Password</FieldLabel>
               <PasswordInput
                 id="password"
                 {...register("password")}
@@ -86,6 +78,12 @@ export default function SignInPage() {
               />
               <FieldError errors={[errors.password]} />
             </Field>
+            <Link
+              href="/forgot-password"
+              className="-mt-2 self-end text-sm underline-offset-4 hover:underline"
+            >
+              Forgot your password?
+            </Link>
             <Button type="submit" disabled={isSubmitting} className="w-full">
               {isSubmitting ? "Signing in…" : "Sign in"}
               {lastMethod === "email" && (

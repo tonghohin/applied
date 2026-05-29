@@ -70,10 +70,8 @@ export function LinkedInForm({ savedEmail }: { savedEmail: string | null }) {
           {...register("linkedinPassword")}
           aria-invalid={!!errors.linkedinPassword}
         />
+        <FieldDescription>For security, saved passwords are never shown.</FieldDescription>
         <FieldError errors={[errors.linkedinPassword]} />
-        {!errors.linkedinPassword && (
-          <FieldDescription>For security, saved passwords are never shown.</FieldDescription>
-        )}
       </Field>
       <Button type="submit" disabled={loading}>
         {loading ? "Saving…" : hasCredentials ? "Update credentials" : "Save credentials"}
