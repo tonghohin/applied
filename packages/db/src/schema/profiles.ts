@@ -1,4 +1,4 @@
-import { pgTable, text, timestamp, uuid } from "drizzle-orm/pg-core";
+import { boolean, pgTable, text, timestamp, uuid } from "drizzle-orm/pg-core";
 import { users } from "./auth";
 
 export const profiles = pgTable("profiles", {
@@ -16,6 +16,7 @@ export const profiles = pgTable("profiles", {
   websiteUrl: text("website_url"),
   resume: text("resume").notNull(),
   coverLetterInstructions: text("cover_letter_instructions"),
+  requiresSponsorship: boolean("requires_sponsorship").notNull().default(false),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });

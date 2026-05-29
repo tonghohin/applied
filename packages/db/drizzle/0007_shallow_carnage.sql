@@ -1,0 +1,1 @@
+ALTER TABLE "profiles" ADD COLUMN "requires_sponsorship" boolean DEFAULT false NOT NULL;

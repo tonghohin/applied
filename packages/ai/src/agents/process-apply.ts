@@ -3,7 +3,7 @@ import { dirname } from "node:path";
 import {
   type Db,
   getJobForUser,
-  getProfileForUser,
+  getProfileWithEmailForUser,
   updateJobApplied,
   updateJobFailed,
 } from "@repo/db";
@@ -20,7 +20,7 @@ export async function processApplyJob(
   log("Fetching job and profile");
   const [jobRow, profileRow] = await Promise.all([
     getJobForUser(db, jobId, userId),
-    getProfileForUser(db, userId),
+    getProfileWithEmailForUser(db, userId),
   ]);
 
   if (!jobRow) throw new Error(`Job ${jobId} not found`);

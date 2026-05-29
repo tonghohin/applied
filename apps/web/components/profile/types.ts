@@ -8,4 +8,5 @@ export type InitialProfile = {
   websiteUrl?: string | null;
   resume?: string;
   coverLetterInstructions?: string | null;
+  requiresSponsorship?: boolean;
 } | null;

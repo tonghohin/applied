@@ -1,11 +1,18 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
-import { Field, FieldError, FieldLabel } from "@/components/ui/field";
+import { Checkbox } from "@/components/ui/checkbox";
+import {
+  Field,
+  FieldContent,
+  FieldDescription,
+  FieldError,
+  FieldLabel,
+} from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { trpc } from "@/lib/trpc";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useForm } from "react-hook-form";
+import { Controller, useForm } from "react-hook-form";
 import { toast } from "sonner";
 import { z } from "zod";
 import type { InitialProfile } from "./types";
@@ -18,6 +25,7 @@ const schema = z.object({
   linkedinUrl: z.string().optional(),
   githubUrl: z.string().optional(),
   websiteUrl: z.string().optional(),
+  requiresSponsorship: z.boolean(),
 });
 
 type FormValues = z.infer<typeof schema>;
@@ -34,6 +42,7 @@ export function PersonalForm({ initial }: { initial?: InitialProfile }) {
   const {
     register,
     handleSubmit,
+    control,
     formState: { errors, isSubmitting },
   } = useForm<FormValues>({
     resolver: zodResolver(schema),
@@ -45,6 +54,7 @@ export function PersonalForm({ initial }: { initial?: InitialProfile }) {
       linkedinUrl: initial?.linkedinUrl ?? "",
       githubUrl: initial?.githubUrl ?? "",
       websiteUrl: initial?.websiteUrl ?? "",
+      requiresSponsorship: initial?.requiresSponsorship ?? false,
     },
   });
 
@@ -116,6 +126,25 @@ export function PersonalForm({ initial }: { initial?: InitialProfile }) {
           placeholder="https://yoursite.com"
           {...register("websiteUrl")}
         />
+      </Field>
+      <Field orientation="horizontal">
+        <Controller
+          name="requiresSponsorship"
+          control={control}
+          render={({ field }) => (
+            <Checkbox
+              id="requiresSponsorship"
+              checked={field.value}
+              onCheckedChange={field.onChange}
+            />
+          )}
+        />
+        <FieldContent>
+          <FieldLabel htmlFor="requiresSponsorship">I require visa sponsorship</FieldLabel>
+          <FieldDescription>
+            The agent will answer sponsorship questions accurately on your behalf.
+          </FieldDescription>
+        </FieldContent>
       </Field>
       <Button type="submit" disabled={loading}>
         {loading ? "Saving…" : "Save"}

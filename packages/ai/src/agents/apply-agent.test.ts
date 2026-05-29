@@ -25,9 +25,9 @@ vi.mock("ai", () => ({
   stepCountIs: vi.fn().mockReturnValue({}),
 }));
 
-import type { Job, Profile } from "@repo/db";
+import type { Job } from "@repo/db";
 import { generateText } from "ai";
-import { applyToJob } from "./apply-agent";
+import { type ProfileWithEmail, applyToJob } from "./apply-agent";
 
 const mockJob = {
   id: "job-1",
@@ -53,6 +53,7 @@ const mockProfile = {
   userId: "user-1",
   firstName: "Jane",
   lastName: "Doe",
+  email: "jane@example.com",
   phone: "555-1234",
   address: "123 Main St",
   linkedinUrl: null,
@@ -60,9 +61,10 @@ const mockProfile = {
   websiteUrl: null,
   resume: "Jane Doe\n5 years experience",
   coverLetterInstructions: null,
+  requiresSponsorship: false,
   createdAt: new Date(),
   updatedAt: new Date(),
-} satisfies Profile;
+} satisfies ProfileWithEmail;
 
 describe("applyToJob", () => {
   it("returns success when agent responds SUCCESS", async () => {

@@ -15,6 +15,7 @@ export const upsertPersonalSchema = z.object({
   linkedinUrl: z.url().optional().or(z.literal("")),
   githubUrl: z.url().optional().or(z.literal("")),
   websiteUrl: z.url().optional().or(z.literal("")),
+  requiresSponsorship: z.boolean(),
 });
 
 export const upsertResumeSchema = z.object({
