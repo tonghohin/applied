@@ -63,7 +63,7 @@ export const columns: ColumnDef<Run>[] = [
     header: ({ column }) => <DataTableColumnHeader column={column} title="Error" />,
     cell: ({ getValue }) => {
       const message = getValue<string | null>();
-      if (!message) return null;
+      if (!message) return "—";
       return (
         <span className="max-w-xs truncate text-destructive text-xs" title={message}>
           {message}
