@@ -1,8 +1,7 @@
 import { Badge, type BadgeVariant } from "@/components/ui/badge";
 import { Spinner } from "@/components/ui/spinner";
-import type { RouterOutputs } from "@repo/api";
-
-type RunStatus = RouterOutputs["runs"]["list"][number]["status"];
+import type { RunStatus } from "@/lib/trpc";
+import { toTitleCase } from "@repo/shared";
 
 const RUN_STATUS_VARIANT: Record<RunStatus, BadgeVariant> = {
   completed: "default",
@@ -15,7 +14,7 @@ export function RunStatusBadge({ status }: { status: RunStatus }) {
   return (
     <Badge variant={RUN_STATUS_VARIANT[status]}>
       {status === "running" && <Spinner data-icon="inline-start" />}
-      {status}
+      {toTitleCase(status)}
     </Badge>
   );
 }

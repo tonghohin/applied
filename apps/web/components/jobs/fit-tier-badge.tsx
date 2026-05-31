@@ -1,5 +1,6 @@
 import { Badge, type BadgeVariant } from "@/components/ui/badge";
 import type { FitTier } from "@/lib/trpc";
+import { toTitleCase } from "@repo/shared";
 
 const FIT_TIER_VARIANT: Record<FitTier, BadgeVariant> = {
   strong: "default",
@@ -8,5 +9,5 @@ const FIT_TIER_VARIANT: Record<FitTier, BadgeVariant> = {
 };
 
 export function FitTierBadge({ tier }: { tier: FitTier }) {
-  return <Badge variant={FIT_TIER_VARIANT[tier]}>{tier}</Badge>;
+  return <Badge variant={FIT_TIER_VARIANT[tier]}>{toTitleCase(tier)}</Badge>;
 }
