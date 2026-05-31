@@ -23,7 +23,7 @@ export const jobs = pgTable(
     runId: uuid("run_id")
       .notNull()
       .references(() => searchRuns.id, { onDelete: "cascade" }),
-    listedAt: timestamp("listed_at"),
+    listedAt: timestamp("listed_at").notNull(),
     appliedAt: timestamp("applied_at"),
     failureReason: text("failure_reason"),
     createdAt: timestamp("created_at").notNull().defaultNow(),

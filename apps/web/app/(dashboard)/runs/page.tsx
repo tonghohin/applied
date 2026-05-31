@@ -9,9 +9,5 @@ export default async function RunsPage() {
   if (!session) redirect("/sign-in");
   const runs = await listSearchRuns(db, session.user.id);
 
-  return (
-    <div className="mx-auto max-w-4xl p-8">
-      <RunsClient initialRuns={runs} />
-    </div>
-  );
+  return <RunsClient initialRuns={runs} />;
 }

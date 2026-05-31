@@ -11,7 +11,9 @@ export default function DashboardLayout({
     <SidebarProvider>
       <AppSidebar />
       <SidebarInset>
-        <div className="flex-1">{children}</div>
+        <div className="flex-1 p-4 pt-2">
+          <div className="mx-auto max-w-7xl">{children}</div>
+        </div>
         <Footer />
       </SidebarInset>
     </SidebarProvider>

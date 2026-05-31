@@ -2,7 +2,7 @@
 
 import { EmptyState } from "@/components/jobs/empty-state";
 import { JobListSkeleton } from "@/components/jobs/job-list-skeleton";
-import { JobTabs } from "@/components/jobs/job-tabs";
+import { JobsDataTable } from "@/components/jobs/jobs-data-table";
 import { Button } from "@/components/ui/button";
 import { trpc } from "@/lib/trpc";
 import type { RouterOutputs } from "@repo/api";
@@ -74,7 +74,7 @@ export function JobsClient({
           description="Click Search Jobs to find matching positions."
         />
       ) : (
-        <JobTabs jobs={jobs} />
+        <JobsDataTable jobs={jobs} />
       )}
     </>
   );

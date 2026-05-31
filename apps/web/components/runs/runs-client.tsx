@@ -1,6 +1,5 @@
 "use client";
 
-import { Badge, type BadgeVariant } from "@/components/ui/badge";
 import {
   Table,
   TableBody,
@@ -12,16 +11,9 @@ import {
 import { trpc } from "@/lib/trpc";
 import type { RouterOutputs } from "@repo/api";
 import { format, formatDuration, intervalToDuration } from "date-fns";
+import { RunStatusBadge } from "./run-status-badge";
 
 type Runs = RouterOutputs["runs"]["list"];
-type RunStatus = Runs[number]["status"];
-
-const STATUS_VARIANT: Record<RunStatus, BadgeVariant> = {
-  completed: "default",
-  failed: "destructive",
-  running: "warning",
-  pending: "secondary",
-};
 
 export function RunsClient({ initialRuns }: { initialRuns: Runs }) {
   const { data: runs = [] } = trpc.runs.list.useQuery(undefined, { initialData: initialRuns });
@@ -51,7 +43,7 @@ export function RunsClient({ initialRuns }: { initialRuns: Runs }) {
               <TableRow key={run.id}>
                 <TableCell className="capitalize">{run.platform}</TableCell>
                 <TableCell>
-                  <Badge variant={STATUS_VARIANT[run.status]}>{run.status}</Badge>
+                  <RunStatusBadge status={run.status} />
                 </TableCell>
                 <TableCell>{format(run.startedAt, "MMM d, yyyy h:mm a")}</TableCell>
                 <TableCell>

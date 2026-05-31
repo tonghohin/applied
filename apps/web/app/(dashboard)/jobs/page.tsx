@@ -12,9 +12,5 @@ export default async function JobsPage() {
     getProfile(db, session.user.id),
   ]);
 
-  return (
-    <div className="mx-auto max-w-4xl p-8">
-      <JobsClient initialJobs={jobs} initialProfileData={profileData} />
-    </div>
-  );
+  return <JobsClient initialJobs={jobs} initialProfileData={profileData} />;
 }

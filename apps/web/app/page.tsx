@@ -89,11 +89,22 @@ export default function Home() {
               submits the Easy Apply applications for you — cover letter and all.
             </p>
             <div className="mt-8 flex flex-wrap justify-center gap-3">
-              <Button size="lg" className="h-11 px-5" nativeButton={false} render={<Link href="/sign-in" />}>
+              <Button
+                size="lg"
+                className="h-11 px-5"
+                nativeButton={false}
+                render={<Link href="/sign-in" />}
+              >
                 Get started
                 <RiArrowRightLine size={16} />
               </Button>
-              <Button variant="outline" size="lg" className="h-11 px-5" nativeButton={false} render={<Link href="#how" />}>
+              <Button
+                variant="outline"
+                size="lg"
+                className="h-11 px-5"
+                nativeButton={false}
+                render={<Link href="#how" />}
+              >
                 See how it works
               </Button>
             </div>

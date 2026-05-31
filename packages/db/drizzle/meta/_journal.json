@@ -57,6 +57,13 @@
       "when": 1780064496082,
       "tag": "0007_shallow_carnage",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1780180658997,
+      "tag": "0008_free_jazinda",
+      "breakpoints": true
     }
   ]
 }

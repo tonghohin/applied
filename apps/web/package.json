@@ -18,6 +18,7 @@
     "@repo/db": "workspace:^",
     "@repo/shared": "workspace:^",
     "@tanstack/react-query": "^5.100.11",
+    "@tanstack/react-table": "^8.21.3",
     "@trpc/client": "^11.17.0",
     "@trpc/react-query": "^11.17.0",
     "@trpc/server": "^11.17.0",
