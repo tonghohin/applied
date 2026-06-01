@@ -1,18 +1,12 @@
 "use client";
 
-import { Button } from "@/components/ui/button";
-import { RiComputerLine, RiMoonLine, RiSunLine } from "@remixicon/react";
+import { SidebarMenuButton, SidebarMenuItem } from "@/components/ui/sidebar";
+import { RiMoonLine, RiSunLine } from "@remixicon/react";
 import { useTheme } from "next-themes";
 import { useEffect, useState } from "react";
 
-const OPTIONS = [
-  { value: "system", label: "System", icon: RiComputerLine },
-  { value: "light", label: "Light", icon: RiSunLine },
-  { value: "dark", label: "Dark", icon: RiMoonLine },
-] as const;
-
 export function ThemeToggle() {
-  const { theme, setTheme } = useTheme();
+  const { resolvedTheme, setTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
@@ -20,25 +14,27 @@ export function ThemeToggle() {
   }, []);
 
   if (!mounted) {
-    return <div className="h-7 w-21" />;
+    return (
+      <SidebarMenuItem>
+        <SidebarMenuButton disabled>
+          <RiSunLine />
+          Toggle theme
+        </SidebarMenuButton>
+      </SidebarMenuItem>
+    );
   }
 
-  const current = theme ?? "system";
+  const isDark = resolvedTheme === "dark";
 
   return (
-    <div className="flex gap-1">
-      {OPTIONS.map(({ value, label, icon: Icon }) => (
-        <Button
-          key={value}
-          variant={current === value ? "outline" : "ghost"}
-          size="icon-sm"
-          onClick={() => setTheme(value)}
-          aria-label={label}
-          aria-pressed={current === value}
-        >
-          <Icon />
-        </Button>
-      ))}
-    </div>
+    <SidebarMenuItem>
+      <SidebarMenuButton
+        onClick={() => setTheme(isDark ? "light" : "dark")}
+        tooltip={isDark ? "Switch to light" : "Switch to dark"}
+      >
+        {isDark ? <RiSunLine /> : <RiMoonLine />}
+        {isDark ? "Light mode" : "Dark mode"}
+      </SidebarMenuButton>
+    </SidebarMenuItem>
   );
 }

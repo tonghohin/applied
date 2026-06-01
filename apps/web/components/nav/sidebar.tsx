@@ -1,6 +1,7 @@
 "use client";
 
 import { AppliedIcon } from "@/components/applied-logo";
+import { ThemeToggle } from "@/components/theme/theme-toggle";
 import {
   Sidebar,
   SidebarContent,
@@ -42,7 +43,7 @@ export function AppSidebar() {
       <SidebarHeader className="h-12 justify-center pl-3">
         <div className="flex items-center gap-2">
           <AppliedIcon className="h-6" />
-          <span className="truncate font-semibold text-primary">Applied</span>
+          <span className="truncate font-semibold text-primary dark:text-foreground">Applied</span>
         </div>
       </SidebarHeader>
       <SidebarContent className="p-2 pt-0">
@@ -63,6 +64,7 @@ export function AppSidebar() {
       </SidebarContent>
       <SidebarFooter>
         <SidebarMenu>
+          <ThemeToggle />
           <SidebarMenuItem>
             <SidebarMenuButton onClick={handleSignOut} tooltip="Sign out">
               <RiLogoutBoxLine />
