@@ -2,11 +2,7 @@
 
 import { Button } from "@/components/ui/button";
 import { Card, CardAction, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import {
-  type ChartConfig,
-  ChartContainer,
-
-} from "@/components/ui/chart";
+import { type ChartConfig, ChartContainer } from "@/components/ui/chart";
 import { RiArrowRightLine } from "@remixicon/react";
 import type { DashboardJob } from "@repo/api";
 import type { jobStatusEnum } from "@repo/db";
@@ -48,11 +44,11 @@ export function ApplicationStatus({ jobs }: { jobs: DashboardJob[] }) {
           <BarChart data={chartData} layout="vertical" barCategoryGap="25%">
             <YAxis dataKey="status" type="category" tickLine={false} axisLine={false} width={56} />
             <XAxis type="number" hide />
-            <Bar dataKey="count" radius={4} minPointSize={2}>
+            <Bar dataKey="count" radius={2} minPointSize={2}>
               <LabelList
                 dataKey="count"
                 position="right"
-                style={{ fontSize: 12, fontFamily: "var(--font-mono)" }}
+                className="fill-foreground font-medium font-mono tabular-nums"
               />
             </Bar>
           </BarChart>

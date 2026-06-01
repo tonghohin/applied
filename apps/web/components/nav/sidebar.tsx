@@ -1,6 +1,6 @@
 "use client";
 
-import { AppliedLockup } from "@/components/applied-logo";
+import { AppliedIcon } from "@/components/applied-logo";
 import {
   Sidebar,
   SidebarContent,
@@ -38,9 +38,12 @@ export function AppSidebar() {
   }
 
   return (
-    <Sidebar>
-      <SidebarHeader>
-        <AppliedLockup />
+    <Sidebar collapsible="icon">
+      <SidebarHeader className="h-12 justify-center pl-3">
+        <div className="flex items-center gap-2">
+          <AppliedIcon className="h-6" />
+          <span className="truncate font-semibold text-primary">Applied</span>
+        </div>
       </SidebarHeader>
       <SidebarContent className="p-2 pt-0">
         <SidebarMenu>
@@ -49,6 +52,7 @@ export function AppSidebar() {
               <SidebarMenuButton
                 render={<Link href={href} />}
                 isActive={exact ? pathname === href : pathname.startsWith(href)}
+                tooltip={label}
               >
                 <Icon />
                 {label}
@@ -60,7 +64,7 @@ export function AppSidebar() {
       <SidebarFooter>
         <SidebarMenu>
           <SidebarMenuItem>
-            <SidebarMenuButton onClick={handleSignOut}>
+            <SidebarMenuButton onClick={handleSignOut} tooltip="Sign out">
               <RiLogoutBoxLine />
               Sign out
             </SidebarMenuButton>

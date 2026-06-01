@@ -58,14 +58,9 @@ export function WeeklyActivityChart({ jobs }: { jobs: DashboardJob[] }) {
         <ChartContainer config={chartConfig} className="h-30 w-full">
           <BarChart data={chartData} barCategoryGap="20%">
             <XAxis dataKey="day" tickLine={false} axisLine={false} />
-            <Bar dataKey="applied" stackId="a" fill={chartConfig.applied.color} />
-            <Bar dataKey="failed" stackId="a" fill={chartConfig.failed.color} />
-            <Bar
-              dataKey="remaining"
-              stackId="a"
-              fill={chartConfig.remaining.color}
-              radius={[4, 4, 0, 0]}
-            />
+            <Bar dataKey="applied" stackId="a" fill={chartConfig.applied.color} radius={2} />
+            <Bar dataKey="failed" stackId="a" fill={chartConfig.failed.color} radius={2} />
+            <Bar dataKey="remaining" stackId="a" fill={chartConfig.remaining.color} radius={2} />
             <ChartTooltip content={<ChartTooltipContent />} />
             <ChartLegend content={<ChartLegendContent />} />
           </BarChart>

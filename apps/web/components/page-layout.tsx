@@ -1,4 +1,3 @@
-import { Separator } from "@/components/ui/separator";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 
 export function PageLayout({
@@ -19,7 +18,6 @@ export function PageLayout({
         </div>
         {action}
       </div>
-      <Separator />
       <div className="mx-auto w-full max-w-7xl px-6 py-4">{children}</div>
     </>
   );
