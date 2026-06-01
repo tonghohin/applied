@@ -4,76 +4,25 @@ import { EmptyState } from "@/components/jobs/empty-state";
 import { JobListSkeleton } from "@/components/jobs/job-list-skeleton";
 import { JobsDataTable } from "@/components/jobs/jobs-data-table";
 import { PageLayout } from "@/components/page-layout";
-import { Button } from "@/components/ui/button";
+import { SearchJobsButton } from "@/components/search-jobs-button";
 import { trpc } from "@/lib/trpc";
 import type { RouterOutputs } from "@repo/api";
-import { getMissingSearchFields } from "@repo/shared";
-import { toast } from "sonner";
 
 type InitialJobs = RouterOutputs["jobs"]["list"];
-type InitialProfileData = RouterOutputs["profile"]["getProfile"];
 
-export function JobsClient({
-  initialJobs,
-  initialProfileData,
-}: {
-  initialJobs: InitialJobs;
-  initialProfileData: InitialProfileData;
-}) {
+export function JobsClient({ initialJobs }: { initialJobs: InitialJobs }) {
   const { data: jobs = [], isLoading } = trpc.jobs.list.useQuery(undefined, {
     initialData: initialJobs,
   });
-  const { data: profileData } = trpc.profile.getProfile.useQuery(undefined, {
-    initialData: initialProfileData,
-  });
-  const missingFields = getMissingSearchFields(
-    profileData?.profile,
-    profileData?.criteria,
-    profileData?.linkedinAccount
-  );
-
-  const searchMutation = trpc.jobs.search.useMutation({
-    onSuccess: () => {
-      toast.success("Search started", { description: "Jobs will appear shortly." });
-    },
-    onError: (err) => {
-      if (err.data?.code === "PRECONDITION_FAILED") {
-        toast.error("Complete your profile first", { description: err.message });
-      } else {
-        const description = missingFields.length > 0 ? missingFields.join(", ") : err.message;
-        toast.error("Complete your profile first", { description });
-      }
-    },
-  });
-
-  const isReady = missingFields.length === 0;
 
   return (
-    <PageLayout
-      title="Jobs"
-      action={
-        <Button
-          onClick={() => {
-            if (!isReady) {
-              toast.error("Complete your profile first", {
-                description: missingFields.join(", "),
-              });
-              return;
-            }
-            searchMutation.mutate();
-          }}
-          disabled={searchMutation.isPending}
-        >
-          {searchMutation.isPending ? "Searching…" : "Search Jobs"}
-        </Button>
-      }
-    >
+    <PageLayout title="Jobs" action={<SearchJobsButton />}>
       {isLoading ? (
         <JobListSkeleton />
       ) : jobs.length === 0 ? (
         <EmptyState
           title="No jobs yet"
-          description="Click Search Jobs to find matching positions."
+          description="Click Search jobs to find matching positions."
         />
       ) : (
         <JobsDataTable jobs={jobs} />

@@ -1,4 +1,5 @@
 import { Separator } from "@/components/ui/separator";
+import { SidebarTrigger } from "@/components/ui/sidebar";
 
 export function PageLayout({
   title,
@@ -12,7 +13,10 @@ export function PageLayout({
   return (
     <>
       <div className="flex h-12 items-center justify-between px-4">
-        <h1 className="font-semibold">{title}</h1>
+        <div className="flex items-center gap-2">
+          <SidebarTrigger />
+          <h1 className="font-semibold">{title}</h1>
+        </div>
         {action}
       </div>
       <Separator />
