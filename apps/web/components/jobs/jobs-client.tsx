@@ -3,6 +3,7 @@
 import { EmptyState } from "@/components/jobs/empty-state";
 import { JobListSkeleton } from "@/components/jobs/job-list-skeleton";
 import { JobsDataTable } from "@/components/jobs/jobs-data-table";
+import { PageLayout } from "@/components/page-layout";
 import { Button } from "@/components/ui/button";
 import { trpc } from "@/lib/trpc";
 import type { RouterOutputs } from "@repo/api";
@@ -48,9 +49,9 @@ export function JobsClient({
   const isReady = missingFields.length === 0;
 
   return (
-    <>
-      <div className="mb-6 flex items-center justify-between">
-        <h1 className="font-semibold text-2xl">Jobs</h1>
+    <PageLayout
+      title="Jobs"
+      action={
         <Button
           onClick={() => {
             if (!isReady) {
@@ -65,7 +66,8 @@ export function JobsClient({
         >
           {searchMutation.isPending ? "Searching…" : "Search Jobs"}
         </Button>
-      </div>
+      }
+    >
       {isLoading ? (
         <JobListSkeleton />
       ) : jobs.length === 0 ? (
@@ -76,6 +78,6 @@ export function JobsClient({
       ) : (
         <JobsDataTable jobs={jobs} />
       )}
-    </>
+    </PageLayout>
   );
 }

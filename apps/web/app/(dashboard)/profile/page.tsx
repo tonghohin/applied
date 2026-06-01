@@ -1,3 +1,4 @@
+import { PageLayout } from "@/components/page-layout";
 import { ProfileContent } from "@/components/profile/profile-content";
 import { getSession } from "@/lib/session";
 import { getProfile } from "@repo/api";
@@ -10,9 +11,8 @@ export default async function ProfilePage() {
   const data = await getProfile(db, session.user.id);
 
   return (
-    <>
-      <h1 className="mb-4 font-semibold text-xl">Profile</h1>
+    <PageLayout title="Profile">
       <ProfileContent initialData={data} />
-    </>
+    </PageLayout>
   );
 }
