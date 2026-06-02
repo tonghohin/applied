@@ -30,7 +30,7 @@ export function WeeklyActivityChart({ jobs }: { jobs: DashboardJob[] }) {
       (job) => job.status === "failed" && isSameDay(job.updatedAt, day)
     ).length;
     return {
-      day: format(day, "EEEE"),
+      day: format(day, "E"),
       applied,
       failed,
       remaining: Math.max(0, found - applied - failed),
