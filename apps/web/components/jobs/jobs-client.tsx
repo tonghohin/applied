@@ -1,12 +1,20 @@
 "use client";
 
-import { EmptyState } from "@/components/jobs/empty-state";
 import { JobListSkeleton } from "@/components/jobs/job-list-skeleton";
 import { JobsDataTable } from "@/components/jobs/jobs-data-table";
 import { PageLayout } from "@/components/page-layout";
 import { SearchJobsButton } from "@/components/search-jobs-button";
+import {
+  Empty,
+  EmptyContent,
+  EmptyDescription,
+  EmptyHeader,
+  EmptyMedia,
+  EmptyTitle,
+} from "@/components/ui/empty";
 import { trpc } from "@/lib/trpc";
 import type { RouterOutputs } from "@repo/api";
+import { RiBriefcaseLine } from "@remixicon/react";
 
 type InitialJobs = RouterOutputs["jobs"]["list"];
 
@@ -20,10 +28,18 @@ export function JobsClient({ initialJobs }: { initialJobs: InitialJobs }) {
       {isLoading ? (
         <JobListSkeleton />
       ) : jobs.length === 0 ? (
-        <EmptyState
-          title="No jobs yet"
-          description="Click Search jobs to find matching positions."
-        />
+        <Empty className="min-h-80 border">
+          <EmptyHeader>
+            <EmptyMedia variant="icon">
+              <RiBriefcaseLine />
+            </EmptyMedia>
+            <EmptyContent>
+              <EmptyTitle>No jobs yet</EmptyTitle>
+              <EmptyDescription>Search LinkedIn for positions matching your profile.</EmptyDescription>
+            </EmptyContent>
+            <SearchJobsButton />
+          </EmptyHeader>
+        </Empty>
       ) : (
         <JobsDataTable jobs={jobs} />
       )}
