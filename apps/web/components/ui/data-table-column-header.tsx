@@ -110,7 +110,7 @@ export function DataTableColumnHeader<TData, TValue>({
           )}
 
           {column.getCanFilter() && (
-            <DropdownMenuGroup>
+            <DropdownMenuGroup className="max-h-60 overflow-auto">
               <DropdownMenuLabel>Filter</DropdownMenuLabel>
               {sortedUniqueValues.map((key) => (
                 <DropdownMenuCheckboxItem

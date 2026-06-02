@@ -55,7 +55,7 @@ export const columns: ColumnDef<Job>[] = [
   {
     accessorKey: "company",
     header: ({ column }) => <DataTableColumnHeader column={column} title="Company" />,
-    enableColumnFilter: false,
+    filterFn: "arrIncludesSome",
   },
   {
     accessorKey: "location",
