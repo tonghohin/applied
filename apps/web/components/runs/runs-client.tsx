@@ -1,6 +1,7 @@
 "use client";
 
 import { PageLayout } from "@/components/page-layout";
+import { SearchJobsButton } from "@/components/search-jobs-button";
 import {
   Empty,
   EmptyContent,
@@ -9,10 +10,9 @@ import {
   EmptyMedia,
   EmptyTitle,
 } from "@/components/ui/empty";
-import { SearchJobsButton } from "@/components/search-jobs-button";
 import { trpc } from "@/lib/trpc";
+import { RiHistoryLine } from "@remixicon/react";
 import type { RouterOutputs } from "@repo/api";
-import { RiSearchLine } from "@remixicon/react";
 import { RunsDataTable } from "./runs-data-table";
 
 type Runs = RouterOutputs["runs"]["list"];
@@ -26,7 +26,7 @@ export function RunsClient({ initialRuns }: { initialRuns: Runs }) {
         <Empty className="min-h-80 border">
           <EmptyHeader>
             <EmptyMedia variant="icon">
-              <RiSearchLine />
+              <RiHistoryLine />
             </EmptyMedia>
             <EmptyContent>
               <EmptyTitle>No runs yet</EmptyTitle>
