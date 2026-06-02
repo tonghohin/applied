@@ -2,6 +2,8 @@ import { appRouter, createContext } from "@repo/api";
 import { fetchRequestHandler } from "@trpc/server/adapters/fetch";
 import type { NextRequest } from "next/server";
 
+export const runtime = "nodejs";
+
 function handler(req: NextRequest) {
   return fetchRequestHandler({
     endpoint: "/api/trpc",

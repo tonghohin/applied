@@ -6,6 +6,7 @@ import { decrypt } from "@repo/shared";
 import { Worker } from "bullmq";
 import { env } from "../env";
 import { langfuseSpanProcessor } from "../otel";
+import { publishEvent } from "../redis";
 
 type ApplyJobData = { jobId: string; userId: string; runId: string };
 
@@ -19,11 +20,17 @@ export const applyWorker = new Worker<ApplyJobData>(
       : undefined;
 
     const logs: ApplyRunLog[] = [];
-    const log = (message: string) => logs.push({ timestamp: new Date().toISOString(), message });
+    const log = (message: string) => {
+      const entry: ApplyRunLog = { timestamp: new Date().toISOString(), message };
+      logs.push(entry);
+      publishEvent(userId, { type: "apply-run:log", jobId, runId, log: entry });
+    };
 
-    await updateApplyRun(db, runId, { status: "running" });
+    const runningRun = await updateApplyRun(db, runId, { status: "running" });
+    if (runningRun) publishEvent(userId, { type: "apply-run:update", jobId, run: runningRun });
 
     try {
+      let applyResult: Awaited<ReturnType<typeof processApplyJob>> | undefined;
       await propagateAttributes(
         {
           traceName: "apply-job",
@@ -32,21 +39,53 @@ export const applyWorker = new Worker<ApplyJobData>(
           tags: ["apply"],
         },
         async () => {
-          await processApplyJob(db, jobId, userId, linkedinSessionJson, log);
+          applyResult = await processApplyJob(db, jobId, userId, linkedinSessionJson, log);
         }
       );
-      await updateApplyRun(db, runId, {
+      const completedAt = new Date();
+      const completedRun = await updateApplyRun(db, runId, {
         status: "completed",
-        completedAt: new Date(),
+        completedAt,
         logs,
       });
+      if (completedRun) publishEvent(userId, { type: "apply-run:update", jobId, run: completedRun });
+      if (applyResult?.success) {
+        publishEvent(userId, {
+          type: "job:status",
+          jobId,
+          status: "applied",
+          appliedAt: completedAt,
+          failureReason: null,
+          updatedAt: completedAt,
+        });
+      } else {
+        publishEvent(userId, {
+          type: "job:status",
+          jobId,
+          status: "failed",
+          appliedAt: null,
+          failureReason: applyResult?.success === false ? applyResult.reason : "Unknown error",
+          updatedAt: completedAt,
+        });
+      }
     } catch (err) {
       log(`Unexpected error: ${err instanceof Error ? err.message : String(err)}`);
-      await updateApplyRun(db, runId, {
+      const completedAt = new Date();
+      const failureReason = err instanceof Error ? err.message : String(err);
+      const failedRun = await updateApplyRun(db, runId, {
         status: "failed",
-        completedAt: new Date(),
-        errorMessage: err instanceof Error ? err.message : String(err),
+        completedAt,
+        errorMessage: failureReason,
         logs,
+      });
+      if (failedRun) publishEvent(userId, { type: "apply-run:update", jobId, run: failedRun });
+      publishEvent(userId, {
+        type: "job:status",
+        jobId,
+        status: "failed",
+        appliedAt: null,
+        failureReason,
+        updatedAt: completedAt,
       });
       throw err;
     } finally {

@@ -35,20 +35,15 @@ export function SearchCriteria({
       <CardHeader>
         <CardTitle>Search criteria</CardTitle>
         <CardAction>
-          <Button variant="ghost" size="sm" render={<Link href="/profile" />}>
+          <Button variant="ghost" size="sm" nativeButton={false} render={<Link href="/profile" />}>
             Edit <RiArrowRightLine />
           </Button>
         </CardAction>
       </CardHeader>
       <CardContent>
         <div className="flex flex-col gap-3">
-          <CriteriaRow
-            label="Roles"
-            values={[
-              ...(criteria?.jobTitle ? [criteria.jobTitle] : []),
-              ...(criteria?.skills ?? []),
-            ]}
-          />
+          <CriteriaRow label="Role" values={criteria?.jobTitle ? [criteria.jobTitle] : []} />
+          <CriteriaRow label="Skills" values={criteria?.skills ?? []} />
           <CriteriaRow
             label="Locations"
             values={criteria?.locations.map((loc) => loc.location) ?? []}
@@ -68,7 +63,10 @@ export function SearchCriteria({
                 : []
             }
           />
-          <CriteriaRow label="LinkedIn" values={[linkedInConnected ? "Yes" : "No"]} />
+          <CriteriaRow
+            label="LinkedIn"
+            values={[linkedInConnected ? "Connected" : "Not connected"]}
+          />
         </div>
       </CardContent>
     </Card>

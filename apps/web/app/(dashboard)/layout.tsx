@@ -1,3 +1,4 @@
+import { SseProvider } from "@/components/sse-provider";
 import { AppSidebar } from "@/components/nav/sidebar";
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
 
@@ -10,7 +11,9 @@ export default function DashboardLayout({
     <SidebarProvider>
       <AppSidebar />
       <SidebarInset>
-        <div className="flex flex-1 flex-col">{children}</div>
+        <SseProvider>
+          <div className="flex flex-1 flex-col">{children}</div>
+        </SseProvider>
       </SidebarInset>
     </SidebarProvider>
   );

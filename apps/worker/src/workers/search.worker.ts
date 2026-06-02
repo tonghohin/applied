@@ -9,6 +9,7 @@ import {
 import { decrypt, encrypt } from "@repo/shared";
 import { Worker } from "bullmq";
 import { env } from "../env";
+import { publishEvent } from "../redis";
 
 type SearchJobData = { userId: string; runId: string };
 
@@ -21,7 +22,8 @@ async function processSearch(userId: string, runId: string) {
     ? decrypt(account.sessionEncrypted, env.LINKEDIN_ENCRYPTION_KEY)
     : undefined;
 
-  await updateSearchRun(db, runId, { status: "running" });
+  const runningRun = await updateSearchRun(db, runId, { status: "running" });
+  if (runningRun) publishEvent(userId, { type: "search-run:update", run: runningRun });
 
   try {
     const { jobCount, newSessionJson } = await runSearch(
@@ -35,18 +37,20 @@ async function processSearch(userId: string, runId: string) {
     if (newSessionJson) {
       await saveLinkedInSession(db, userId, encrypt(newSessionJson, env.LINKEDIN_ENCRYPTION_KEY));
     }
-    await updateSearchRun(db, runId, {
+    const completedRun = await updateSearchRun(db, runId, {
       status: "completed",
       completedAt: new Date(),
       jobCount,
     });
+    if (completedRun) publishEvent(userId, { type: "search-run:update", run: completedRun });
   } catch (err) {
     const isCaptcha = err instanceof Error && err.message.toLowerCase().includes("captcha");
-    await updateSearchRun(db, runId, {
+    const failedRun = await updateSearchRun(db, runId, {
       status: "failed",
       completedAt: new Date(),
       errorMessage: err instanceof Error ? err.message : String(err),
     });
+    if (failedRun) publishEvent(userId, { type: "search-run:update", run: failedRun });
     if (isCaptcha) await clearLinkedInSession(db, userId);
     throw err;
   }

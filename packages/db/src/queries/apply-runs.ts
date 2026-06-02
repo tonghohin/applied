@@ -14,7 +14,12 @@ export async function insertApplyRun(db: Db, data: NewApplyRun) {
 }
 
 export async function updateApplyRun(db: Db, runId: string, updates: ApplyRunUpdate) {
-  await db.update(applyRuns).set(updates).where(eq(applyRuns.id, runId));
+  return db
+    .update(applyRuns)
+    .set(updates)
+    .where(eq(applyRuns.id, runId))
+    .returning()
+    .then((rows) => rows[0]);
 }
 
 export async function listLatestApplyRunsByJobIds(db: Db, jobIds: string[]) {

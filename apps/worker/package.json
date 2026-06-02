@@ -6,6 +6,7 @@
     "dev": "tsx watch --env-file .env src/index.ts",
     "build": "tsc --noEmit",
     "typecheck": "tsc --noEmit",
+    "test": "vitest run",
     "lint": "biome check .",
     "format": "biome format --write ."
   },
@@ -14,16 +15,20 @@
     "@langfuse/tracing": "^5.3.0",
     "@opentelemetry/sdk-node": "^0.218.0",
     "@repo/ai": "workspace:*",
+    "@repo/api": "workspace:*",
     "@repo/automation": "workspace:*",
     "@repo/db": "workspace:*",
     "@repo/shared": "workspace:*",
     "bullmq": "^5.77.2",
+    "ioredis": "^5.6.1",
+    "superjson": "^2.2.6",
     "drizzle-orm": "^0.45.2",
     "zod": "^4.4.3"
   },
   "devDependencies": {
     "@types/node": "^20",
     "tsx": "^4.19.3",
-    "typescript": "^5.8.3"
+    "typescript": "^5.8.3",
+    "vitest": "^4.1.7"
   }
 }

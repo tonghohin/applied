@@ -14,7 +14,12 @@ export async function insertSearchRun(db: Db, data: NewSearchRun) {
 }
 
 export async function updateSearchRun(db: Db, runId: string, updates: SearchRunUpdate) {
-  await db.update(searchRuns).set(updates).where(eq(searchRuns.id, runId));
+  return db
+    .update(searchRuns)
+    .set(updates)
+    .where(eq(searchRuns.id, runId))
+    .returning()
+    .then((rows) => rows[0]);
 }
 
 export async function listSearchRuns(db: Db, userId: string) {

@@ -33,7 +33,7 @@ export function DashboardClient({
       title="Dashboard"
       action={
         <div className="flex items-center gap-2">
-          <Button variant="outline" render={<Link href="/runs" />}>
+          <Button variant="outline" nativeButton={false} render={<Link href="/runs" />}>
             View runs
           </Button>
           <SearchJobsButton />

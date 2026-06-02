@@ -34,7 +34,7 @@ export function ApplicationStatus({ jobs }: { jobs: DashboardJob[] }) {
       <CardHeader>
         <CardTitle>Application status</CardTitle>
         <CardAction>
-          <Button variant="ghost" size="sm" render={<Link href="/jobs" />}>
+          <Button variant="ghost" size="sm" nativeButton={false} render={<Link href="/jobs" />}>
             Open jobs <RiArrowRightLine />
           </Button>
         </CardAction>
