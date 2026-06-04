@@ -9,6 +9,7 @@ export const jobStatusEnum = pgEnum("job_status", [
   "failed",
   "skipped",
 ]);
+export const workplaceTypeEnum = pgEnum("workplace_type", ["on-site", "remote", "hybrid"]);
 export const searchRunStatusEnum = pgEnum("search_run_status", [
   "pending",
   "running",

@@ -5,6 +5,7 @@ import type { FitTier, Job, JobStatus } from "@/lib/trpc";
 import type { ColumnDef } from "@tanstack/react-table";
 import { format } from "date-fns";
 import Link from "next/link";
+import { toTitleCase } from "@repo/shared";
 import { ApplyButton } from "./apply-button";
 import { FitTierBadge } from "./fit-tier-badge";
 import { JobStatusBadge } from "./job-status-badge";
@@ -62,6 +63,13 @@ export const columns: ColumnDef<Job>[] = [
     header: ({ column }) => <DataTableColumnHeader column={column} title="Location" />,
     cell: ({ getValue }) => getValue<string | null>() ?? "—",
     enableColumnFilter: false,
+  },
+  {
+    accessorKey: "workplaceType",
+    header: ({ column }) => <DataTableColumnHeader column={column} title="Workplace" />,
+    cell: ({ getValue }) => toTitleCase(getValue<string>()),
+    filterFn: "arrIncludesSome",
+    enableGlobalFilter: false,
   },
   {
     accessorKey: "fitTier",

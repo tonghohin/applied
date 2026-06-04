@@ -12,5 +12,6 @@ export const jobCriteria = pgTable("job_criteria", {
   skills: text("skills").array().notNull().default([]),
   locations: jsonb("locations").notNull().default([]).$type<LocationEntry[]>(),
   seniority: text("seniority").array().notNull().default([]),
+  excludeKeywords: text("exclude_keywords").array().notNull().default([]),
   minSalary: integer("min_salary"),
 });

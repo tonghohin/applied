@@ -41,6 +41,7 @@ export const upsertCriteriaSchema = z.object({
   skills: z.array(z.string()),
   locations: z.array(locationEntrySchema),
   seniority: z.array(z.string()),
+  excludeKeywords: z.array(z.string()).default([]),
   minSalary: z.number().int().positive().optional(),
 });
 

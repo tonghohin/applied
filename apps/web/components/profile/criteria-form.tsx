@@ -2,12 +2,12 @@
 
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Field, FieldError, FieldLabel } from "@/components/ui/field";
+import { Field, FieldDescription, FieldError, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { trpc } from "@/lib/trpc";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { WORK_TYPES, splitCsv } from "@repo/shared";
 import type { LocationEntry, WorkType } from "@repo/shared";
+import { WORK_TYPES, splitCsv } from "@repo/shared";
 import { useFieldArray, useForm, useWatch } from "react-hook-form";
 import { toast } from "sonner";
 import { z } from "zod";
@@ -28,6 +28,7 @@ const schema = z.object({
   skills: z.string().min(1, "Required"),
   locations: z.array(locationSchema).min(1, "Add at least one location"),
   seniority: z.string(),
+  excludeKeywords: z.string(),
   minSalary: z.string(),
 });
 
@@ -41,6 +42,7 @@ export function CriteriaForm({
     skills?: string[];
     locations?: LocationEntry[] | null;
     seniority?: string[];
+    excludeKeywords?: string[] | null;
     minSalary?: number | null;
   } | null;
 }) {
@@ -65,6 +67,7 @@ export function CriteriaForm({
       skills: initial?.skills?.join(", ") ?? "",
       locations: initial?.locations ?? [],
       seniority: initial?.seniority?.join(", ") ?? "",
+      excludeKeywords: initial?.excludeKeywords?.join(", ") ?? "",
       minSalary: initial?.minSalary?.toString() ?? "",
     },
   });
@@ -78,7 +81,9 @@ export function CriteriaForm({
 
   function toggleWorkType(index: number, type: WorkType) {
     const current = locations[index]?.workTypes ?? [];
-    const next = current.includes(type) ? current.filter((t) => t !== type) : [...current, type];
+    const next = current.includes(type)
+      ? current.filter((entry) => entry !== type)
+      : [...current, type];
     setValue(`locations.${index}.workTypes`, next as WorkType[], { shouldValidate: true });
   }
 
@@ -89,6 +94,7 @@ export function CriteriaForm({
         skills: splitCsv(values.skills),
         locations: values.locations,
         seniority: splitCsv(values.seniority),
+        excludeKeywords: splitCsv(values.excludeKeywords),
         minSalary: values.minSalary ? Number(values.minSalary) : undefined,
       });
     } catch {
@@ -123,6 +129,7 @@ export function CriteriaForm({
           {...register("skills")}
           aria-invalid={!!errors.skills}
         />
+        <FieldDescription>Used to score how well a job matches your profile.</FieldDescription>
         <FieldError errors={[errors.skills]} />
       </Field>
 
@@ -184,6 +191,18 @@ export function CriteriaForm({
 
         <FieldError errors={[errors.locations as { message?: string } | undefined]} />
       </div>
+
+      <Field>
+        <FieldLabel htmlFor="excludeKeywords">Exclude keywords (comma-separated)</FieldLabel>
+        <Input
+          id="excludeKeywords"
+          placeholder="Java, PHP, Unpaid"
+          {...register("excludeKeywords")}
+        />
+        <FieldDescription>
+          Jobs whose title contains any of these words will be skipped entirely.
+        </FieldDescription>
+      </Field>
 
       <Field>
         <FieldLabel htmlFor="seniority">Seniority levels (comma-separated)</FieldLabel>

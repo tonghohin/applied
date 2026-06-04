@@ -32,6 +32,7 @@ const baseJob = {
   description: null,
   url: "https://example.com",
   platform: "linkedin" as const,
+  workplaceType: "on-site" as const,
   fitTier: "strong" as const,
   status: "pending_review" as const,
   runId: "run-1",

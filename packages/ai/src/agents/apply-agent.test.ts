@@ -39,6 +39,7 @@ const mockJob = {
   description: "A great job",
   url: "https://example.com/jobs/1",
   platform: "linkedin" as const,
+  workplaceType: "on-site" as const,
   fitTier: "strong" as const,
   status: "pending_review" as const,
   listedAt: new Date(),
