@@ -2,21 +2,18 @@ import { cn } from "@/lib/utils";
 import type { RemixiconComponentType } from "@remixicon/react";
 import { type VariantProps, cva } from "class-variance-authority";
 
-const iconBadgeVariants = cva(
-  "flex size-7 shrink-0 items-center justify-center rounded-lg",
-  {
-    variants: {
-      variant: {
-        default: "bg-primary text-primary-foreground",
-        secondary: "bg-secondary text-secondary-foreground",
-        destructive: "bg-destructive/10 text-destructive",
-      },
+const iconBadgeVariants = cva("flex size-7 shrink-0 items-center justify-center rounded-lg", {
+  variants: {
+    variant: {
+      default: "bg-primary text-primary-foreground",
+      secondary: "bg-secondary text-secondary-foreground",
+      destructive: "bg-destructive/10 text-destructive",
     },
-    defaultVariants: {
-      variant: "default",
-    },
-  }
-);
+  },
+  defaultVariants: {
+    variant: "default",
+  },
+});
 
 function IconBadge({
   icon: Icon,

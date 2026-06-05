@@ -5,7 +5,7 @@ type ApplyRun = NonNullable<Job["latestApplyRun"]>;
 
 export function ApplyRunLog({ applyRun }: { applyRun: ApplyRun }) {
   return (
-    <div className="space-y-1 rounded-md bg-muted/50 p-3 font-mono text-xs">
+    <div className="max-h-80 space-y-1 overflow-y-auto rounded-md bg-muted/50 p-3 font-mono text-xs">
       {applyRun.errorMessage && (
         <p className="mb-2 text-destructive">Error: {applyRun.errorMessage}</p>
       )}
@@ -14,7 +14,7 @@ export function ApplyRunLog({ applyRun }: { applyRun: ApplyRun }) {
           <span className="shrink-0 text-muted-foreground/60">
             {format(new Date(entry.timestamp), "h:mm:ss a")}
           </span>
-          <span className="text-foreground">{entry.message}</span>
+          <span className="w-fit whitespace-pre-line text-foreground">{entry.message}</span>
         </div>
       ))}
       {applyRun.logs.length === 0 && (

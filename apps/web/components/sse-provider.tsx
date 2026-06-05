@@ -15,7 +15,13 @@ export function applyJobStatusEvent(
 ): JobList {
   return jobs.map((job) =>
     job.id === event.jobId
-      ? { ...job, status: event.status, appliedAt: event.appliedAt, failureReason: event.failureReason, updatedAt: event.updatedAt }
+      ? {
+          ...job,
+          status: event.status,
+          appliedAt: event.appliedAt,
+          failureReason: event.failureReason,
+          updatedAt: event.updatedAt,
+        }
       : job
   );
 }
@@ -38,9 +44,7 @@ export function applyApplyRunUpdateEvent(
   jobs: JobList,
   event: Extract<SseEvent, { type: "apply-run:update" }>
 ): JobList {
-  return jobs.map((job) =>
-    job.id === event.jobId ? { ...job, latestApplyRun: event.run } : job
-  );
+  return jobs.map((job) => (job.id === event.jobId ? { ...job, latestApplyRun: event.run } : job));
 }
 
 export function applyApplyRunLogEvent(

@@ -64,7 +64,7 @@ export const applyWorker = new Worker<ApplyJobData>(
           jobId,
           status: "failed",
           appliedAt: null,
-          failureReason: applyResult?.success === false ? applyResult.reason : "Unknown error",
+          failureReason: applyResult?.success === false ? (applyResult.reason ?? "Unknown error") : "Unknown error",
           updatedAt: completedAt,
         });
       }

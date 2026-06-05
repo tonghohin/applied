@@ -107,7 +107,16 @@ describe("applyDashboardJobStatusEvent", () => {
     const updatedAt = new Date("2026-01-02");
     const stats: Stats = {
       jobs: [
-        { id: "job-1", title: "SE", company: "Acme", status: "applying", fitTier: "strong", createdAt: new Date(), appliedAt: null, updatedAt: new Date() },
+        {
+          id: "job-1",
+          title: "SE",
+          company: "Acme",
+          status: "applying",
+          fitTier: "strong",
+          createdAt: new Date(),
+          appliedAt: null,
+          updatedAt: new Date(),
+        },
       ],
       searchRuns: [],
     };

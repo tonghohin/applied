@@ -35,7 +35,9 @@ export function JobsClient({ initialJobs }: { initialJobs: InitialJobs }) {
             </EmptyMedia>
             <EmptyContent>
               <EmptyTitle>No jobs yet</EmptyTitle>
-              <EmptyDescription>Search LinkedIn for positions matching your profile.</EmptyDescription>
+              <EmptyDescription>
+                Search LinkedIn for positions matching your profile.
+              </EmptyDescription>
             </EmptyContent>
             <SearchJobsButton />
           </EmptyHeader>

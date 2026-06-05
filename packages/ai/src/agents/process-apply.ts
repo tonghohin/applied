@@ -36,7 +36,7 @@ export async function processApplyJob(
       await updateJobApplied(db, jobId);
     } else {
       log(`Application failed: ${result.reason}`);
-      await updateJobFailed(db, jobId, result.reason);
+      await updateJobFailed(db, jobId, result.reason ?? "Unknown error");
     }
     return result;
   } finally {
