@@ -1,5 +1,6 @@
 "use client";
 
+import { AppliedIcon } from "@/components/applied-logo";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -52,9 +53,10 @@ export default function SignInPage() {
   return (
     <div className="flex min-h-screen items-center justify-center p-4">
       <Card className="w-full max-w-sm">
-        <CardHeader className="text-center">
-          <CardTitle className="text-2xl">Sign in to your account</CardTitle>
-          <CardDescription>Enter your email below to sign in to your account</CardDescription>
+        <CardHeader className="items-center text-center">
+          <AppliedIcon className="mx-auto mb-4 size-10" />
+          <CardTitle className="text-2xl">Welcome to Applied</CardTitle>
+          <CardDescription>Sign in to continue applying</CardDescription>
         </CardHeader>
         <CardContent className="flex flex-col gap-4">
           <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-4">

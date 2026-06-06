@@ -1,7 +1,7 @@
 import { createMCPClient } from "@ai-sdk/mcp";
 import { InMemoryTransport } from "@modelcontextprotocol/sdk/inMemory.js";
 import { createConnection } from "@playwright/mcp";
-import type { BrowserContextOptions } from "playwright";
+import type { BrowserContext, BrowserContextOptions } from "playwright";
 import { chromium } from "playwright-extra";
 import StealthPlugin from "puppeteer-extra-plugin-stealth";
 
@@ -20,7 +20,13 @@ const BROWSER_ARGS = [
 type StorageState = NonNullable<BrowserContextOptions["storageState"]>;
 type MCPClient = Awaited<ReturnType<typeof createMCPClient>>;
 
-export async function createPlaywrightMCPClient(storageStateJson?: string): Promise<MCPClient> {
+export type PlaywrightMCPClient = {
+  tools: MCPClient["tools"];
+  close: () => Promise<void>;
+  browserContext: BrowserContext;
+};
+
+export async function createPlaywrightMCPClient(storageStateJson?: string): Promise<PlaywrightMCPClient> {
   const browser = await chromium.launch({ headless: true, args: BROWSER_ARGS });
 
   try {
@@ -39,10 +45,11 @@ export async function createPlaywrightMCPClient(storageStateJson?: string): Prom
 
     // playwright-extra types reference playwright-core directly; pnpm resolves that to
     // 1.60.0 while @playwright/mcp uses 1.61-alpha. The types are identical at runtime.
-    // biome-ignore lint/suspicious/noExplicitAny: playwright-core version mismatch between playwright-extra and @playwright/mcp
-    const mcpServer = await (createConnection as any)(
+    type ContextFactory = Parameters<typeof createConnection>[1];
+    const contextFactory = (() => Promise.resolve(context)) as unknown as ContextFactory;
+    const mcpServer = await createConnection(
       { imageResponses: "omit", allowUnrestrictedFileAccess: true },
-      () => Promise.resolve(context)
+      contextFactory
     );
 
     const [serverTransport, clientTransport] = InMemoryTransport.createLinkedPair();
@@ -57,7 +64,8 @@ export async function createPlaywrightMCPClient(storageStateJson?: string): Prom
         await context.close();
         await browser.close();
       },
-    } as unknown as MCPClient;
+      browserContext: context,
+    };
   } catch (err) {
     await browser.close();
     throw err;

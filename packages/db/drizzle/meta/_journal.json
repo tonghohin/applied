@@ -71,6 +71,13 @@
       "when": 1780420791810,
       "tag": "0009_amazing_spitfire",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1780683245168,
+      "tag": "0010_colossal_arclight",
+      "breakpoints": true
     }
   ]
 }

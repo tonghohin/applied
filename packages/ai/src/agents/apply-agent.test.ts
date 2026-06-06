@@ -17,12 +17,22 @@ vi.mock("../mcp", () => ({
   createPlaywrightMCPClient: vi.fn().mockResolvedValue({
     tools: mockTools,
     close: mockClose,
+    browserContext: {
+      pages: () => [],
+      newPage: vi.fn().mockResolvedValue({ goto: vi.fn() }),
+    },
   }),
 }));
 
 vi.mock("ai", () => ({
   generateText: vi.fn(),
   stepCountIs: vi.fn().mockReturnValue({}),
+  tool: vi.fn().mockReturnValue({}),
+  Output: { object: vi.fn().mockReturnValue({}) },
+}));
+
+vi.mock("./generate-cover-letter", () => ({
+  generateCoverLetter: vi.fn().mockResolvedValue("Mock cover letter"),
 }));
 
 import type { Job } from "@repo/db";
@@ -68,36 +78,39 @@ const mockProfile = {
 } satisfies ProfileWithEmail;
 
 describe("applyToJob", () => {
-  it("returns success when agent responds SUCCESS", async () => {
-    vi.mocked(generateText).mockResolvedValueOnce({ text: "SUCCESS" } as never);
+  it("returns success when agent returns success", async () => {
+    vi.mocked(generateText).mockResolvedValueOnce({ output: { success: true }, steps: [] } as never);
 
-    const result = await applyToJob(mockJob, mockProfile, "/tmp/resume.pdf", undefined);
+    const result = await applyToJob(mockJob, mockProfile, "/tmp/resume.pdf", 90000, undefined);
 
     expect(result).toEqual({ success: true });
   });
 
-  it("returns failure when agent responds FAILURE:<reason>", async () => {
-    vi.mocked(generateText).mockResolvedValueOnce({ text: "FAILURE:CAPTCHA detected" } as never);
+  it("returns failure when agent returns failure with reason", async () => {
+    vi.mocked(generateText).mockResolvedValueOnce({
+      output: { success: false, reason: "CAPTCHA detected" },
+      steps: [],
+    } as never);
 
-    const result = await applyToJob(mockJob, mockProfile, "/tmp/resume.pdf", undefined);
+    const result = await applyToJob(mockJob, mockProfile, "/tmp/resume.pdf", 90000, undefined);
 
     expect(result).toEqual({ success: false, reason: "CAPTCHA detected" });
   });
 
-  it("returns failure for unexpected agent response", async () => {
-    vi.mocked(generateText).mockResolvedValueOnce({ text: "I navigated to the page" } as never);
+  it("returns failure with fallback reason when agent omits reason", async () => {
+    vi.mocked(generateText).mockResolvedValueOnce({ output: { success: false }, steps: [] } as never);
 
-    const result = await applyToJob(mockJob, mockProfile, "/tmp/resume.pdf", undefined);
+    const result = await applyToJob(mockJob, mockProfile, "/tmp/resume.pdf", 90000, undefined);
 
     expect(result.success).toBe(false);
-    expect((result as { success: false; reason: string }).reason).toContain("Unexpected");
+    expect((result as { success: false; reason: string }).reason).toBe("Agent finished without a reason");
   });
 
   it("always closes the MCP client", async () => {
     mockClose.mockClear();
     vi.mocked(generateText).mockRejectedValueOnce(new Error("network error"));
 
-    await expect(applyToJob(mockJob, mockProfile, "/tmp/resume.pdf", undefined)).rejects.toThrow(
+    await expect(applyToJob(mockJob, mockProfile, "/tmp/resume.pdf", 90000, undefined)).rejects.toThrow(
       "network error"
     );
 

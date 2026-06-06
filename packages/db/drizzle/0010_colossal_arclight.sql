@@ -1,0 +1,1 @@
+ALTER TABLE "job_criteria" ALTER COLUMN "min_salary" SET NOT NULL;

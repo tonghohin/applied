@@ -2,6 +2,7 @@ import { rm } from "node:fs/promises";
 import { dirname } from "node:path";
 import {
   type Db,
+  getJobCriteriaForUser,
   getJobForUser,
   getProfileWithEmailForUser,
   updateJobApplied,
@@ -18,19 +19,21 @@ export async function processApplyJob(
   log: (msg: string) => void = () => {}
 ) {
   log("Fetching job and profile");
-  const [jobRow, profileRow] = await Promise.all([
+  const [jobRow, profileRow, criteriaRow] = await Promise.all([
     getJobForUser(db, jobId, userId),
     getProfileWithEmailForUser(db, userId),
+    getJobCriteriaForUser(db, userId),
   ]);
 
   if (!jobRow) throw new Error(`Job ${jobId} not found`);
   if (!profileRow) throw new Error(`Profile for user ${userId} not found`);
+  if (!criteriaRow) throw new Error(`Criteria for user ${userId} not found`);
 
   log("Generating resume PDF");
   const resumePdfPath = await generateResumePdf(profileRow.resume);
   try {
     log("Launching AI agent");
-    const result = await applyToJob(jobRow, profileRow, resumePdfPath, linkedinSessionJson, log);
+    const result = await applyToJob(jobRow, profileRow, resumePdfPath, criteriaRow.minSalary, linkedinSessionJson, log);
     if (result.success) {
       log("Application submitted successfully");
       await updateJobApplied(db, jobId);

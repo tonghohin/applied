@@ -2,6 +2,7 @@
 import type { WorkType } from "@repo/shared";
 import type { Page } from "playwright";
 import type { ScrapedJob, SearchCriteria } from "../types";
+import { isExcluded } from "../utils";
 
 const MAX_PAGES = 5;
 const randomDelay = () => Math.floor(Math.random() * 2000) + 1500;
@@ -14,53 +15,105 @@ const WT_MAP: Record<WorkType, string> = {
 };
 
 function buildSearchUrl(jobTitle: string, location: string, workTypes: WorkType[]): string {
-  const f_WT = workTypes
-    .map((w) => WT_MAP[w])
-    .filter(Boolean)
-    .join(",");
-  const params = new URLSearchParams({
-    keywords: jobTitle,
-    location,
-    sortBy: "DD",
-  });
+  const f_WT = workTypes.map((w) => WT_MAP[w]).filter(Boolean).join(",");
+  const params = new URLSearchParams({ keywords: jobTitle, location, sortBy: "DD" });
   if (f_WT) params.set("f_WT", f_WT);
   return `https://www.linkedin.com/jobs/search/?${params.toString()}`;
 }
 
-async function scrapeJobsPage(page: Page): Promise<ScrapedJob[]> {
-  const jobs = await page.evaluate(() => {
-    const cards = Array.from(document.querySelectorAll("[data-occludable-job-id]"));
-    return cards
-      .map((card) => {
-        const linkEl = card.querySelector("a.job-card-container__link");
-        const companyEl = card.querySelector(".artdeco-entity-lockup__subtitle");
-        const locationEl = card.querySelector(".artdeco-entity-lockup__caption");
+function extractCards() {
+  const cards = Array.from(document.querySelectorAll("[data-occludable-job-id]"));
+  return cards
+    .map((card) => {
+      const linkEl = card.querySelector("a.job-card-container__link");
+      const companyEl = card.querySelector(".artdeco-entity-lockup__subtitle");
+      const locationEl = card.querySelector(".artdeco-entity-lockup__caption");
+      const jobId = card.getAttribute("data-occludable-job-id");
+      const timeEl = card.querySelector("time[datetime]");
+      return {
+        title: linkEl?.getAttribute("aria-label") ?? linkEl?.textContent?.trim() ?? "",
+        company: companyEl?.textContent?.trim() ?? "",
+        location: (locationEl?.textContent?.trim() ?? "")
+          .replace(/\s*[·•]\s*(remote|hybrid|on-site|onsite)\s*$/i, "")
+          .replace(/\s*\((remote|hybrid|on-site|onsite)\)\s*$/i, "")
+          .trim(),
+        url: jobId ? `https://www.linkedin.com/jobs/view/${jobId}/` : "",
+        description: "",
+        platform: "linkedin" as const,
+        listedAt:
+          timeEl !== null
+            ? (timeEl.getAttribute("datetime") ?? new Date().toISOString())
+            : new Date().toISOString(),
+      };
+    })
+    .filter((j) => j.title && j.url);
+}
 
-        const jobId = card.getAttribute("data-occludable-job-id");
-        const timeEl = card.querySelector("time[datetime]");
-        return {
-          title: linkEl?.getAttribute("aria-label") ?? linkEl?.textContent?.trim() ?? "",
-          company: companyEl?.textContent?.trim() ?? "",
-          location: locationEl?.textContent?.trim() ?? "",
-          url: jobId ? `https://www.linkedin.com/jobs/view/${jobId}/` : "",
-          description: "",
-          platform: "linkedin" as const,
-          listedAt:
-            timeEl !== null
-              ? (timeEl.getAttribute("datetime") ?? new Date().toISOString())
-              : new Date().toISOString(),
-        };
-      })
-      .filter((j) => j.title && j.url);
-  });
-  return jobs.map((j) => ({
-    ...j,
-    title: j.title.replace(/ with verification$/i, "").trim(),
+async function scrapeJobsPage(page: Page): Promise<Omit<ScrapedJob, "workplaceType">[]> {
+  const seen = new Map<string, ReturnType<typeof extractCards>[number]>();
+
+  let stableRounds = 0;
+  while (stableRounds < 3) {
+    const cards = await page.evaluate(extractCards);
+    let newCards = 0;
+    for (const card of cards) {
+      if (!seen.has(card.url)) {
+        seen.set(card.url, card);
+        newCards++;
+      }
+    }
+
+    if (newCards === 0) {
+      stableRounds++;
+    } else {
+      stableRounds = 0;
+    }
+    await page.evaluate(() => {
+      const firstCard = document.querySelector("[data-occludable-job-id]");
+      if (!firstCard) {
+        window.scrollBy(0, 600);
+        return;
+      }
+      let el: Element | null = firstCard.parentElement;
+      while (el && el !== document.body) {
+        const style = window.getComputedStyle(el);
+        if (style.overflowY === "scroll" || style.overflowY === "auto") {
+          el.scrollTop += 600;
+          return;
+        }
+        el = el.parentElement;
+      }
+      window.scrollBy(0, 600);
+    });
+    await page.waitForTimeout(600);
+  }
+
+  return Array.from(seen.values()).map((job) => ({
+    ...job,
+    title: job.title.replace(/ with verification$/i, "").trim(),
   }));
 }
 
-async function fetchDescription(page: Page, url: string): Promise<string> {
-  await page.goto(url, { waitUntil: "domcontentloaded" });
+async function gotoWithRetry(page: Page, url: string): Promise<void> {
+  for (let attempt = 1; attempt <= 3; attempt++) {
+    try {
+      await page.goto(url, { waitUntil: "domcontentloaded", timeout: 60000 });
+      return;
+    } catch (err) {
+      if (attempt < 3 && String(err).includes("interrupted by another navigation")) {
+        await page.waitForTimeout(attempt * 1500);
+        continue;
+      }
+      throw err;
+    }
+  }
+}
+
+async function fetchJobDetails(
+  page: Page,
+  url: string
+): Promise<{ description: string; workplaceType: WorkType }> {
+  await gotoWithRetry(page, url);
   await page.waitForTimeout(randomDelay());
   return page.evaluate(() => {
     // Primary: LinkedIn usually wraps the description with an "About the job" header
@@ -68,15 +121,47 @@ async function fetchDescription(page: Page, url: string): Promise<string> {
       const text = el.textContent?.trim() ?? "";
       return text.startsWith("About the job") && text.length > 100 && text.length < 8000;
     });
-    if (aboutJobEl) return aboutJobEl.textContent?.trim() ?? "";
+    const description = aboutJobEl
+      ? (aboutJobEl.textContent?.trim() ?? "")
+      : (() => {
+          // Fallback: biggest bounded section (excludes nav/footer)
+          const sections = Array.from(document.querySelectorAll("section"));
+          return (
+            sections
+              .map((section) => section.textContent?.trim() ?? "")
+              .filter((text) => text.length > 200 && text.length < 10000)
+              .sort((a, b) => b.length - a.length)[0] ?? ""
+          );
+        })();
 
-    // Fallback: biggest bounded section (excludes nav/footer)
-    const sections = Array.from(document.querySelectorAll("section"));
-    const biggest = sections
-      .map((s) => s.textContent?.trim() ?? "")
-      .filter((t) => t.length > 200 && t.length < 10000)
-      .sort((a, b) => b.length - a.length)[0];
-    return biggest ?? "";
+    // Extract workplace type — JSON-LD is reliable for remote; leaf-element scan covers hybrid
+    let workplaceType:WorkType = "on-site";
+    try {
+      const jsonLdEl = document.querySelector('script[type="application/ld+json"]');
+      if (jsonLdEl) {
+        const data = JSON.parse(jsonLdEl.textContent ?? "{}");
+        if (data.jobLocationType === "TELECOMMUTE") workplaceType = "remote";
+      }
+    } catch {}
+
+    if (workplaceType === "on-site") {
+      const exactMatch: Record<string, WorkType> = {
+        remote: "remote",
+        hybrid: "hybrid",
+        "on-site": "on-site",
+        onsite: "on-site",
+      };
+      for (const el of Array.from(document.querySelectorAll("span, li"))) {
+        if (el.children.length > 0) continue;
+        const text = (el.textContent?.trim() ?? "").toLowerCase();
+        if (text in exactMatch) {
+          workplaceType = exactMatch[text] ?? "on-site";
+          break;
+        }
+      }
+    }
+
+    return { description, workplaceType: workplaceType };
   });
 }
 
@@ -89,17 +174,13 @@ export async function scrapeLinkedInJobs(
   const seen = new Set<string>();
   const effectiveCutoff = sinceDate ?? new Date(Date.now() - CUTOFF_MS);
 
+  let locIdx = 0;
   for (const locationEntry of criteria.locations) {
-    const searchUrl = buildSearchUrl(
-      criteria.jobTitle,
-      locationEntry.location,
-      locationEntry.workTypes
-    );
-    let hitCutoff = false;
-
+    if (locIdx++ > 0) await page.waitForTimeout(5000 + Math.random() * 3000);
+    const searchUrl = buildSearchUrl(criteria.jobTitle, locationEntry.location, locationEntry.workTypes);
     for (let pageNum = 0; pageNum < MAX_PAGES; pageNum++) {
       const url = pageNum === 0 ? searchUrl : `${searchUrl}&start=${pageNum * 25}`;
-      await page.goto(url, { waitUntil: "domcontentloaded" });
+      await gotoWithRetry(page, url);
       await page.waitForTimeout(randomDelay());
 
       const jobs = await scrapeJobsPage(page);
@@ -107,22 +188,31 @@ export async function scrapeLinkedInJobs(
 
       for (const job of jobs) {
         if (job.listedAt && new Date(job.listedAt) < effectiveCutoff) {
-          hitCutoff = true;
           continue;
         }
         if (seen.has(job.url)) continue;
         seen.add(job.url);
 
-        let description = "";
-        try {
-          description = await fetchDescription(page, job.url);
-        } catch (err) {
-          console.error(`Failed to fetch description for ${job.url}:`, err);
+        if (isExcluded(job.title, criteria.excludeKeywords)) {
+          continue;
         }
-        results.push({ ...job, description });
-      }
 
-      if (hitCutoff) break;
+        let details: { description: string; workplaceType: WorkType } = {
+          description: "",
+          workplaceType: "on-site",
+        };
+        try {
+          details = await fetchJobDetails(page, job.url);
+        } catch (err) {
+          console.error(`Failed to fetch details for ${job.url}:`, err);
+        }
+
+        if (!locationEntry.workTypes.includes(details.workplaceType)) {
+          continue;
+        }
+
+        results.push({ ...job, ...details });
+      }
     }
   }
 

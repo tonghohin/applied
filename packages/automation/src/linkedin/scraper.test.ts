@@ -17,7 +17,7 @@ const sixtyDaysAgo = new Date(Date.now() - 60 * 24 * 60 * 60 * 1000).toISOString
 
 const criteria: SearchCriteria = {
   jobTitle: "Software Engineer",
-  locations: [{ location: "Remote", workTypes: ["remote"] }],
+  locations: [{ location: "Remote", workTypes: ["on-site", "remote", "hybrid"] }],
   excludeKeywords: [],
 };
 

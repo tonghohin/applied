@@ -29,7 +29,7 @@ const schema = z.object({
   locations: z.array(locationSchema).min(1, "Add at least one location"),
   seniority: z.string(),
   excludeKeywords: z.string(),
-  minSalary: z.string(),
+  minSalary: z.string().min(1, "Required"),
 });
 
 type FormValues = z.infer<typeof schema>;
@@ -95,7 +95,7 @@ export function CriteriaForm({
         locations: values.locations,
         seniority: splitCsv(values.seniority),
         excludeKeywords: splitCsv(values.excludeKeywords),
-        minSalary: values.minSalary ? Number(values.minSalary) : undefined,
+        minSalary: Number(values.minSalary),
       });
     } catch {
       toast.error("Failed to save job criteria");
@@ -209,9 +209,16 @@ export function CriteriaForm({
         <Input id="seniority" placeholder="Mid, Senior" {...register("seniority")} />
       </Field>
 
-      <Field>
-        <FieldLabel htmlFor="minSalary">Minimum salary (USD)</FieldLabel>
-        <Input id="minSalary" type="number" placeholder="100000" {...register("minSalary")} />
+      <Field data-invalid={!!errors.minSalary}>
+        <FieldLabel htmlFor="minSalary">Minimum salary</FieldLabel>
+        <Input
+          id="minSalary"
+          type="number"
+          placeholder="100000"
+          {...register("minSalary")}
+          aria-invalid={!!errors.minSalary}
+        />
+        <FieldError errors={[errors.minSalary]} />
       </Field>
 
       <Button type="submit" disabled={loading}>

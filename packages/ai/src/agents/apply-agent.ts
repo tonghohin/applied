@@ -1,8 +1,24 @@
 import type { Job, Profile } from "@repo/db";
-import { generateText, stepCountIs } from "ai";
+import { Output, generateText, stepCountIs, tool } from "ai";
+import { z } from "zod";
 import { createPlaywrightMCPClient } from "../mcp";
+import { generateCoverLetter } from "./generate-cover-letter";
 
-export type ApplyResult = { success: true } | { success: false; reason: string };
+const applyResultSchema = z.object({
+  success: z
+    .boolean()
+    .describe(
+      "True only if you observed an explicit confirmation — URL changed to a thank-you/success path, or the page shows a 'Thank you' / 'Application submitted' heading. False otherwise."
+    ),
+  reason: z
+    .string()
+    .optional()
+    .describe(
+      "Required when success is false: the specific reason (e.g. 'form did not redirect after submit', 'CAPTCHA detected', 'account creation required'). Optional when success is true, but include a note for edge cases like duplicate submissions."
+    ),
+});
+
+export type ApplyResult = z.infer<typeof applyResultSchema>;
 
 export type ProfileWithEmail = Profile & { email: string };
 
@@ -18,92 +34,157 @@ function detectPlatform(url: string): ApplyPlatform {
 
 const FORM_FILLING_RULES = `## Form filling rules
 - Use the resume content to answer questions about experience, skills, and education.
-- When a cover letter field is required, write a personalized cover letter for the specific company and position based on the applicant's resume. If COVER LETTER INSTRUCTIONS are provided, follow them (tone, length, emphasis, etc.).
+- When a cover letter field is required, call generate_cover_letter to obtain the cover letter text, then type the returned text into the field.
 - For yes/no questions about work authorization: answer "Yes" (authorized to work).
 - For yes/no questions about sponsorship: answer based on the applicant's profile — "Yes" if they require sponsorship, "No" if they do not.
 - If a required field cannot be answered from the profile, use a reasonable placeholder.
 - If a file upload field for a resume appears and a Resume PDF path is provided in the prompt, use browser_file_upload to upload that file. For any other file upload fields, skip them.
 - Fill text fields one at a time using browser_type. Do not use browser_fill_form.
+- Before typing into any text field, ALWAYS first click it to focus it, then press "Control+a" with browser_press_key to select all existing content, then use browser_type to replace it. This prevents accidentally appending to pre-filled values.
+- For location/address/city autocomplete fields: after typing the value, use browser_wait_for with a short text condition to wait for the dropdown to appear, then press "ArrowDown" and "Enter" with browser_press_key to select the first autocomplete suggestion. If no autocomplete dropdown appears, the typed value is accepted as-is.
 - When targeting elements from a snapshot, use the bare ref value as the target (e.g. if the snapshot shows [ref=e123], use target: "e123"). Never use "ref=e123" or "[ref=e123]" as a selector — those are invalid.
 - Prefer targeting by accessible role and name when refs fail: use getByRole("button", { name: "Submit" }) or getByRole("textbox", { name: "Email" }) syntax as the target value.
 - For resume file upload: click the upload button first to open the file dialog, then immediately call browser_file_upload with the resume PDF path. Do not call browser_file_upload before triggering the dialog.
 - Do not take a snapshot unless the page has changed (after a navigation, click, or form submission). Never take consecutive snapshots without an action in between.
+- When clicking multiple checkboxes or radio buttons in sequence, add a browser_wait_for with time:1 between each click. This avoids triggering spam/bot detection heuristics that flag rapid consecutive clicks.
 
-Only respond with SUCCESS or FAILURE:<reason> after attempting the application — nothing else.`;
+## Dropdown fields
+Many modern ATS forms use custom React/styled dropdowns that are NOT native <select> elements — browser_select_option will NOT work on them. To select an option from a custom dropdown:
+1. Click the dropdown trigger to open it.
+2. Take a snapshot to confirm the options list is visible.
+3. Click the desired option directly by ref or by text.
+If the dropdown has a search/filter input, type the value, wait for the option to appear, then click it or press ArrowDown + Enter.
 
-const LINKEDIN_PROMPT = `You are an automated job application agent. Navigate to a LinkedIn job page and submit the application using the applicant's profile.
+## Phone country code fields
+Phone inputs often have a country code selector before the number. Set it to Canada (+1) by: click the selector → wait for the list → click "Canada +1". If already set correctly, skip it.
+
+## Salary fields
+Enter a single integer (e.g. 120000). Never enter ranges, currency codes, or text like "Competitive". Use the "Expected salary" value from the applicant profile.
+
+## Verifying submission success (required)
+After clicking the final submit button:
+1. Take a snapshot immediately to check for inline validation errors. If errors are present and fixable, fix them and retry submit.
+2. If no validation errors, take a snapshot after a few seconds to check the page state.
+3. Look at the page URL and the snapshot content to determine the outcome.
+
+Return { success: true } ONLY IF you can confirm ONE of the following — do not guess:
+- The page URL changed to a different path (e.g. /thank-you, /confirmation, /success, /complete, /applied, /submitted). A URL still ending in /apply or the same path as the form means the form did NOT submit.
+- OR the accessibility snapshot clearly shows a heading, alert, or prominent text containing "Thank you", "Application submitted", "Application received", "Application complete", or similar explicit confirmation.
+
+Return { success: false, reason: "..." } in these cases:
+- The URL is still on the application/form page AND no confirmation text is visible in the snapshot → reason: "form did not redirect after submit; page URL unchanged"
+- browser_wait_for timed out waiting for a confirmation element → reason: "confirmation did not appear after submission"
+- Inline validation errors remain → reason: the specific validation error message
+- Never infer success from completing the form or clicking submit alone — you must see the confirmation.
+
+## Spam detection recovery
+If the ATS shows a "flagged as spam" or "possible spam" error with a suggestion to try again (common on Ashby): wait 2 seconds, then click the submit button one more time (this is the ATS's own retry flow). If it is flagged a second time, return { success: false, reason: "flagged as spam by ATS" }.
+
+## Submission retry limit
+Never submit the same form more than 2 times. If the form fails validation twice, identify the specific failing field from the error message, attempt ONE targeted fix, then submit a third and final time. If it still fails, return { success: false, reason: "<specific validation error>" } immediately. Repeated submission attempts trigger CAPTCHA and bot detection — failing fast is better than looping.
+
+## Detecting already-applied (409 duplicate) responses
+Some ATSes (including Breezy HR) silently return HTTP 409 when you've already applied with the same email — the page looks unchanged but the application was already in their system.
+After clicking submit and the page doesn't redirect, use browser_network_requests to inspect the most recent POST request to the apply endpoint. If any request to the apply endpoint returned status 409, return { success: true, reason: "already applied (duplicate submission rejected by ATS — original application is on file)" }.
+
+## Final response
+After verifying the outcome, return a JSON object with:
+- success: true if the application was submitted successfully, false otherwise
+- reason: (optional) a short description of the failure, or a note for successful edge cases like duplicate submissions`;
+
+const LINKEDIN_PROMPT = `You are an automated job application agent. Submit a LinkedIn job application using the applicant's profile.
 
 ## Instructions
-1. Navigate to the job URL using browser_navigate.
-2. Take a snapshot with browser_snapshot to understand the page.
-3. If an "Easy Apply" button is present:
+1. The browser is already loaded on the job URL. Take a browser_snapshot to see the current page state.
+2. If an "Easy Apply" button is present:
    - Click it to open the Easy Apply modal.
    - The modal is a multi-step wizard. Take a snapshot after each action to see the current step.
    - Fill each required field on the current step before clicking "Next" or "Review".
    - On the final review step, click "Submit application".
-4. If only an "Apply" button (not "Easy Apply") is present:
-   - Click it — it will open an external application page.
-   - Take a snapshot after the redirect to identify the ATS, then apply the matching rules below:
+3. If only an "Apply" button (not "Easy Apply") is present:
+   - Click it — it will open an external application page in a new tab.
+   - Use browser_tabs to switch to the new tab, then take a snapshot to identify the ATS.
+   - Apply the matching rules below:
      - Greenhouse (greenhouse.io): fill name, email, phone, resume upload, LinkedIn URL, cover letter textarea, custom questions; click the submit button at the bottom.
      - Lever (lever.co): fill name, email, phone, current company, resume upload, LinkedIn URL, social links, cover letter textarea, custom questions; click Apply.
      - Ashby (ashbyhq.com): fill personal info, resume upload, custom questions; click submit.
+     - Breezy HR (breezy.hr): multi-step form — fill each page's required fields, click Next/Continue until the final step, then click Submit. After submitting, confirm the URL changed to a thank-you page.
+     - Gem (jobs.gem.com): single-page form — fill all visible required fields (name, email, phone, resume, custom questions), then click the submit button.
      - Other: fill required fields only and submit.
    - If account creation is required before applying, respond with FAILURE:account creation required.
-5. If a CAPTCHA or verification challenge appears, respond with FAILURE:CAPTCHA detected.
-6. Do not take an extra snapshot after every keystroke — batch related fields and snapshot only when needed.
-
-${FORM_FILLING_RULES}`;
-
-const GREENHOUSE_PROMPT = `You are an automated job application agent. Navigate to a Greenhouse job application page and submit the application using the applicant's profile.
-
-## Instructions
-1. Navigate to the job URL using browser_navigate.
-2. Take a snapshot to understand the form layout.
-3. No login is required — fill the form directly.
-4. Typical field order: name, email, phone, resume upload, LinkedIn URL, website, cover letter textarea, custom questions at the bottom.
-5. Fill required fields only — skip optional fields.
-6. Do not take an extra snapshot after every keystroke — batch related fields and snapshot only when needed.
-7. Before submitting, take a snapshot to confirm all required fields are filled, then click the submit button at the bottom.
-8. If account creation is required before applying, respond with FAILURE:account creation required.
-
-${FORM_FILLING_RULES}`;
-
-const LEVER_PROMPT = `You are an automated job application agent. Navigate to a Lever job application page and submit the application using the applicant's profile.
-
-## Instructions
-1. Navigate to the job URL using browser_navigate.
-2. Take a snapshot to understand the form layout.
-3. No login is required — fill the form directly.
-4. Typical fields: full name, email, phone, current company, resume upload, LinkedIn URL, social links, cover letter textarea, custom questions.
-5. Fill required fields only — skip optional fields.
-6. Do not take an extra snapshot after every keystroke — batch related fields and snapshot only when needed.
-7. Before submitting, take a snapshot to confirm required fields are filled, then click the Apply button.
-8. If account creation is required before applying, respond with FAILURE:account creation required.
-
-${FORM_FILLING_RULES}`;
-
-const ASHBY_PROMPT = `You are an automated job application agent. Navigate to an Ashby job application page and submit the application using the applicant's profile.
-
-## Instructions
-1. Navigate to the job URL using browser_navigate.
-2. Take a snapshot to understand the form layout.
-3. No login is required — fill the form directly.
-4. Typical fields: personal info (name, email, phone), resume upload, custom questions.
-5. Fill required fields only — skip optional fields.
-6. Do not take an extra snapshot after every keystroke — batch related fields and snapshot only when needed.
-7. Before submitting, take a snapshot to confirm required fields are filled, then click the submit button.
-8. If account creation is required before applying, respond with FAILURE:account creation required.
-
-${FORM_FILLING_RULES}`;
-
-const GENERIC_PROMPT = `You are an automated job application agent. Navigate to a job application page and submit the application using the applicant's profile.
-
-## Instructions
-1. Navigate to the job URL using browser_navigate.
-2. Take a snapshot to assess the form.
-3. Fill required fields only — skip optional fields.
-4. For multi-step forms, complete each step in sequence.
+   - IMPORTANT: Once you have opened the external application tab, do NOT navigate back to LinkedIn or click "Apply on company website" again. If you accidentally land on LinkedIn, use browser_navigate to go directly back to the external application URL (visible in the tab list from your last snapshot).
+4. If a CAPTCHA or verification challenge appears, respond with FAILURE:CAPTCHA detected.
 5. Do not take an extra snapshot after every keystroke — batch related fields and snapshot only when needed.
+
+${FORM_FILLING_RULES}`;
+
+const GREENHOUSE_PROMPT = `You are an automated job application agent. Submit a Greenhouse job application using the applicant's profile.
+
+## Instructions
+1. The browser is already loaded on the job URL. Take a browser_snapshot to understand the form layout.
+2. No login is required — fill the form directly.
+3. Typical field order: name, email, phone, resume upload, LinkedIn URL, website, cover letter textarea, custom questions at the bottom.
+4. Fill required fields only — skip optional fields.
+5. Do not take an extra snapshot after every keystroke — batch related fields and snapshot only when needed.
+6. Before submitting, take a snapshot to confirm all required fields are filled, then click the submit button at the bottom.
+7. After submitting, take a snapshot to verify the URL changed to a confirmation page or a confirmation message is shown.
+8. If account creation is required before applying, respond with FAILURE:account creation required.
+
+## Greenhouse-specific: custom dropdown fields
+Greenhouse forms use React Select custom dropdowns — NOT native <select> elements. browser_select_option will NOT work on them.
+To select an option (e.g. "No" for sponsorship, "Yes" for work authorization):
+1. Click the dropdown trigger to open it (browser_click on the dropdown container).
+2. Take a snapshot to see the options list.
+3. Click the desired option text directly (browser_click on the option ref).
+Do NOT use browser_select_option on Greenhouse dropdowns. Do NOT loop — if the first click-open and click-option attempt does not work, try once more then skip the field.
+
+## Greenhouse-specific: phone country code
+Phone number fields often have a country code selector next to the number input. To set it to Canada: click the country code button/dropdown, wait for the option list, click "Canada +1". Do this before typing the phone number. If the country code is already set to Canada, skip it.
+
+## Greenhouse-specific: salary fields
+For salary/compensation fields, enter a single integer from the "Expected salary" in the applicant profile. Do NOT enter ranges ("120000 - 150000"), currency codes ("CAD"), or text ("Competitive"). If a currency selector exists alongside the number field, leave it at the default.
+
+## Greenhouse-specific: navigation guard
+NEVER click "Back to jobs", "Back", "Cancel", or any link that navigates away from the application form. Only click form inputs and the "Submit Application" button. If you accidentally navigate away from the form, use browser_navigate_back to return to it.
+
+${FORM_FILLING_RULES}`;
+
+const LEVER_PROMPT = `You are an automated job application agent. Submit a Lever job application using the applicant's profile.
+
+## Instructions
+1. The browser is already loaded on the job URL. Take a browser_snapshot to understand the form layout.
+2. No login is required — fill the form directly.
+3. Typical fields: full name, email, phone, current company, resume upload, LinkedIn URL, social links, cover letter textarea, custom questions.
+4. Fill required fields only — skip optional fields.
+5. Do not take an extra snapshot after every keystroke — batch related fields and snapshot only when needed.
+6. Before submitting, take a snapshot to confirm required fields are filled, then click the Apply button.
+7. After submitting, take a snapshot to verify the URL changed to a confirmation page or a confirmation message is shown.
+8. If account creation is required before applying, respond with FAILURE:account creation required.
+
+${FORM_FILLING_RULES}`;
+
+const ASHBY_PROMPT = `You are an automated job application agent. Submit an Ashby job application using the applicant's profile.
+
+## Instructions
+1. The browser is already loaded on the job URL. Take a browser_snapshot to understand the form layout.
+2. No login is required — fill the form directly.
+3. Typical fields: personal info (name, email, phone), resume upload, custom questions.
+4. Fill required fields only — skip optional fields.
+5. Do not take an extra snapshot after every keystroke — batch related fields and snapshot only when needed.
+6. Before submitting, take a snapshot to confirm required fields are filled, then click the submit button.
+7. After submitting, take a snapshot to verify the URL changed to a confirmation page or a confirmation message is shown.
+8. If account creation is required before applying, respond with FAILURE:account creation required.
+
+${FORM_FILLING_RULES}`;
+
+const GENERIC_PROMPT = `You are an automated job application agent. Submit a job application using the applicant's profile.
+
+## Instructions
+1. The browser is already loaded on the job URL. Take a browser_snapshot to assess the form.
+2. Fill required fields only — skip optional fields.
+3. For multi-step forms, complete each step in sequence.
+4. Do not take an extra snapshot after every keystroke — batch related fields and snapshot only when needed.
+5. After submitting, take a snapshot to verify the URL changed to a confirmation page or a confirmation message is shown.
 6. If account creation is required before applying, respond with FAILURE:account creation required.
 7. If you reach a page that requires information you cannot supply (e.g. a work permit number, background check consent gate, or government ID), respond with FAILURE:<specific blocker>.
 
@@ -117,10 +198,25 @@ const PROMPTS: Record<ApplyPlatform, string> = {
   generic: GENERIC_PROMPT,
 };
 
+function logToolCall(
+  stepNumber: number,
+  toolName: string,
+  args: unknown,
+  log: (msg: string) => void
+) {
+  const argStr = JSON.stringify(args);
+  const brief =
+    toolName === "browser_snapshot" || toolName === "browser_tabs"
+      ? ""
+      : `: ${argStr.slice(0, 120)}${argStr.length > 120 ? "…" : ""}`;
+  log(`[step ${stepNumber + 1}] ${toolName}${brief}`);
+}
+
 export async function applyToJob(
   job: Job,
   profile: ProfileWithEmail,
   resumePdfPath: string,
+  minSalary: number,
   linkedinSessionJson?: string,
   log: (msg: string) => void = () => {}
 ): Promise<ApplyResult> {
@@ -128,6 +224,11 @@ export async function applyToJob(
   const client = await createPlaywrightMCPClient(linkedinSessionJson);
 
   try {
+    log("Pre-navigating to job URL");
+    const firstPage = client.browserContext.pages()[0];
+    const page = firstPage !== undefined ? firstPage : await client.browserContext.newPage();
+    await page.goto(job.url, { waitUntil: "domcontentloaded" });
+    log("Page loaded");
     const ALLOWED_TOOL_NAMES = new Set([
       "browser_navigate",
       "browser_snapshot",
@@ -139,11 +240,20 @@ export async function applyToJob(
       "browser_tabs",
       "browser_close",
       "browser_wait_for",
+      "browser_network_requests",
+      "browser_navigate_back",
     ]);
-    const allTools = await client.tools();
-    const tools = Object.fromEntries(
-      Object.entries(allTools).filter(([name]) => ALLOWED_TOOL_NAMES.has(name))
-    );
+    const tools = {
+      ...Object.fromEntries(
+        Object.entries(await client.tools()).filter(([name]) => ALLOWED_TOOL_NAMES.has(name))
+      ),
+      generate_cover_letter: tool({
+        description:
+          "Generate a personalized cover letter for this job application. Call this when the form has a required cover letter field.",
+        inputSchema: z.object({}),
+        execute: async () => generateCoverLetter(job, profile),
+      }),
+    };
 
     if (linkedinSessionJson) {
       log("Session restored from saved state");
@@ -157,6 +267,7 @@ export async function applyToJob(
       `Phone: ${profile.phone}`,
       `Address: ${profile.address}`,
       `Requires visa sponsorship: ${profile.requiresSponsorship ? "Yes" : "No"}`,
+      `Expected salary: ${minSalary}`,
       profile.linkedinUrl ? `LinkedIn: ${profile.linkedinUrl}` : null,
       profile.githubUrl ? `GitHub: ${profile.githubUrl}` : null,
       profile.websiteUrl ? `Website: ${profile.websiteUrl}` : null,
@@ -171,28 +282,25 @@ export async function applyToJob(
     const platform = detectPlatform(job.url);
     log(`Platform detected: ${platform}`);
 
-    const { text } = await generateText({
+    const { output, steps } = await generateText({
       model: "google/gemini-2.5-flash",
       tools,
       stopWhen: stepCountIs(100),
+      output: Output.object({ schema: applyResultSchema }),
       system: PROMPTS[platform],
       prompt: `Apply to this job:\nURL: ${job.url}\nTitle: ${job.title} at ${job.company}\n\nApplicant profile:\n${profileSummary}${resumePdfPath ? `\n\nResume PDF path: ${resumePdfPath}` : ""}`,
       experimental_telemetry: { isEnabled: true },
+      onStepFinish: (step) => {
+        for (const toolCall of step.toolCalls) {
+          logToolCall(step.stepNumber, toolCall.toolName, toolCall.input, log);
+        }
+      },
     });
-    log("AI agent finished");
+    log(`AI agent finished after ${steps.length} step(s)`);
+    log(`Agent result: success=${output.success}${output.reason ? ` reason=${output.reason}` : ""}`);
 
-    const result = text.trim();
-    if (result === "SUCCESS") return { success: true };
-    if (result.startsWith("FAILURE:")) return { success: false, reason: result.slice(8).trim() };
-    if (!result)
-      return {
-        success: false,
-        reason: "Agent reached step limit without completing the application",
-      };
-    return {
-      success: false,
-      reason: `Unexpected agent response: ${result.slice(0, 100)}`,
-    };
+    if (output.success) return { success: true };
+    return { success: false, reason: output.reason ?? "Agent finished without a reason" };
   } finally {
     await client.close();
   }

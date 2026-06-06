@@ -5,8 +5,9 @@ const returning = vi.fn();
 const insertValues = vi.fn().mockReturnValue({ returning });
 const mockInsert = vi.fn().mockReturnValue({ values: insertValues });
 
-// update chain: update().set().where() → Promise<void>
-const updateWhere = vi.fn().mockResolvedValue(undefined);
+// update chain: update().set().where().returning() → Promise<row[]>
+const updateReturning = vi.fn().mockResolvedValue([]);
+const updateWhere = vi.fn().mockReturnValue({ returning: updateReturning });
 const set = vi.fn().mockReturnValue({ where: updateWhere });
 const mockUpdate = vi.fn().mockReturnValue({ set });
 

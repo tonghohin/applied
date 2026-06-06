@@ -4,14 +4,27 @@ vi.mock("../env", () => ({
   env: { LINKEDIN_ENCRYPTION_KEY: "a".repeat(64), REDIS_URL: "redis://localhost:6379" },
 }));
 
-const { mockSearchAdd, mockApplyAdd, mockGetProfile, mockGetCriteria, mockGetLinkedInAccount } =
-  vi.hoisted(() => ({
-    mockSearchAdd: vi.fn().mockResolvedValue(undefined),
-    mockApplyAdd: vi.fn().mockResolvedValue(undefined),
-    mockGetProfile: vi.fn(),
-    mockGetCriteria: vi.fn(),
-    mockGetLinkedInAccount: vi.fn(),
-  }));
+const {
+  mockSearchAdd,
+  mockApplyAdd,
+  mockGetProfile,
+  mockGetCriteria,
+  mockGetLinkedInAccount,
+  mockInsertApplyRun,
+  mockInsertSearchRun,
+  mockUpdateJobApplying,
+} = vi.hoisted(() => ({
+  mockSearchAdd: vi.fn().mockResolvedValue(undefined),
+  mockApplyAdd: vi.fn().mockResolvedValue(undefined),
+  mockGetProfile: vi.fn(),
+  mockGetCriteria: vi.fn(),
+  mockGetLinkedInAccount: vi.fn(),
+  mockInsertApplyRun: vi.fn().mockImplementation((_db: unknown, data: { jobId: string; userId: string }) =>
+    Promise.resolve({ id: "run-1", jobId: data.jobId, userId: data.userId, status: "pending" })
+  ),
+  mockInsertSearchRun: vi.fn().mockResolvedValue({ id: "run-1", userId: "user_1", status: "pending" }),
+  mockUpdateJobApplying: vi.fn().mockResolvedValue(undefined),
+}));
 
 vi.mock("../queues/index", () => ({
   searchQueue: { add: mockSearchAdd },
@@ -61,6 +74,9 @@ vi.mock("@repo/db", () => ({
   getProfileForUser: mockGetProfile,
   getJobCriteriaForUser: mockGetCriteria,
   getLinkedInAccount: mockGetLinkedInAccount,
+  insertApplyRun: mockInsertApplyRun,
+  insertSearchRun: mockInsertSearchRun,
+  updateJobApplying: mockUpdateJobApplying,
 }));
 
 import type { Context } from "../context";
@@ -109,7 +125,7 @@ describe("jobs.applyJobs", () => {
 
     expect(result).toEqual({ queued: true });
     expect(mockApplyAdd).toHaveBeenCalledOnce();
-    expect(mockApplyAdd).toHaveBeenCalledWith("apply", { jobId, userId: "user_1" });
+    expect(mockApplyAdd).toHaveBeenCalledWith("apply", { jobId, userId: "user_1", runId: "run-1" });
   });
 
   it("enqueues apply job for a failed job", async () => {
@@ -127,7 +143,7 @@ describe("jobs.applyJobs", () => {
 
     expect(result).toEqual({ queued: true });
     expect(mockApplyAdd).toHaveBeenCalledOnce();
-    expect(mockApplyAdd).toHaveBeenCalledWith("apply", { jobId, userId: "user_1" });
+    expect(mockApplyAdd).toHaveBeenCalledWith("apply", { jobId, userId: "user_1", runId: "run-1" });
   });
 
   it("throws FORBIDDEN when job belongs to another user", async () => {
@@ -155,7 +171,7 @@ describe("jobs.search", () => {
 
     expect(result).toEqual({ queued: true });
     expect(mockSearchAdd).toHaveBeenCalledOnce();
-    expect(mockSearchAdd).toHaveBeenCalledWith("search", { userId: "user_1" });
+    expect(mockSearchAdd).toHaveBeenCalledWith("search", { userId: "user_1", runId: "run-1" });
   });
 
   it("throws PRECONDITION_FAILED when required fields are missing", async () => {
