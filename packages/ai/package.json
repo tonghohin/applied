@@ -20,6 +20,7 @@
     "@ai-sdk/mcp": "^1.0.43",
     "@modelcontextprotocol/sdk": "^1.29.0",
     "@playwright/mcp": "^0.0.75",
+    "@repo/automation": "workspace:*",
     "@repo/db": "workspace:*",
     "ai": "^6.0.190",
     "playwright": "^1.60.0",

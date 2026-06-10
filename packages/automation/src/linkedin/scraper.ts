@@ -49,7 +49,7 @@ function extractCards() {
     .filter((j) => j.title && j.url);
 }
 
-async function scrapeJobsPage(page: Page): Promise<Omit<ScrapedJob, "workplaceType">[]> {
+async function scrapeJobsPage(page: Page): Promise<Omit<ScrapedJob, "workplaceType" | "externalApplyUrl">[]> {
   const seen = new Map<string, ReturnType<typeof extractCards>[number]>();
 
   let stableRounds = 0;
@@ -68,23 +68,7 @@ async function scrapeJobsPage(page: Page): Promise<Omit<ScrapedJob, "workplaceTy
     } else {
       stableRounds = 0;
     }
-    await page.evaluate(() => {
-      const firstCard = document.querySelector("[data-occludable-job-id]");
-      if (!firstCard) {
-        window.scrollBy(0, 600);
-        return;
-      }
-      let el: Element | null = firstCard.parentElement;
-      while (el && el !== document.body) {
-        const style = window.getComputedStyle(el);
-        if (style.overflowY === "scroll" || style.overflowY === "auto") {
-          el.scrollTop += 600;
-          return;
-        }
-        el = el.parentElement;
-      }
-      window.scrollBy(0, 600);
-    });
+    await page.mouse.wheel(0, 600);
     await page.waitForTimeout(600);
   }
 
@@ -112,7 +96,7 @@ async function gotoWithRetry(page: Page, url: string): Promise<void> {
 async function fetchJobDetails(
   page: Page,
   url: string
-): Promise<{ description: string; workplaceType: WorkType }> {
+): Promise<{ description: string; workplaceType: WorkType; externalApplyUrl: string | null }> {
   await gotoWithRetry(page, url);
   await page.waitForTimeout(randomDelay());
   return page.evaluate(() => {
@@ -135,12 +119,18 @@ async function fetchJobDetails(
         })();
 
     // Extract workplace type — JSON-LD is reliable for remote; leaf-element scan covers hybrid
-    let workplaceType:WorkType = "on-site";
+    let workplaceType: WorkType = "on-site";
+    let externalApplyUrl: string | null = null;
     try {
       const jsonLdEl = document.querySelector('script[type="application/ld+json"]');
       if (jsonLdEl) {
         const data = JSON.parse(jsonLdEl.textContent ?? "{}");
         if (data.jobLocationType === "TELECOMMUTE") workplaceType = "remote";
+        // LinkedIn includes applicationContact.url for external apply jobs in JSON-LD
+        const appUrl = data?.applicationContact?.url ?? data?.applicationUrl ?? null;
+        if (typeof appUrl === "string" && !appUrl.includes("linkedin.com")) {
+          externalApplyUrl = appUrl;
+        }
       }
     } catch {}
 
@@ -161,7 +151,19 @@ async function fetchJobDetails(
       }
     }
 
-    return { description, workplaceType: workplaceType };
+    // Fallback: look for a direct non-LinkedIn link labelled as an apply action
+    if (!externalApplyUrl) {
+      for (const anchor of Array.from(document.querySelectorAll("a[href]")) as HTMLAnchorElement[]) {
+        const label = (anchor.getAttribute("aria-label") ?? anchor.textContent ?? "").toLowerCase();
+        const href = anchor.href ?? "";
+        if (/apply/.test(label) && href && !href.includes("linkedin.com")) {
+          externalApplyUrl = href;
+          break;
+        }
+      }
+    }
+
+    return { description, workplaceType, externalApplyUrl };
   });
 }
 
@@ -197,9 +199,10 @@ export async function scrapeLinkedInJobs(
           continue;
         }
 
-        let details: { description: string; workplaceType: WorkType } = {
+        let details: { description: string; workplaceType: WorkType; externalApplyUrl: string | null } = {
           description: "",
           workplaceType: "on-site",
+          externalApplyUrl: null,
         };
         try {
           details = await fetchJobDetails(page, job.url);

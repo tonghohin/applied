@@ -6,38 +6,23 @@ import {
   updateSearchRun,
 } from "@repo/db";
 import type { Browser, BrowserContext, BrowserContextOptions, Page } from "playwright";
-import { chromium } from "playwright-extra";
 import { browserManager } from "./browser";
 import { loginToLinkedIn } from "./linkedin/login";
 import { scrapeLinkedInJobs } from "./linkedin/scraper";
 import { scoreJob } from "./scorer";
+import { launchStealthBrowser, stealthContextOptions, stealthPatch } from "./stealth";
 
 type StorageState = NonNullable<BrowserContextOptions["storageState"]>;
-
-type ContextOptions = {
-  userAgent: string;
-  viewport: { width: number; height: number };
-};
-
-const webdriverPatch = () => {
-  Object.defineProperty(navigator, "webdriver", { get: () => undefined });
-};
-
-const contextOptions: ContextOptions = {
-  userAgent:
-    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
-  viewport: { width: 1280, height: 800 },
-};
 
 async function manualHeadedLogin(): Promise<string> {
   console.log(
     "[linkedin] CAPTCHA detected — opening browser for manual login. Complete the login and the run will continue automatically."
   );
-  const headedBrowser = await chromium.launch({ headless: false });
+  const headedBrowser = await launchStealthBrowser();
   try {
-    const ctx = await headedBrowser.newContext(contextOptions);
+    const ctx = await headedBrowser.newContext(stealthContextOptions);
     const pg = await ctx.newPage();
-    await pg.addInitScript(webdriverPatch);
+    await pg.addInitScript(stealthPatch);
     await pg.goto("https://www.linkedin.com/login", { waitUntil: "domcontentloaded" });
     await pg.waitForURL("**/feed**", { timeout: 5 * 60 * 1000 });
     return JSON.stringify(await ctx.storageState());
@@ -51,9 +36,9 @@ async function loginOrManual(
   email: string,
   password: string
 ): Promise<{ context: BrowserContext; page: Page; newSessionJson: string }> {
-  const context = await browser.newContext(contextOptions);
+  const context = await browser.newContext(stealthContextOptions);
   const page = await context.newPage();
-  await page.addInitScript(webdriverPatch);
+  await page.addInitScript(stealthPatch);
 
   try {
     await loginToLinkedIn(page, email, password);
@@ -63,11 +48,11 @@ async function loginOrManual(
       await context.close();
       const newSessionJson = await manualHeadedLogin();
       const restoredContext = await browser.newContext({
-        ...contextOptions,
+        ...stealthContextOptions,
         storageState: JSON.parse(newSessionJson) as StorageState,
       });
       const restoredPage = await restoredContext.newPage();
-      await restoredPage.addInitScript(webdriverPatch);
+      await restoredPage.addInitScript(stealthPatch);
       return { context: restoredContext, page: restoredPage, newSessionJson };
     }
     throw err;
@@ -102,16 +87,20 @@ export async function runSearch(
 
   if (existingSessionJson) {
     context = await browser.newContext({
-      ...contextOptions,
+      ...stealthContextOptions,
       storageState: JSON.parse(existingSessionJson) as StorageState,
     });
     page = await context.newPage();
-    await page.addInitScript(webdriverPatch);
+    await page.addInitScript(stealthPatch);
     await page.goto("https://www.linkedin.com/feed", { waitUntil: "domcontentloaded" });
 
     if (!page.url().includes("/feed")) {
       await context.close();
       ({ context, page, newSessionJson } = await loginOrManual(browser, email, password));
+    } else {
+      await page.waitForTimeout(1500 + Math.random() * 1500);
+      await page.mouse.wheel(0, 400);
+      await page.waitForTimeout(800 + Math.random() * 600);
     }
   } else {
     ({ context, page, newSessionJson } = await loginOrManual(browser, email, password));
@@ -141,6 +130,7 @@ export async function runSearch(
         location: job.location,
         description: job.description,
         url: job.url,
+        externalApplyUrl: job.externalApplyUrl,
         platform: job.platform,
         workplaceType: job.workplaceType,
         fitTier: scoreJob(job, { jobTitle: criteriaRow.jobTitle, skills: criteriaRow.skills }),

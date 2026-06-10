@@ -1,8 +1,9 @@
 import { describe, expect, it, vi } from "vitest";
 
-const { mockClose, mockTools } = vi.hoisted(() => ({
+const { mockClose, mockTools, mockGoto } = vi.hoisted(() => ({
   mockClose: vi.fn().mockResolvedValue(undefined),
   mockTools: vi.fn().mockResolvedValue({}),
+  mockGoto: vi.fn(),
 }));
 
 vi.mock("../env", () => ({
@@ -19,7 +20,7 @@ vi.mock("../mcp", () => ({
     close: mockClose,
     browserContext: {
       pages: () => [],
-      newPage: vi.fn().mockResolvedValue({ goto: vi.fn() }),
+      newPage: vi.fn().mockResolvedValue({ goto: mockGoto }),
     },
   }),
 }));
@@ -52,6 +53,7 @@ const mockJob = {
   workplaceType: "on-site" as const,
   fitTier: "strong" as const,
   status: "pending_review" as const,
+  externalApplyUrl: null,
   listedAt: new Date(),
   appliedAt: null,
   failureReason: null,
@@ -79,7 +81,10 @@ const mockProfile = {
 
 describe("applyToJob", () => {
   it("returns success when agent returns success", async () => {
-    vi.mocked(generateText).mockResolvedValueOnce({ output: { success: true }, steps: [] } as never);
+    vi.mocked(generateText).mockResolvedValueOnce({
+      output: { success: true },
+      steps: [],
+    } as never);
 
     const result = await applyToJob(mockJob, mockProfile, "/tmp/resume.pdf", 90000, undefined);
 
@@ -98,21 +103,71 @@ describe("applyToJob", () => {
   });
 
   it("returns failure with fallback reason when agent omits reason", async () => {
-    vi.mocked(generateText).mockResolvedValueOnce({ output: { success: false }, steps: [] } as never);
+    vi.mocked(generateText).mockResolvedValueOnce({
+      output: { success: false },
+      steps: [],
+    } as never);
 
     const result = await applyToJob(mockJob, mockProfile, "/tmp/resume.pdf", 90000, undefined);
 
     expect(result.success).toBe(false);
-    expect((result as { success: false; reason: string }).reason).toBe("Agent finished without a reason");
+    expect((result as { success: false; reason: string }).reason).toBe(
+      "Agent finished without a reason"
+    );
+  });
+
+  it("navigates directly to the external apply URL when it loads", async () => {
+    mockGoto.mockClear();
+    mockGoto.mockResolvedValueOnce({ status: () => 200 });
+    vi.mocked(generateText).mockResolvedValueOnce({
+      output: { success: true },
+      steps: [],
+    } as never);
+
+    const externalJob = { ...mockJob, externalApplyUrl: "https://boards.greenhouse.io/acme/1" };
+    await applyToJob(externalJob, mockProfile, "/tmp/resume.pdf", 90000, undefined);
+
+    expect(mockGoto).toHaveBeenCalledTimes(1);
+    expect(mockGoto).toHaveBeenCalledWith("https://boards.greenhouse.io/acme/1", expect.anything());
+  });
+
+  it("falls back to the job URL when the external apply URL returns an error status", async () => {
+    mockGoto.mockClear();
+    mockGoto.mockResolvedValueOnce({ status: () => 404 });
+    vi.mocked(generateText).mockResolvedValueOnce({
+      output: { success: true },
+      steps: [],
+    } as never);
+
+    const externalJob = { ...mockJob, externalApplyUrl: "https://boards.greenhouse.io/acme/1" };
+    await applyToJob(externalJob, mockProfile, "/tmp/resume.pdf", 90000, undefined);
+
+    expect(mockGoto).toHaveBeenCalledTimes(2);
+    expect(mockGoto).toHaveBeenLastCalledWith(mockJob.url, expect.anything());
+  });
+
+  it("falls back to the job URL when navigating to the external apply URL throws", async () => {
+    mockGoto.mockClear();
+    mockGoto.mockRejectedValueOnce(new Error("net::ERR_NAME_NOT_RESOLVED"));
+    vi.mocked(generateText).mockResolvedValueOnce({
+      output: { success: true },
+      steps: [],
+    } as never);
+
+    const externalJob = { ...mockJob, externalApplyUrl: "https://gone.example.com/jobs/1" };
+    await applyToJob(externalJob, mockProfile, "/tmp/resume.pdf", 90000, undefined);
+
+    expect(mockGoto).toHaveBeenCalledTimes(2);
+    expect(mockGoto).toHaveBeenLastCalledWith(mockJob.url, expect.anything());
   });
 
   it("always closes the MCP client", async () => {
     mockClose.mockClear();
     vi.mocked(generateText).mockRejectedValueOnce(new Error("network error"));
 
-    await expect(applyToJob(mockJob, mockProfile, "/tmp/resume.pdf", 90000, undefined)).rejects.toThrow(
-      "network error"
-    );
+    await expect(
+      applyToJob(mockJob, mockProfile, "/tmp/resume.pdf", 90000, undefined)
+    ).rejects.toThrow("network error");
 
     expect(mockClose).toHaveBeenCalledOnce();
   });

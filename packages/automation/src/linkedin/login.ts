@@ -1,6 +1,8 @@
 import type { Page } from "playwright";
 
 export async function loginToLinkedIn(page: Page, email: string, password: string): Promise<void> {
+  await page.goto("https://www.linkedin.com", { waitUntil: "domcontentloaded" });
+  await page.waitForTimeout(1500 + Math.random() * 1000);
   await page.goto("https://www.linkedin.com/login", { waitUntil: "load" });
 
   const url = page.url();
@@ -26,9 +28,11 @@ export async function loginToLinkedIn(page: Page, email: string, password: strin
     );
   }
 
-  await emailInput.fill(email);
+  await emailInput.pressSequentially(email, { delay: 80 });
+  await page.waitForTimeout(500 + Math.random() * 700);
   const passwordInput = page.locator('input[type="password"]:visible').first();
-  await passwordInput.fill(password);
+  await passwordInput.pressSequentially(password, { delay: 90 });
+  await page.waitForTimeout(300 + Math.random() * 400);
   await passwordInput.press("Enter");
 
   try {

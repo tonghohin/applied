@@ -14,6 +14,7 @@ function makeJob(title: string, description: string): ScrapedJob {
     company: "ACME",
     location: "Remote",
     url: "https://example.com",
+    externalApplyUrl: null,
     platform: "linkedin",
     workplaceType: "on-site",
     listedAt: new Date().toISOString(),

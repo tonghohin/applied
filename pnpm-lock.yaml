@@ -193,6 +193,9 @@ importers:
       '@playwright/mcp':
         specifier: ^0.0.75
         version: 0.0.75
+      '@repo/automation':
+        specifier: workspace:*
+        version: link:../automation
       '@repo/db':
         specifier: workspace:*
         version: link:../db

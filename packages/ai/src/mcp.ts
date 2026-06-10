@@ -1,21 +1,8 @@
 import { createMCPClient } from "@ai-sdk/mcp";
 import { InMemoryTransport } from "@modelcontextprotocol/sdk/inMemory.js";
 import { createConnection } from "@playwright/mcp";
+import { launchStealthBrowser, stealthContextOptions, stealthPatch } from "@repo/automation";
 import type { BrowserContext, BrowserContextOptions } from "playwright";
-import { chromium } from "playwright-extra";
-import StealthPlugin from "puppeteer-extra-plugin-stealth";
-
-chromium.use(StealthPlugin());
-
-const USER_AGENT =
-  "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36";
-
-const BROWSER_ARGS = [
-  "--disable-blink-features=AutomationControlled",
-  "--no-sandbox",
-  "--disable-setuid-sandbox",
-  "--disable-dev-shm-usage",
-];
 
 type StorageState = NonNullable<BrowserContextOptions["storageState"]>;
 type MCPClient = Awaited<ReturnType<typeof createMCPClient>>;
@@ -26,22 +13,19 @@ export type PlaywrightMCPClient = {
   browserContext: BrowserContext;
 };
 
-export async function createPlaywrightMCPClient(storageStateJson?: string): Promise<PlaywrightMCPClient> {
-  const browser = await chromium.launch({ headless: true, args: BROWSER_ARGS });
+export async function createPlaywrightMCPClient(
+  storageStateJson?: string
+): Promise<PlaywrightMCPClient> {
+  const browser = await launchStealthBrowser();
 
   try {
-    const contextOptions: BrowserContextOptions = {
-      userAgent: USER_AGENT,
-      viewport: { width: 1280, height: 800 },
-    };
+    const contextOptions: BrowserContextOptions = { ...stealthContextOptions };
     if (storageStateJson) {
       contextOptions.storageState = JSON.parse(storageStateJson) as StorageState;
     }
 
     const context = await browser.newContext(contextOptions);
-    await context.addInitScript(() => {
-      Object.defineProperty(navigator, "webdriver", { get: () => undefined });
-    });
+    await context.addInitScript(stealthPatch);
 
     // playwright-extra types reference playwright-core directly; pnpm resolves that to
     // 1.60.0 while @playwright/mcp uses 1.61-alpha. The types are identical at runtime.

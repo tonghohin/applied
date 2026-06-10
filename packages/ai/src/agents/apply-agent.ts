@@ -1,5 +1,5 @@
 import type { Job, Profile } from "@repo/db";
-import { Output, generateText, stepCountIs, tool } from "ai";
+import { type ModelMessage, Output, generateText, stepCountIs, tool } from "ai";
 import { z } from "zod";
 import { createPlaywrightMCPClient } from "../mcp";
 import { generateCoverLetter } from "./generate-cover-letter";
@@ -39,14 +39,17 @@ const FORM_FILLING_RULES = `## Form filling rules
 - For yes/no questions about sponsorship: answer based on the applicant's profile — "Yes" if they require sponsorship, "No" if they do not.
 - If a required field cannot be answered from the profile, use a reasonable placeholder.
 - If a file upload field for a resume appears and a Resume PDF path is provided in the prompt, use browser_file_upload to upload that file. For any other file upload fields, skip them.
-- Fill text fields one at a time using browser_type. Do not use browser_fill_form.
-- Before typing into any text field, ALWAYS first click it to focus it, then press "Control+a" with browser_press_key to select all existing content, then use browser_type to replace it. This prevents accidentally appending to pre-filled values.
+- Fill text fields one at a time. Do not use browser_fill_form or browser_type.
+- Before interacting with any field or button, ALWAYS first use browser_hover to move the mouse over the element, then click it. This simulates natural mouse movement and is required to avoid spam detection.
+- To fill a text field: hover the element → click it to focus → press "Control+a" with browser_press_key to clear existing content → use browser_press_sequentially with delay:80 to type the new value character by character. The delay:80 parameter simulates human typing speed and is critical — do not omit it.
+- After filling each text field, add a browser_wait_for with time:600 before moving to the next field.
+- Only use browser_type as a fallback if browser_press_sequentially fails on a specific field.
 - For location/address/city autocomplete fields: after typing the value, use browser_wait_for with a short text condition to wait for the dropdown to appear, then press "ArrowDown" and "Enter" with browser_press_key to select the first autocomplete suggestion. If no autocomplete dropdown appears, the typed value is accepted as-is.
 - When targeting elements from a snapshot, use the bare ref value as the target (e.g. if the snapshot shows [ref=e123], use target: "e123"). Never use "ref=e123" or "[ref=e123]" as a selector — those are invalid.
 - Prefer targeting by accessible role and name when refs fail: use getByRole("button", { name: "Submit" }) or getByRole("textbox", { name: "Email" }) syntax as the target value.
 - For resume file upload: click the upload button first to open the file dialog, then immediately call browser_file_upload with the resume PDF path. Do not call browser_file_upload before triggering the dialog.
 - Do not take a snapshot unless the page has changed (after a navigation, click, or form submission). Never take consecutive snapshots without an action in between.
-- When clicking multiple checkboxes or radio buttons in sequence, add a browser_wait_for with time:1 between each click. This avoids triggering spam/bot detection heuristics that flag rapid consecutive clicks.
+- When clicking multiple checkboxes or radio buttons in sequence, add a browser_wait_for with time:1500 between each click. This avoids triggering spam/bot detection heuristics that flag rapid consecutive clicks.
 
 ## Dropdown fields
 Many modern ATS forms use custom React/styled dropdowns that are NOT native <select> elements — browser_select_option will NOT work on them. To select an option from a custom dropdown:
@@ -78,7 +81,7 @@ Return { success: false, reason: "..." } in these cases:
 - Never infer success from completing the form or clicking submit alone — you must see the confirmation.
 
 ## Spam detection recovery
-If the ATS shows a "flagged as spam" or "possible spam" error with a suggestion to try again (common on Ashby): wait 2 seconds, then click the submit button one more time (this is the ATS's own retry flow). If it is flagged a second time, return { success: false, reason: "flagged as spam by ATS" }.
+If the ATS shows a "flagged as spam" or "possible spam" error with a suggestion to try again (common on Ashby): use browser_wait_for with time:8000 to wait 8 seconds, then click the submit button one more time (this is the ATS's own retry flow, and it needs time to clear the rate limit). If it is flagged a second time, return { success: false, reason: "flagged as spam by ATS" }.
 
 ## Submission retry limit
 Never submit the same form more than 2 times. If the form fails validation twice, identify the specific failing field from the error message, attempt ONE targeted fix, then submit a third and final time. If it still fails, return { success: false, reason: "<specific validation error>" } immediately. Repeated submission attempts trigger CAPTCHA and bot detection — failing fast is better than looping.
@@ -227,13 +230,35 @@ export async function applyToJob(
     log("Pre-navigating to job URL");
     const firstPage = client.browserContext.pages()[0];
     const page = firstPage !== undefined ? firstPage : await client.browserContext.newPage();
-    await page.goto(job.url, { waitUntil: "domcontentloaded" });
+    let navigateUrl = job.url;
+    if (job.externalApplyUrl) {
+      // The external URL was captured at scrape time and may have gone stale (job closed,
+      // expired redirect, ATS migration). Fall back to the LinkedIn job page, where the
+      // agent can rediscover the current apply link via the Apply button.
+      try {
+        const response = await page.goto(job.externalApplyUrl, { waitUntil: "domcontentloaded" });
+        if (response && response.status() >= 400) {
+          log(
+            `External apply URL returned ${response.status()} — falling back to LinkedIn job page`
+          );
+        } else {
+          navigateUrl = job.externalApplyUrl;
+        }
+      } catch {
+        log("External apply URL unreachable — falling back to LinkedIn job page");
+      }
+    }
+    if (navigateUrl === job.url) {
+      await page.goto(job.url, { waitUntil: "domcontentloaded" });
+    }
     log("Page loaded");
     const ALLOWED_TOOL_NAMES = new Set([
       "browser_navigate",
       "browser_snapshot",
       "browser_click",
       "browser_type",
+      "browser_press_sequentially",
+      "browser_hover",
       "browser_select_option",
       "browser_file_upload",
       "browser_press_key",
@@ -279,7 +304,7 @@ export async function applyToJob(
       .filter(Boolean)
       .join("\n");
 
-    const platform = detectPlatform(job.url);
+    const platform = detectPlatform(navigateUrl);
     log(`Platform detected: ${platform}`);
 
     const { output, steps } = await generateText({
@@ -288,8 +313,47 @@ export async function applyToJob(
       stopWhen: stepCountIs(100),
       output: Output.object({ schema: applyResultSchema }),
       system: PROMPTS[platform],
-      prompt: `Apply to this job:\nURL: ${job.url}\nTitle: ${job.title} at ${job.company}\n\nApplicant profile:\n${profileSummary}${resumePdfPath ? `\n\nResume PDF path: ${resumePdfPath}` : ""}`,
+      prompt: `Apply to this job:\nURL: ${navigateUrl}\nTitle: ${job.title} at ${job.company}\n\nApplicant profile:\n${profileSummary}${resumePdfPath ? `\n\nResume PDF path: ${resumePdfPath}` : ""}`,
       experimental_telemetry: { isEnabled: true },
+      prepareStep: ({ messages }) => {
+        // Keep only the most recent browser_snapshot result; replace older ones with a
+        // short placeholder to avoid re-sending large DOM snapshots every step.
+        const snapshotIndices: number[] = [];
+        for (let idx = 0; idx < messages.length; idx++) {
+          const msg = messages[idx];
+          if (!msg || msg.role !== "tool") continue;
+          if (
+            msg.content.some(
+              (part) => part.type === "tool-result" && part.toolName === "browser_snapshot"
+            )
+          ) {
+            snapshotIndices.push(idx);
+          }
+        }
+        if (snapshotIndices.length <= 1) return {};
+
+        const toStub = new Set(snapshotIndices.slice(0, -1));
+        return {
+          messages: messages.map((msg, idx): ModelMessage => {
+            if (!toStub.has(idx) || msg.role !== "tool") return msg;
+            return {
+              ...msg,
+              content: msg.content.map((part) => {
+                if (part.type !== "tool-result" || part.toolName !== "browser_snapshot")
+                  return part;
+                return {
+                  ...part,
+                  output: {
+                    type: "text" ,
+                    value:
+                      "[snapshot omitted — call browser_snapshot again if you need a fresh view]",
+                  },
+                };
+              }),
+            };
+          }),
+        };
+      },
       onStepFinish: (step) => {
         for (const toolCall of step.toolCalls) {
           logToolCall(step.stepNumber, toolCall.toolName, toolCall.input, log);
@@ -297,7 +361,9 @@ export async function applyToJob(
       },
     });
     log(`AI agent finished after ${steps.length} step(s)`);
-    log(`Agent result: success=${output.success}${output.reason ? ` reason=${output.reason}` : ""}`);
+    log(
+      `Agent result: success=${output.success}${output.reason ? ` reason=${output.reason}` : ""}`
+    );
 
     if (output.success) return { success: true };
     return { success: false, reason: output.reason ?? "Agent finished without a reason" };
