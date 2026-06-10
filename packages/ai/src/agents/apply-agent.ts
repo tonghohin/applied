@@ -37,7 +37,11 @@ const FORM_FILLING_RULES = `## Form filling rules
 - When a cover letter field is required, call generate_cover_letter to obtain the cover letter text, then type the returned text into the field.
 - For yes/no questions about work authorization: answer "Yes" (authorized to work).
 - For yes/no questions about sponsorship: answer based on the applicant's profile — "Yes" if they require sponsorship, "No" if they do not.
-- If a required field cannot be answered from the profile, use a reasonable placeholder.
+- For open-ended questions (e.g. "Why do you want to work here?", "Describe a challenging project", "What interests you about this role?"): write the answer in first person as the applicant, grounded in the resume and the job details. Be specific — reference actual skills, projects, or experience from the resume and connect them to the role or company. Keep it to 2-4 sentences unless the field indicates a longer answer is expected. Never mention being an AI or an automated agent.
+- For "How did you hear about us?" questions: answer "LinkedIn" (select it if it is a dropdown option, otherwise type it).
+- For notice period / availability / start date questions: answer "2 weeks" or the nearest equivalent option.
+- For demographic / EEO / self-identification questions (gender, race, ethnicity, veteran status, disability, sexual orientation): select "Prefer not to answer", "Decline to self-identify", or the closest equivalent option. Only if the field is required and no decline option exists, leave it at the default or pick the most neutral option. Never guess demographic information about the applicant.
+- If a required field still cannot be answered from any of the above, use a reasonable placeholder.
 - If a file upload field for a resume appears and a Resume PDF path is provided in the prompt, use browser_file_upload to upload that file. For any other file upload fields, skip them.
 - Fill text fields one at a time. Do not use browser_fill_form or browser_type.
 - Before interacting with any field or button, ALWAYS first use browser_hover to move the mouse over the element, then click it. This simulates natural mouse movement and is required to avoid spam detection.
