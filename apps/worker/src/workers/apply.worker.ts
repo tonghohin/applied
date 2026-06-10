@@ -1,6 +1,6 @@
 import { propagateAttributes } from "@langfuse/tracing";
 import { processApplyJob } from "@repo/ai";
-import { db, getLinkedInAccount, updateApplyRun } from "@repo/db";
+import { db, getLinkedInAccount, updateApplyRun, updateJobFailed } from "@repo/db";
 import type { ApplyRunLog } from "@repo/db";
 import { decrypt } from "@repo/shared";
 import { Worker } from "bullmq";
@@ -48,7 +48,8 @@ export const applyWorker = new Worker<ApplyJobData>(
         completedAt,
         logs,
       });
-      if (completedRun) publishEvent(userId, { type: "apply-run:update", jobId, run: completedRun });
+      if (completedRun)
+        publishEvent(userId, { type: "apply-run:update", jobId, run: completedRun });
       if (applyResult?.success) {
         publishEvent(userId, {
           type: "job:status",
@@ -64,7 +65,10 @@ export const applyWorker = new Worker<ApplyJobData>(
           jobId,
           status: "failed",
           appliedAt: null,
-          failureReason: applyResult?.success === false ? (applyResult.reason ?? "Unknown error") : "Unknown error",
+          failureReason:
+            applyResult?.success === false
+              ? (applyResult.reason ?? "Unknown error")
+              : "Unknown error",
           updatedAt: completedAt,
         });
       }
@@ -72,6 +76,9 @@ export const applyWorker = new Worker<ApplyJobData>(
       log(`Unexpected error: ${err instanceof Error ? err.message : String(err)}`);
       const completedAt = new Date();
       const failureReason = err instanceof Error ? err.message : String(err);
+      // processApplyJob only updates the job row when applyToJob returns; on a thrown
+      // error the job would otherwise stay in "applying" forever.
+      await updateJobFailed(db, jobId, failureReason);
       const failedRun = await updateApplyRun(db, runId, {
         status: "failed",
         completedAt,

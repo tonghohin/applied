@@ -309,6 +309,10 @@ export async function applyToJob(
 
     const { output, steps } = await generateText({
       model: "google/gemini-2.5-flash",
+      // Pin gateway routing to Vertex. Output.object adds a JSON responseFormat to every
+      // step, and the gateway's fallback route (Google AI Studio) rejects requests that
+      // combine function calling with a JSON response mime type — Vertex accepts it.
+      providerOptions: { gateway: { only: ["vertex"] } },
       tools,
       stopWhen: stepCountIs(100),
       output: Output.object({ schema: applyResultSchema }),
@@ -344,7 +348,7 @@ export async function applyToJob(
                 return {
                   ...part,
                   output: {
-                    type: "text" ,
+                    type: "text",
                     value:
                       "[snapshot omitted — call browser_snapshot again if you need a fresh view]",
                   },

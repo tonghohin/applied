@@ -116,6 +116,18 @@ describe("applyToJob", () => {
     );
   });
 
+  it("pins gateway routing to vertex (AI Studio rejects tools + JSON response format)", async () => {
+    vi.mocked(generateText).mockResolvedValueOnce({
+      output: { success: true },
+      steps: [],
+    } as never);
+
+    await applyToJob(mockJob, mockProfile, "/tmp/resume.pdf", 90000, undefined);
+
+    const callArgs = vi.mocked(generateText).mock.calls.at(-1)?.[0];
+    expect(callArgs?.providerOptions).toEqual({ gateway: { only: ["vertex"] } });
+  });
+
   it("navigates directly to the external apply URL when it loads", async () => {
     mockGoto.mockClear();
     mockGoto.mockResolvedValueOnce({ status: () => 200 });
