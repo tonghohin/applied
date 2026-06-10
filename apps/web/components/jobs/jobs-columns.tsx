@@ -2,10 +2,10 @@ import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { DataTableColumnHeader } from "@/components/ui/data-table-column-header";
 import type { FitTier, Job, JobStatus } from "@/lib/trpc";
+import { toTitleCase } from "@repo/shared";
 import type { ColumnDef } from "@tanstack/react-table";
 import { format } from "date-fns";
 import Link from "next/link";
-import { toTitleCase } from "@repo/shared";
 import { ApplyButton } from "./apply-button";
 import { FitTierBadge } from "./fit-tier-badge";
 import { JobStatusBadge } from "./job-status-badge";
@@ -103,7 +103,8 @@ export const columns: ColumnDef<Job>[] = [
     cell: ({ row }) => {
       const job = row.original;
       const hasLogs =
-        job.latestApplyRun !== null && (job.status === "applied" || job.status === "failed");
+        job.latestApplyRun !== null &&
+        (job.status === "applied" || job.status === "applying" || job.status === "failed");
       if (!hasLogs) return <span className="text-muted-foreground text-xs">No logs</span>;
       return (
         <Button variant="ghost" size="xs" onClick={() => row.toggleExpanded()} className="-m-2">
