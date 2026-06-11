@@ -5,6 +5,14 @@ export type FitTier = (typeof fitTierEnum.enumValues)[number];
 
 const [STRONG, POTENTIAL, WEAK] = fitTierEnum.enumValues;
 
+// Scoring weights — these interact: with a single title, max title score is
+// TITLE_POINTS, so "strong" requires a title match plus
+// (STRONG_THRESHOLD - TITLE_POINTS) skill matches.
+const TITLE_POINTS = 2;
+const MAX_SKILL_POINTS = 6;
+const STRONG_THRESHOLD = 7;
+const POTENTIAL_THRESHOLD = 3;
+
 function normalize(text: string): string {
   return text.toLowerCase().trim();
 }
@@ -15,25 +23,21 @@ function countMatches(haystack: string, needles: string[]): number {
 
 export function scoreJob(
   job: ScrapedJob,
-  // Note: with a single title, max title score is 2 pts (match = 2, no match = 0).
-  // "strong" (≥7) therefore requires 1 title match + 5 skill matches.
   criteria: Pick<SearchCriteria, "jobTitle"> & { skills?: string[] }
 ): FitTier {
   const text = normalize(`${job.title} ${job.description}`);
   let score = 0;
 
-  // Title match (worth 2 points)
   if (criteria.jobTitle && text.includes(normalize(criteria.jobTitle))) {
-    score += 2;
+    score += TITLE_POINTS;
   }
 
-  // Skills match (worth up to 6 points)
   if (criteria.skills && criteria.skills.length > 0) {
     const skillMatches = countMatches(text, criteria.skills);
-    score += Math.min(skillMatches, 6);
+    score += Math.min(skillMatches, MAX_SKILL_POINTS);
   }
 
-  if (score >= 7) return STRONG;
-  if (score >= 3) return POTENTIAL;
+  if (score >= STRONG_THRESHOLD) return STRONG;
+  if (score >= POTENTIAL_THRESHOLD) return POTENTIAL;
   return WEAK;
 }

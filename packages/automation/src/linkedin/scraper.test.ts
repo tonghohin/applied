@@ -176,6 +176,21 @@ describe("scrapeLinkedInJobs", () => {
     expect(results).toHaveLength(1);
   });
 
+  it("stops paginating at maxPages even when pages keep returning jobs", async () => {
+    const page = makePage([
+      [makeJob("1")],
+      [],
+      [], // page 0
+      details("description 1"), // fetchJobDetails for job1
+    ]);
+
+    const results = await scrapeLinkedInJobs(page, criteria, noKnownUrls, 1);
+
+    expect(results).toHaveLength(1);
+    const visitedUrls = vi.mocked(page.goto).mock.calls.map(([url]) => String(url));
+    expect(visitedUrls.some((url) => url.includes("start=25"))).toBe(false);
+  });
+
   it("skips jobs whose title matches an excluded keyword", async () => {
     const page = makePage([
       [makeJob("1"), { ...makeJob("2"), title: "Java Developer" }],

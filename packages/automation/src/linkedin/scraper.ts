@@ -4,7 +4,7 @@ import { secondsInWeek } from "date-fns/constants";
 import type { Page } from "playwright";
 import type { ScrapedJob, SearchCriteria } from "../types";
 
-const MAX_PAGES = 5;
+const DEFAULT_MAX_PAGES = 5;
 const randomDelay = (minMs = 1500, maxMs = 3500) =>
   minMs + Math.floor(Math.random() * (maxMs - minMs));
 
@@ -147,7 +147,8 @@ async function fetchJobDetails(page: Page, url: string): Promise<{ description: 
 export async function scrapeLinkedInJobs(
   page: Page,
   criteria: SearchCriteria,
-  knownUrls: Set<string>
+  knownUrls: Set<string>,
+  maxPages: number = DEFAULT_MAX_PAGES
 ): Promise<ScrapedJob[]> {
   const results: ScrapedJob[] = [];
   const seen = new Set<string>();
@@ -159,7 +160,7 @@ export async function scrapeLinkedInJobs(
     for (const workType of locationEntry.workTypes) {
       if (searchIdx++ > 0) await page.waitForTimeout(randomDelay(3000, 5000));
       const searchUrl = buildSearchUrl(criteria.jobTitle, locationEntry.location, workType);
-      for (let pageNum = 0; pageNum < MAX_PAGES; pageNum++) {
+      for (let pageNum = 0; pageNum < maxPages; pageNum++) {
         const url = pageNum === 0 ? searchUrl : `${searchUrl}&start=${pageNum * 25}`;
         await gotoWithRetry(page, url);
         // Short settle only — scrapeJobsPage's scroll loop already waits for cards to render

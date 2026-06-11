@@ -65,7 +65,8 @@ export async function runSearch(
   email: string,
   password: string,
   runId: string,
-  existingSessionJson?: string
+  existingSessionJson?: string,
+  options?: { maxPages?: number }
 ): Promise<{ jobCount: number; newSessionJson: string | null }> {
   const criteriaRow = await getJobCriteriaForUser(db, userId);
   if (!criteriaRow) throw new Error("No job criteria found");
@@ -115,7 +116,8 @@ export async function runSearch(
         locations: criteriaRow.locations,
         excludeKeywords: criteriaRow.excludeKeywords,
       },
-      knownUrls
+      knownUrls,
+      options?.maxPages
     );
 
     if (scraped.length === 0) return { jobCount: 0, newSessionJson };

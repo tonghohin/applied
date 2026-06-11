@@ -61,7 +61,15 @@ export const searchWorker = new Worker<SearchJobData>(
   async (job) => {
     await processSearch(job.data.userId, job.data.runId);
   },
-  { connection: { url: env.REDIS_URL }, concurrency: 1, lockDuration: 5 * 60 * 1000 }
+  {
+    connection: { url: env.REDIS_URL },
+    concurrency: 1,
+    // lockDuration bounds stall detection, not total run time — BullMQ renews the lock
+    // every lockDuration/2 while the processor runs. A search run routinely exceeds 5
+    // minutes (locations × workTypes × maxPages pages, with human-mimicry dwells per
+    // job); that's fine as long as the event loop stays responsive so renewals fire.
+    lockDuration: 5 * 60 * 1000,
+  }
 );
 
 searchWorker.on("failed", (job, err) => {
