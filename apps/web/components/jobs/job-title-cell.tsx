@@ -43,8 +43,8 @@ export function JobTitleCell({ job }: { job: Job }) {
   }
 
   return (
-    <span className="flex items-center gap-1.5">
-      <span ref={cellRef} className="font-medium">
+    <span className="flex max-w-70 items-center gap-1.5">
+      <span ref={cellRef} className="whitespace-normal font-medium">
         {job.title}
       </span>
       <Link

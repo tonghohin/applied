@@ -64,6 +64,14 @@ export const columns: ColumnDef<Job>[] = [
   {
     accessorKey: "company",
     header: ({ column }) => <DataTableColumnHeader column={column} title="Company" />,
+    cell: ({ getValue }) => {
+      const company = getValue<string>();
+      return (
+        <span className="block max-w-40 truncate" title={company}>
+          {company}
+        </span>
+      );
+    },
     filterFn: "arrIncludesSome",
   },
   {
