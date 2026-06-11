@@ -53,7 +53,6 @@ const mockJob = {
   workplaceType: "on-site" as const,
   fitTier: "strong" as const,
   status: "pending_review" as const,
-  externalApplyUrl: null,
   appliedAt: null,
   failureReason: null,
   createdAt: new Date(),
@@ -127,49 +126,17 @@ describe("applyToJob", () => {
     expect(callArgs?.providerOptions).toEqual({ gateway: { only: ["vertex"] } });
   });
 
-  it("navigates directly to the external apply URL when it loads", async () => {
+  it("always pre-navigates to the job's LinkedIn URL", async () => {
     mockGoto.mockClear();
-    mockGoto.mockResolvedValueOnce({ status: () => 200 });
     vi.mocked(generateText).mockResolvedValueOnce({
       output: { success: true },
       steps: [],
     } as never);
 
-    const externalJob = { ...mockJob, externalApplyUrl: "https://boards.greenhouse.io/acme/1" };
-    await applyToJob(externalJob, mockProfile, "/tmp/resume.pdf", 90000, undefined);
+    await applyToJob(mockJob, mockProfile, "/tmp/resume.pdf", 90000, undefined);
 
     expect(mockGoto).toHaveBeenCalledTimes(1);
-    expect(mockGoto).toHaveBeenCalledWith("https://boards.greenhouse.io/acme/1", expect.anything());
-  });
-
-  it("falls back to the job URL when the external apply URL returns an error status", async () => {
-    mockGoto.mockClear();
-    mockGoto.mockResolvedValueOnce({ status: () => 404 });
-    vi.mocked(generateText).mockResolvedValueOnce({
-      output: { success: true },
-      steps: [],
-    } as never);
-
-    const externalJob = { ...mockJob, externalApplyUrl: "https://boards.greenhouse.io/acme/1" };
-    await applyToJob(externalJob, mockProfile, "/tmp/resume.pdf", 90000, undefined);
-
-    expect(mockGoto).toHaveBeenCalledTimes(2);
-    expect(mockGoto).toHaveBeenLastCalledWith(mockJob.url, expect.anything());
-  });
-
-  it("falls back to the job URL when navigating to the external apply URL throws", async () => {
-    mockGoto.mockClear();
-    mockGoto.mockRejectedValueOnce(new Error("net::ERR_NAME_NOT_RESOLVED"));
-    vi.mocked(generateText).mockResolvedValueOnce({
-      output: { success: true },
-      steps: [],
-    } as never);
-
-    const externalJob = { ...mockJob, externalApplyUrl: "https://gone.example.com/jobs/1" };
-    await applyToJob(externalJob, mockProfile, "/tmp/resume.pdf", 90000, undefined);
-
-    expect(mockGoto).toHaveBeenCalledTimes(2);
-    expect(mockGoto).toHaveBeenLastCalledWith(mockJob.url, expect.anything());
+    expect(mockGoto).toHaveBeenCalledWith(mockJob.url, expect.anything());
   });
 
   it("always closes the MCP client", async () => {

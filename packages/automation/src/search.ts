@@ -130,7 +130,6 @@ export async function runSearch(
         location: job.location,
         description: job.description,
         url: job.url,
-        externalApplyUrl: job.externalApplyUrl,
         platform: job.platform,
         workplaceType: job.workplaceType,
         fitTier: scoreJob(job, { jobTitle: criteriaRow.jobTitle, skills: criteriaRow.skills }),

@@ -11,7 +11,6 @@ import { scrapeLinkedInJobs } from "./scraper";
 
 const details = (description = "") => ({
   description,
-  externalApplyUrl: null,
 });
 
 const criteria: SearchCriteria = {
@@ -39,6 +38,7 @@ function makePage(evaluateResponses: unknown[]): Page {
     goto: vi.fn().mockResolvedValue(undefined),
     hover: vi.fn().mockResolvedValue(undefined),
     waitForTimeout: vi.fn().mockResolvedValue(undefined),
+    waitForFunction: vi.fn().mockResolvedValue(undefined),
     mouse: { wheel: vi.fn().mockResolvedValue(undefined) },
     evaluate: vi.fn().mockImplementation(() => {
       const response = evaluateResponses[i++] ?? [];
@@ -53,7 +53,7 @@ afterEach(() => {
 
 describe("scrapeLinkedInJobs", () => {
   it("hovers a job card so wheel scrolling targets the job-list panel", async () => {
-    const page = makePage([[makeJob("1")], [], [], [], details("description 1")]);
+    const page = makePage([[makeJob("1")], [], [], details("description 1")]);
 
     await scrapeLinkedInJobs(page, criteria, noKnownUrls);
 
@@ -64,8 +64,8 @@ describe("scrapeLinkedInJobs", () => {
   });
 
   it("includes the past-week f_TPR and single work-type f_WT filters in the search URL", async () => {
-    // Empty first page: 3 stable extractCards rounds, then pagination stops
-    const page = makePage([[], [], []]);
+    // Empty first page: 2 stable extractCards rounds, then pagination stops
+    const page = makePage([[], []]);
 
     await scrapeLinkedInJobs(page, criteria, noKnownUrls);
 
@@ -82,14 +82,11 @@ describe("scrapeLinkedInJobs", () => {
     const page = makePage([
       [makeJob("1")],
       [],
-      [],
       [], // remote search, page 0
       details("remote job"),
       [], // remote search, page 1: empty → stop
       [],
-      [],
       [makeJob("2")],
-      [],
       [],
       [], // hybrid search, page 0
       details("hybrid job"),
@@ -107,12 +104,11 @@ describe("scrapeLinkedInJobs", () => {
 
   it("skips already-stored jobs without fetching their details", async () => {
     const knownUrls = new Set(["https://www.linkedin.com/jobs/view/2/"]);
-    // scrapeJobsPage needs 4 extractCards calls per page (1 with data + 3 stable rounds)
+    // scrapeJobsPage needs 3 extractCards calls per page (1 with data + 2 stable rounds)
     const page = makePage([
       [makeJob("1"), makeJob("2")],
       [],
-      [],
-      [], // page 0: both cards, then 3 stable
+      [], // page 0: both cards, then 2 stable
       details("description 1"), // fetchJobDetails for job1 only (job2 already stored)
     ]);
 
@@ -127,7 +123,6 @@ describe("scrapeLinkedInJobs", () => {
   it("retries fetchJobDetails once and uses the second attempt's result", async () => {
     const page = makePage([
       [makeJob("1")],
-      [],
       [],
       [], // page 0
       new Error("timeout"), // first fetchJobDetails attempt fails
@@ -144,7 +139,6 @@ describe("scrapeLinkedInJobs", () => {
     const page = makePage([
       [makeJob("1")],
       [],
-      [],
       [], // page 0
       new Error("timeout"), // first attempt
       new Error("timeout"), // retry also fails → fallback details, job still kept
@@ -159,7 +153,7 @@ describe("scrapeLinkedInJobs", () => {
 
   it("strips ' with verification' suffix from job titles", async () => {
     const jobWithBadge = { ...makeJob("1"), title: "Senior Engineer with verification" };
-    const page = makePage([[jobWithBadge], [], [], [], details("description 1")]);
+    const page = makePage([[jobWithBadge], [], [], details("description 1")]);
 
     const results = await scrapeLinkedInJobs(page, criteria, noKnownUrls);
 
@@ -170,11 +164,9 @@ describe("scrapeLinkedInJobs", () => {
     const page = makePage([
       [makeJob("1")],
       [],
-      [],
       [], // page 0
       details("description 1"), // fetchJobDetails for job1
       [makeJob("1")],
-      [],
       [],
       [], // page 1: same URL → skipped by seen Set in scrapeLinkedInJobs
     ]);
@@ -187,7 +179,6 @@ describe("scrapeLinkedInJobs", () => {
   it("skips jobs whose title matches an excluded keyword", async () => {
     const page = makePage([
       [makeJob("1"), { ...makeJob("2"), title: "Java Developer" }],
-      [],
       [],
       [], // page 0
       details("description 1"), // only job1 gets fetchJobDetails (java job excluded before fetch)

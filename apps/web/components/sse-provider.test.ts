@@ -36,7 +36,6 @@ const baseJob = {
   fitTier: "strong" as const,
   status: "pending_review" as const,
   runId: "run-1",
-  externalApplyUrl: null,
   appliedAt: null,
   failureReason: null,
   createdAt: new Date("2026-01-01"),

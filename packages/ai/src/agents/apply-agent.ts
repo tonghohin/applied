@@ -234,27 +234,10 @@ export async function applyToJob(
     log("Pre-navigating to job URL");
     const firstPage = client.browserContext.pages()[0];
     const page = firstPage !== undefined ? firstPage : await client.browserContext.newPage();
-    let navigateUrl = job.url;
-    if (job.externalApplyUrl) {
-      // The external URL was captured at scrape time and may have gone stale (job closed,
-      // expired redirect, ATS migration). Fall back to the LinkedIn job page, where the
-      // agent can rediscover the current apply link via the Apply button.
-      try {
-        const response = await page.goto(job.externalApplyUrl, { waitUntil: "domcontentloaded" });
-        if (response && response.status() >= 400) {
-          log(
-            `External apply URL returned ${response.status()} — falling back to LinkedIn job page`
-          );
-        } else {
-          navigateUrl = job.externalApplyUrl;
-        }
-      } catch {
-        log("External apply URL unreachable — falling back to LinkedIn job page");
-      }
-    }
-    if (navigateUrl === job.url) {
-      await page.goto(job.url, { waitUntil: "domcontentloaded" });
-    }
+    // Always start on the job's LinkedIn page — for external (non-Easy-Apply) jobs the
+    // real application URL only resolves through clicking the Apply button, which the
+    // agent does itself (LinkedIn prompt, instruction 3).
+    await page.goto(job.url, { waitUntil: "domcontentloaded" });
     log("Page loaded");
     const ALLOWED_TOOL_NAMES = new Set([
       "browser_navigate",
@@ -308,7 +291,7 @@ export async function applyToJob(
       .filter(Boolean)
       .join("\n");
 
-    const platform = detectPlatform(navigateUrl);
+    const platform = detectPlatform(job.url);
     log(`Platform detected: ${platform}`);
 
     const { output, steps } = await generateText({
@@ -321,7 +304,7 @@ export async function applyToJob(
       stopWhen: stepCountIs(100),
       output: Output.object({ schema: applyResultSchema }),
       system: PROMPTS[platform],
-      prompt: `Apply to this job:\nURL: ${navigateUrl}\nTitle: ${job.title} at ${job.company}\n\nApplicant profile:\n${profileSummary}${resumePdfPath ? `\n\nResume PDF path: ${resumePdfPath}` : ""}`,
+      prompt: `Apply to this job:\nURL: ${job.url}\nTitle: ${job.title} at ${job.company}\n\nApplicant profile:\n${profileSummary}${resumePdfPath ? `\n\nResume PDF path: ${resumePdfPath}` : ""}`,
       experimental_telemetry: { isEnabled: true },
       prepareStep: ({ messages }) => {
         // Keep only the most recent browser_snapshot result; replace older ones with a

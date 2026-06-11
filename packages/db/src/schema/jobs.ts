@@ -24,7 +24,6 @@ export const jobs = pgTable(
     runId: uuid("run_id")
       .notNull()
       .references(() => searchRuns.id, { onDelete: "cascade" }),
-    externalApplyUrl: text("external_apply_url"),
     appliedAt: timestamp("applied_at"),
     failureReason: text("failure_reason"),
     createdAt: timestamp("created_at").notNull().defaultNow(),

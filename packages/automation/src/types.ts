@@ -9,7 +9,6 @@ export interface ScrapedJob {
   location: string;
   url: string;
   description: string;
-  externalApplyUrl: string | null;
   workplaceType: WorkType;
   platform: Platform;
 }

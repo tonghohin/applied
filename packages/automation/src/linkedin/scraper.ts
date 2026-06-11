@@ -5,7 +5,8 @@ import type { Page } from "playwright";
 import type { ScrapedJob, SearchCriteria } from "../types";
 
 const MAX_PAGES = 5;
-const randomDelay = () => Math.floor(Math.random() * 2000) + 1500;
+const randomDelay = (minMs = 1500, maxMs = 3500) =>
+  minMs + Math.floor(Math.random() * (maxMs - minMs));
 
 const WT_MAP: Record<WorkType, string> = {
   "on-site": "1",
@@ -50,9 +51,7 @@ function extractCards() {
     .filter((j) => j.title && j.url);
 }
 
-async function scrapeJobsPage(
-  page: Page
-): Promise<Omit<ScrapedJob, "workplaceType" | "externalApplyUrl">[]> {
+async function scrapeJobsPage(page: Page): Promise<Omit<ScrapedJob, "workplaceType">[]> {
   const seen = new Map<string, ReturnType<typeof extractCards>[number]>();
 
   // Wheel events fire at the mouse position (0,0 by default), which misses LinkedIn's
@@ -60,11 +59,11 @@ async function scrapeJobsPage(
   try {
     await page.hover("[data-occludable-job-id]", { timeout: 5000 });
   } catch {
-    // no job cards rendered; the loop below exits after 3 stable rounds
+    // no job cards rendered; the loop below exits after 2 stable rounds
   }
 
   let stableRounds = 0;
-  while (stableRounds < 3) {
+  while (stableRounds < 2) {
     const cards = await page.evaluate(extractCards);
     let newCards = 0;
     for (const card of cards) {
@@ -79,8 +78,10 @@ async function scrapeJobsPage(
     } else {
       stableRounds = 0;
     }
-    await page.mouse.wheel(0, 600);
-    await page.waitForTimeout(600);
+    // Fast randomized flings — wheel speed on a loaded page is client-side and well
+    // within trackpad behavior; only the lazy-load fetches it triggers reach LinkedIn
+    await page.mouse.wheel(0, randomDelay(900, 1400));
+    await page.waitForTimeout(randomDelay(250, 450));
   }
 
   return Array.from(seen.values()).map((job) => ({
@@ -104,12 +105,22 @@ async function gotoWithRetry(page: Page, url: string): Promise<void> {
   }
 }
 
-async function fetchJobDetails(
-  page: Page,
-  url: string
-): Promise<{ description: string; externalApplyUrl: string | null }> {
+async function fetchJobDetails(page: Page, url: string): Promise<{ description: string }> {
   await gotoWithRetry(page, url);
-  await page.waitForTimeout(randomDelay());
+  // Adaptive wait with a dwell floor: proceed as soon as the description has rendered,
+  // but never leave the page before a randomized minimum — per-page dwell time is part
+  // of looking human even when the content loads instantly.
+  const minDwellMs = randomDelay(1500, 2500);
+  const navigatedAt = Date.now();
+  await page
+    .waitForFunction(() => document.body?.textContent?.includes("About the job") ?? false, {
+      timeout: 4000,
+    })
+    .catch(() => {
+      // description never rendered or uses a different layout — extraction below falls back
+    });
+  const remainingDwellMs = minDwellMs - (Date.now() - navigatedAt);
+  if (remainingDwellMs > 0) await page.waitForTimeout(remainingDwellMs);
   return page.evaluate(() => {
     // Primary: LinkedIn usually wraps the description with an "About the job" header
     const aboutJobEl = Array.from(document.querySelectorAll("div, section, article")).find((el) => {
@@ -129,18 +140,7 @@ async function fetchJobDetails(
           );
         })();
 
-    // Look for a direct non-LinkedIn link labelled as an apply action
-    let externalApplyUrl: string | null = null;
-    for (const anchor of Array.from(document.querySelectorAll("a[href]")) as HTMLAnchorElement[]) {
-      const label = (anchor.getAttribute("aria-label") ?? anchor.textContent ?? "").toLowerCase();
-      const href = anchor.href ?? "";
-      if (/apply/.test(label) && href && !href.includes("linkedin.com")) {
-        externalApplyUrl = href;
-        break;
-      }
-    }
-
-    return { description, externalApplyUrl };
+    return { description };
   });
 }
 
@@ -157,12 +157,13 @@ export async function scrapeLinkedInJobs(
     // One search per work type — LinkedIn's f_WT filter is the source of truth for
     // workplaceType, so each result is stamped with the type it was searched under
     for (const workType of locationEntry.workTypes) {
-      if (searchIdx++ > 0) await page.waitForTimeout(5000 + Math.random() * 3000);
+      if (searchIdx++ > 0) await page.waitForTimeout(randomDelay(3000, 5000));
       const searchUrl = buildSearchUrl(criteria.jobTitle, locationEntry.location, workType);
       for (let pageNum = 0; pageNum < MAX_PAGES; pageNum++) {
         const url = pageNum === 0 ? searchUrl : `${searchUrl}&start=${pageNum * 25}`;
         await gotoWithRetry(page, url);
-        await page.waitForTimeout(randomDelay());
+        // Short settle only — scrapeJobsPage's scroll loop already waits for cards to render
+        await page.waitForTimeout(randomDelay(800, 1500));
 
         const jobs = await scrapeJobsPage(page);
         if (jobs.length === 0) break;
@@ -174,10 +175,7 @@ export async function scrapeLinkedInJobs(
           if (knownUrls.has(job.url)) continue;
           if (isExcluded(job.title, criteria.excludeKeywords)) continue;
 
-          let details: { description: string; externalApplyUrl: string | null } = {
-            description: "",
-            externalApplyUrl: null,
-          };
+          let details: { description: string } = { description: "" };
           for (let attempt = 1; attempt <= 2; attempt++) {
             try {
               details = await fetchJobDetails(page, job.url);

@@ -22,7 +22,6 @@ const mockJob = {
   workplaceType: "remote" as const,
   fitTier: "strong" as const,
   status: "pending_review" as const,
-  externalApplyUrl: null,
   appliedAt: null,
   failureReason: null,
   createdAt: new Date(),
