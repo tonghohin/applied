@@ -11,13 +11,12 @@ import { scrapeLinkedInJobs } from "./scraper";
 
 const details = (description = "") => ({
   description,
-  workplaceType: "on-site" as const,
   externalApplyUrl: null,
 });
 
 const criteria: SearchCriteria = {
   jobTitle: "Software Engineer",
-  locations: [{ location: "Remote", workTypes: ["on-site", "remote", "hybrid"] }],
+  locations: [{ location: "Remote", workTypes: ["on-site"] }],
   excludeKeywords: [],
 };
 
@@ -64,7 +63,7 @@ describe("scrapeLinkedInJobs", () => {
     );
   });
 
-  it("includes the past-week f_TPR filter in the search URL", async () => {
+  it("includes the past-week f_TPR and single work-type f_WT filters in the search URL", async () => {
     // Empty first page: 3 stable extractCards rounds, then pagination stops
     const page = makePage([[], [], []]);
 
@@ -72,6 +71,38 @@ describe("scrapeLinkedInJobs", () => {
 
     const [firstUrl] = vi.mocked(page.goto).mock.calls[0] ?? [];
     expect(firstUrl).toContain("f_TPR=r604800");
+    expect(firstUrl).toContain("f_WT=1");
+  });
+
+  it("runs one search per work type and stamps jobs with the searched type", async () => {
+    const multiType: SearchCriteria = {
+      ...criteria,
+      locations: [{ location: "Remote", workTypes: ["remote", "hybrid"] }],
+    };
+    const page = makePage([
+      [makeJob("1")],
+      [],
+      [],
+      [], // remote search, page 0
+      details("remote job"),
+      [], // remote search, page 1: empty → stop
+      [],
+      [],
+      [makeJob("2")],
+      [],
+      [],
+      [], // hybrid search, page 0
+      details("hybrid job"),
+    ]);
+
+    const results = await scrapeLinkedInJobs(page, multiType, noKnownUrls);
+
+    const visitedUrls = vi.mocked(page.goto).mock.calls.map(([url]) => String(url));
+    expect(visitedUrls.some((url) => url.includes("f_WT=2"))).toBe(true);
+    expect(visitedUrls.some((url) => url.includes("f_WT=3"))).toBe(true);
+    expect(results).toHaveLength(2);
+    expect(results[0]?.workplaceType).toBe("remote");
+    expect(results[1]?.workplaceType).toBe("hybrid");
   });
 
   it("skips already-stored jobs without fetching their details", async () => {
@@ -124,24 +155,6 @@ describe("scrapeLinkedInJobs", () => {
     expect(results).toHaveLength(1);
     expect(results[0]?.description).toBe("");
     expect(results[0]?.workplaceType).toBe("on-site");
-  });
-
-  it("keeps jobs whose parsed workplace type is outside the location's work types", async () => {
-    const remoteOnly: SearchCriteria = {
-      ...criteria,
-      locations: [{ location: "Remote", workTypes: ["remote"] }],
-    };
-    const page = makePage([
-      [makeJob("1")],
-      [],
-      [],
-      [], // page 0
-      details("description 1"), // parsed as on-site, but f_WT already filtered server-side
-    ]);
-
-    const results = await scrapeLinkedInJobs(page, remoteOnly, noKnownUrls);
-
-    expect(results).toHaveLength(1);
   });
 
   it("strips ' with verification' suffix from job titles", async () => {

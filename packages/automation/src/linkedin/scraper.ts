@@ -13,19 +13,17 @@ const WT_MAP: Record<WorkType, string> = {
   hybrid: "3",
 };
 
-function buildSearchUrl(jobTitle: string, location: string, workTypes: WorkType[]): string {
-  const f_WT = workTypes
-    .map((w) => WT_MAP[w])
-    .filter(Boolean)
-    .join(",");
+function buildSearchUrl(jobTitle: string, location: string, workType: WorkType): string {
   const params = new URLSearchParams({
     keywords: jobTitle,
     location,
     sortBy: "DD",
     // LinkedIn's "Date posted: past week" filter
     f_TPR: `r${secondsInWeek}`,
+    // Searching one work type at a time makes the filter the source of truth for
+    // workplaceType — the job pages themselves don't expose it reliably
+    f_WT: WT_MAP[workType],
   });
-  if (f_WT) params.set("f_WT", f_WT);
   return `https://www.linkedin.com/jobs/search/?${params.toString()}`;
 }
 
@@ -109,7 +107,7 @@ async function gotoWithRetry(page: Page, url: string): Promise<void> {
 async function fetchJobDetails(
   page: Page,
   url: string
-): Promise<{ description: string; workplaceType: WorkType; externalApplyUrl: string | null }> {
+): Promise<{ description: string; externalApplyUrl: string | null }> {
   await gotoWithRetry(page, url);
   await page.waitForTimeout(randomDelay());
   return page.evaluate(() => {
@@ -131,54 +129,18 @@ async function fetchJobDetails(
           );
         })();
 
-    // Extract workplace type — JSON-LD is reliable for remote; leaf-element scan covers hybrid
-    let workplaceType: WorkType = "on-site";
+    // Look for a direct non-LinkedIn link labelled as an apply action
     let externalApplyUrl: string | null = null;
-    try {
-      const jsonLdEl = document.querySelector('script[type="application/ld+json"]');
-      if (jsonLdEl) {
-        const data = JSON.parse(jsonLdEl.textContent ?? "{}");
-        if (data.jobLocationType === "TELECOMMUTE") workplaceType = "remote";
-        // LinkedIn includes applicationContact.url for external apply jobs in JSON-LD
-        const appUrl = data?.applicationContact?.url ?? data?.applicationUrl ?? null;
-        if (typeof appUrl === "string" && !appUrl.includes("linkedin.com")) {
-          externalApplyUrl = appUrl;
-        }
-      }
-    } catch {}
-
-    if (workplaceType === "on-site") {
-      const exactMatch: Record<string, WorkType> = {
-        remote: "remote",
-        hybrid: "hybrid",
-        "on-site": "on-site",
-        onsite: "on-site",
-      };
-      for (const el of Array.from(document.querySelectorAll("span, li"))) {
-        if (el.children.length > 0) continue;
-        const text = (el.textContent?.trim() ?? "").toLowerCase();
-        if (text in exactMatch) {
-          workplaceType = exactMatch[text] ?? "on-site";
-          break;
-        }
+    for (const anchor of Array.from(document.querySelectorAll("a[href]")) as HTMLAnchorElement[]) {
+      const label = (anchor.getAttribute("aria-label") ?? anchor.textContent ?? "").toLowerCase();
+      const href = anchor.href ?? "";
+      if (/apply/.test(label) && href && !href.includes("linkedin.com")) {
+        externalApplyUrl = href;
+        break;
       }
     }
 
-    // Fallback: look for a direct non-LinkedIn link labelled as an apply action
-    if (!externalApplyUrl) {
-      for (const anchor of Array.from(
-        document.querySelectorAll("a[href]")
-      ) as HTMLAnchorElement[]) {
-        const label = (anchor.getAttribute("aria-label") ?? anchor.textContent ?? "").toLowerCase();
-        const href = anchor.href ?? "";
-        if (/apply/.test(label) && href && !href.includes("linkedin.com")) {
-          externalApplyUrl = href;
-          break;
-        }
-      }
-    }
-
-    return { description, workplaceType, externalApplyUrl };
+    return { description, externalApplyUrl };
   });
 }
 
@@ -190,50 +152,45 @@ export async function scrapeLinkedInJobs(
   const results: ScrapedJob[] = [];
   const seen = new Set<string>();
 
-  let locIdx = 0;
+  let searchIdx = 0;
   for (const locationEntry of criteria.locations) {
-    if (locIdx++ > 0) await page.waitForTimeout(5000 + Math.random() * 3000);
-    const searchUrl = buildSearchUrl(
-      criteria.jobTitle,
-      locationEntry.location,
-      locationEntry.workTypes
-    );
-    for (let pageNum = 0; pageNum < MAX_PAGES; pageNum++) {
-      const url = pageNum === 0 ? searchUrl : `${searchUrl}&start=${pageNum * 25}`;
-      await gotoWithRetry(page, url);
-      await page.waitForTimeout(randomDelay());
+    // One search per work type — LinkedIn's f_WT filter is the source of truth for
+    // workplaceType, so each result is stamped with the type it was searched under
+    for (const workType of locationEntry.workTypes) {
+      if (searchIdx++ > 0) await page.waitForTimeout(5000 + Math.random() * 3000);
+      const searchUrl = buildSearchUrl(criteria.jobTitle, locationEntry.location, workType);
+      for (let pageNum = 0; pageNum < MAX_PAGES; pageNum++) {
+        const url = pageNum === 0 ? searchUrl : `${searchUrl}&start=${pageNum * 25}`;
+        await gotoWithRetry(page, url);
+        await page.waitForTimeout(randomDelay());
 
-      const jobs = await scrapeJobsPage(page);
-      if (jobs.length === 0) break;
+        const jobs = await scrapeJobsPage(page);
+        if (jobs.length === 0) break;
 
-      for (const job of jobs) {
-        if (seen.has(job.url)) continue;
-        seen.add(job.url);
+        for (const job of jobs) {
+          if (seen.has(job.url)) continue;
+          seen.add(job.url);
 
-        if (knownUrls.has(job.url)) continue;
-        if (isExcluded(job.title, criteria.excludeKeywords)) continue;
+          if (knownUrls.has(job.url)) continue;
+          if (isExcluded(job.title, criteria.excludeKeywords)) continue;
 
-        let details: {
-          description: string;
-          workplaceType: WorkType;
-          externalApplyUrl: string | null;
-        } = {
-          description: "",
-          workplaceType: "on-site",
-          externalApplyUrl: null,
-        };
-        for (let attempt = 1; attempt <= 2; attempt++) {
-          try {
-            details = await fetchJobDetails(page, job.url);
-            break;
-          } catch (err) {
-            if (attempt === 2) {
-              console.error(`Failed to fetch details for ${job.url}:`, err);
+          let details: { description: string; externalApplyUrl: string | null } = {
+            description: "",
+            externalApplyUrl: null,
+          };
+          for (let attempt = 1; attempt <= 2; attempt++) {
+            try {
+              details = await fetchJobDetails(page, job.url);
+              break;
+            } catch (err) {
+              if (attempt === 2) {
+                console.error(`Failed to fetch details for ${job.url}:`, err);
+              }
             }
           }
-        }
 
-        results.push({ ...job, ...details });
+          results.push({ ...job, ...details, workplaceType: workType });
+        }
       }
     }
   }
