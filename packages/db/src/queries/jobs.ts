@@ -1,4 +1,4 @@
-import { and, eq, max } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import type { Db } from "../db";
 import { jobs } from "../schema/jobs";
 
@@ -21,12 +21,9 @@ export async function insertJobs(db: Db, rows: NewJob[]) {
   return result.length;
 }
 
-export async function getLatestListedAtForUser(db: Db, userId: string): Promise<Date | null> {
-  const result = await db
-    .select({ latest: max(jobs.listedAt) })
-    .from(jobs)
-    .where(eq(jobs.userId, userId));
-  return result[0]?.latest ?? null;
+export async function getJobUrlsForUser(db: Db, userId: string) {
+  const result = await db.select({ url: jobs.url }).from(jobs).where(eq(jobs.userId, userId));
+  return result.map((row) => row.url);
 }
 
 export async function updateJobApplying(db: Db, jobId: string) {

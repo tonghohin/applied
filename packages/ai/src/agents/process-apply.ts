@@ -33,7 +33,14 @@ export async function processApplyJob(
   const resumePdfPath = await generateResumePdf(profileRow.resume);
   try {
     log("Launching AI agent");
-    const result = await applyToJob(jobRow, profileRow, resumePdfPath, criteriaRow.minSalary, linkedinSessionJson, log);
+    const result = await applyToJob(
+      jobRow,
+      profileRow,
+      resumePdfPath,
+      criteriaRow.minSalary,
+      linkedinSessionJson,
+      log
+    );
     if (result.success) {
       log("Application submitted successfully");
       await updateJobApplied(db, jobId);

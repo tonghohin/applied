@@ -48,7 +48,6 @@ const mockJob = (id: string) => ({
   fitTier: "strong" as const,
   status: "pending_review" as const,
   runId: "run-1",
-  listedAt: null,
   appliedAt: null,
   failureReason: null,
   createdAt: new Date(),

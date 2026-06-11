@@ -12,7 +12,6 @@ export interface ScrapedJob {
   externalApplyUrl: string | null;
   workplaceType: WorkType;
   platform: Platform;
-  listedAt: string;
 }
 
 export interface SearchCriteria {

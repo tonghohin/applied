@@ -94,8 +94,8 @@ export const columns: ColumnDef<Job>[] = [
     enableGlobalFilter: false,
   },
   {
-    accessorKey: "listedAt",
-    header: ({ column }) => <DataTableColumnHeader column={column} title="Listed" />,
+    accessorKey: "createdAt",
+    header: ({ column }) => <DataTableColumnHeader column={column} title="Added" />,
     cell: ({ getValue }) => {
       const value = getValue<Date>();
       return format(value, "MMM d, yyyy");

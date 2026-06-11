@@ -13,8 +13,7 @@ export async function generateCoverLetter(job: Job, profile: ProfileWithEmail) {
       "You are a professional cover letter writer. Write a concise, personalized cover letter " +
       "for the given job and applicant. Return only the cover letter body — no subject line, " +
       "no JSON wrapper. Start with 'Dear Hiring Manager,'.",
-    prompt:
-      `Job title: ${job.title}\nCompany: ${job.company}\n${job.description ? `\nJob description:\n${job.description}\n` : ""}\nApplicant resume:\n${profile.resume}${instructionsSection}`,
+    prompt: `Job title: ${job.title}\nCompany: ${job.company}\n${job.description ? `\nJob description:\n${job.description}\n` : ""}\nApplicant resume:\n${profile.resume}${instructionsSection}`,
     experimental_telemetry: { isEnabled: true },
   });
 

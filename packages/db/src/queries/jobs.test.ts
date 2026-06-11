@@ -15,16 +15,15 @@ const mockDb = {
 } as never;
 
 vi.mock("../schema/jobs", () => ({
-  jobs: { userId: "userId_col", listedAt: "listed_at_col" },
+  jobs: { userId: "userId_col", url: "url_col" },
 }));
 
 vi.mock("drizzle-orm", () => ({
   eq: vi.fn((col: unknown, val: unknown) => ({ col, val })),
   and: vi.fn((...args: unknown[]) => args),
-  max: vi.fn((col: unknown) => ({ max: col })),
 }));
 
-import { getLatestListedAtForUser, insertJobs } from "./jobs";
+import { getJobUrlsForUser, insertJobs } from "./jobs";
 import type { NewJob } from "./jobs";
 
 const baseJob: NewJob = {
@@ -36,7 +35,6 @@ const baseJob: NewJob = {
   platform: "linkedin",
   fitTier: "strong",
   status: "pending_review",
-  listedAt: new Date("2025-05-24T10:00:00Z"),
   createdAt: new Date(),
   updatedAt: new Date(),
 };
@@ -61,32 +59,28 @@ describe("insertJobs", () => {
     expect(values).toHaveBeenCalledWith([]);
     expect(result).toBe(0);
   });
-
-  it("includes listedAt in the inserted values", async () => {
-    mockReturning.mockResolvedValueOnce([{ id: "job-1" }]);
-    const job = { ...baseJob, listedAt: new Date("2025-05-01T00:00:00Z") };
-    await insertJobs(mockDb, [job]);
-
-    const [insertedRows] = values.mock.lastCall as [NewJob[]];
-    expect(insertedRows[0]?.listedAt).toEqual(new Date("2025-05-01T00:00:00Z"));
-  });
 });
 
-describe("getLatestListedAtForUser", () => {
-  it("returns the latest listedAt date when jobs exist", async () => {
-    const date = new Date("2025-05-24T10:00:00Z");
-    selectWhere.mockResolvedValueOnce([{ latest: date }]);
+describe("getJobUrlsForUser", () => {
+  it("returns the urls of the user's jobs", async () => {
+    selectWhere.mockResolvedValueOnce([
+      { url: "https://www.linkedin.com/jobs/view/1/" },
+      { url: "https://www.linkedin.com/jobs/view/2/" },
+    ]);
 
-    const result = await getLatestListedAtForUser(mockDb, "user-1");
+    const result = await getJobUrlsForUser(mockDb, "user-1");
 
-    expect(result).toEqual(date);
+    expect(result).toEqual([
+      "https://www.linkedin.com/jobs/view/1/",
+      "https://www.linkedin.com/jobs/view/2/",
+    ]);
   });
 
-  it("returns null when no jobs exist for the user", async () => {
-    selectWhere.mockResolvedValueOnce([{ latest: null }]);
+  it("returns an empty array when the user has no jobs", async () => {
+    selectWhere.mockResolvedValueOnce([]);
 
-    const result = await getLatestListedAtForUser(mockDb, "user-1");
+    const result = await getJobUrlsForUser(mockDb, "user-1");
 
-    expect(result).toBeNull();
+    expect(result).toEqual([]);
   });
 });

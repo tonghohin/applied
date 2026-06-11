@@ -1,11 +1,11 @@
 /// <reference lib="dom" />
 import { type WorkType, isExcluded } from "@repo/shared";
+import { secondsInWeek } from "date-fns/constants";
 import type { Page } from "playwright";
 import type { ScrapedJob, SearchCriteria } from "../types";
 
 const MAX_PAGES = 5;
 const randomDelay = () => Math.floor(Math.random() * 2000) + 1500;
-const CUTOFF_MS = 7 * 24 * 60 * 60 * 1000;
 
 const WT_MAP: Record<WorkType, string> = {
   "on-site": "1",
@@ -18,7 +18,13 @@ function buildSearchUrl(jobTitle: string, location: string, workTypes: WorkType[
     .map((w) => WT_MAP[w])
     .filter(Boolean)
     .join(",");
-  const params = new URLSearchParams({ keywords: jobTitle, location, sortBy: "DD" });
+  const params = new URLSearchParams({
+    keywords: jobTitle,
+    location,
+    sortBy: "DD",
+    // LinkedIn's "Date posted: past week" filter
+    f_TPR: `r${secondsInWeek}`,
+  });
   if (f_WT) params.set("f_WT", f_WT);
   return `https://www.linkedin.com/jobs/search/?${params.toString()}`;
 }
@@ -31,7 +37,6 @@ function extractCards() {
       const companyEl = card.querySelector(".artdeco-entity-lockup__subtitle");
       const locationEl = card.querySelector(".artdeco-entity-lockup__caption");
       const jobId = card.getAttribute("data-occludable-job-id");
-      const timeEl = card.querySelector("time[datetime]");
       return {
         title: linkEl?.getAttribute("aria-label") ?? linkEl?.textContent?.trim() ?? "",
         company: companyEl?.textContent?.trim() ?? "",
@@ -42,10 +47,6 @@ function extractCards() {
         url: jobId ? `https://www.linkedin.com/jobs/view/${jobId}/` : "",
         description: "",
         platform: "linkedin" as const,
-        listedAt:
-          timeEl !== null
-            ? (timeEl.getAttribute("datetime") ?? new Date().toISOString())
-            : new Date().toISOString(),
       };
     })
     .filter((j) => j.title && j.url);
@@ -55,6 +56,14 @@ async function scrapeJobsPage(
   page: Page
 ): Promise<Omit<ScrapedJob, "workplaceType" | "externalApplyUrl">[]> {
   const seen = new Map<string, ReturnType<typeof extractCards>[number]>();
+
+  // Wheel events fire at the mouse position (0,0 by default), which misses LinkedIn's
+  // independently scrollable job-list panel — hover a card first so the list scrolls.
+  try {
+    await page.hover("[data-occludable-job-id]", { timeout: 5000 });
+  } catch {
+    // no job cards rendered; the loop below exits after 3 stable rounds
+  }
 
   let stableRounds = 0;
   while (stableRounds < 3) {
@@ -176,11 +185,10 @@ async function fetchJobDetails(
 export async function scrapeLinkedInJobs(
   page: Page,
   criteria: SearchCriteria,
-  sinceDate?: Date
+  knownUrls: Set<string>
 ): Promise<ScrapedJob[]> {
   const results: ScrapedJob[] = [];
   const seen = new Set<string>();
-  const effectiveCutoff = sinceDate ?? new Date(Date.now() - CUTOFF_MS);
 
   let locIdx = 0;
   for (const locationEntry of criteria.locations) {
@@ -199,15 +207,11 @@ export async function scrapeLinkedInJobs(
       if (jobs.length === 0) break;
 
       for (const job of jobs) {
-        if (job.listedAt && new Date(job.listedAt) < effectiveCutoff) {
-          continue;
-        }
         if (seen.has(job.url)) continue;
         seen.add(job.url);
 
-        if (isExcluded(job.title, criteria.excludeKeywords)) {
-          continue;
-        }
+        if (knownUrls.has(job.url)) continue;
+        if (isExcluded(job.title, criteria.excludeKeywords)) continue;
 
         let details: {
           description: string;
@@ -218,14 +222,15 @@ export async function scrapeLinkedInJobs(
           workplaceType: "on-site",
           externalApplyUrl: null,
         };
-        try {
-          details = await fetchJobDetails(page, job.url);
-        } catch (err) {
-          console.error(`Failed to fetch details for ${job.url}:`, err);
-        }
-
-        if (!locationEntry.workTypes.includes(details.workplaceType)) {
-          continue;
+        for (let attempt = 1; attempt <= 2; attempt++) {
+          try {
+            details = await fetchJobDetails(page, job.url);
+            break;
+          } catch (err) {
+            if (attempt === 2) {
+              console.error(`Failed to fetch details for ${job.url}:`, err);
+            }
+          }
         }
 
         results.push({ ...job, ...details });

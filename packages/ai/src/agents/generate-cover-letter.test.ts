@@ -23,7 +23,6 @@ const mockJob = {
   fitTier: "strong" as const,
   status: "pending_review" as const,
   externalApplyUrl: null,
-  listedAt: new Date(),
   appliedAt: null,
   failureReason: null,
   createdAt: new Date(),
@@ -54,7 +53,9 @@ describe("generateCoverLetter", () => {
   });
 
   it("calls generateText with no tools and no stopWhen", async () => {
-    vi.mocked(generateText).mockResolvedValueOnce({ text: "Dear Hiring Manager,\nI am excited." } as never);
+    vi.mocked(generateText).mockResolvedValueOnce({
+      text: "Dear Hiring Manager,\nI am excited.",
+    } as never);
 
     await generateCoverLetter(mockJob, mockProfile);
 
@@ -92,7 +93,10 @@ describe("generateCoverLetter", () => {
 
   it("includes cover letter instructions in prompt when provided", async () => {
     vi.mocked(generateText).mockResolvedValueOnce({ text: "Dear Hiring Manager," } as never);
-    const profileWithInstructions = { ...mockProfile, coverLetterInstructions: "Keep it under 200 words." };
+    const profileWithInstructions = {
+      ...mockProfile,
+      coverLetterInstructions: "Keep it under 200 words.",
+    };
 
     await generateCoverLetter(mockJob, profileWithInstructions);
 

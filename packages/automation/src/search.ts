@@ -1,7 +1,7 @@
 import {
   type Db,
   getJobCriteriaForUser,
-  getLatestListedAtForUser,
+  getJobUrlsForUser,
   insertJobs,
   updateSearchRun,
 } from "@repo/db";
@@ -107,7 +107,7 @@ export async function runSearch(
   }
 
   try {
-    const sinceDate = await getLatestListedAtForUser(db, userId);
+    const knownUrls = new Set(await getJobUrlsForUser(db, userId));
     const scraped = await scrapeLinkedInJobs(
       page,
       {
@@ -115,7 +115,7 @@ export async function runSearch(
         locations: criteriaRow.locations,
         excludeKeywords: criteriaRow.excludeKeywords,
       },
-      sinceDate ?? undefined
+      knownUrls
     );
 
     if (scraped.length === 0) return { jobCount: 0, newSessionJson };
@@ -134,7 +134,6 @@ export async function runSearch(
         platform: job.platform,
         workplaceType: job.workplaceType,
         fitTier: scoreJob(job, { jobTitle: criteriaRow.jobTitle, skills: criteriaRow.skills }),
-        listedAt: new Date(job.listedAt),
         createdAt: new Date(),
         updatedAt: new Date(),
       }))
