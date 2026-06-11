@@ -18,6 +18,7 @@ export function JobsDataTable({ jobs }: { jobs: Job[] }) {
       renderSubRow={(row) =>
         row.original.latestApplyRun ? <ApplyRunLog applyRun={row.original.latestApplyRun} /> : null
       }
+      rowClassName={(row) => (row.original.status === "skipped" ? "opacity-60" : undefined)}
       emptyMessage="No jobs match the current filters."
     />
   );

@@ -1,4 +1,11 @@
-import { jobStatusEnum, jobs, listLatestApplyRunsByJobIds } from "@repo/db";
+import {
+  getJobCriteriaForUser,
+  jobCriteria,
+  jobStatusEnum,
+  jobs,
+  listLatestApplyRunsByJobIds,
+} from "@repo/db";
+import { isExcluded } from "@repo/shared";
 import { TRPCError } from "@trpc/server";
 import { and, eq, inArray } from "drizzle-orm";
 import { z } from "zod";
@@ -35,6 +42,50 @@ export const updateStatusSchema = z.object({
 });
 
 export type UpdateStatusInput = z.infer<typeof updateStatusSchema>;
+
+export const excludeKeywordSchema = z.object({
+  keyword: z.string().trim().min(2).max(50),
+});
+
+export type ExcludeKeywordInput = z.infer<typeof excludeKeywordSchema>;
+
+export async function excludeKeyword(db: Db, userId: string, input: ExcludeKeywordInput) {
+  const criteria = await getJobCriteriaForUser(db, userId);
+
+  if (!criteria) {
+    throw new TRPCError({ code: "PRECONDITION_FAILED", message: "Set up job criteria first" });
+  }
+
+  const { keyword } = input;
+  const alreadyExcluded = criteria.excludeKeywords.some(
+    (existing) => existing.toLowerCase() === keyword.toLowerCase()
+  );
+
+  if (!alreadyExcluded) {
+    await db
+      .update(jobCriteria)
+      .set({ excludeKeywords: [...criteria.excludeKeywords, keyword] })
+      .where(eq(jobCriteria.userId, userId));
+  }
+
+  const skippable = await db
+    .select({ id: jobs.id, title: jobs.title })
+    .from(jobs)
+    .where(and(eq(jobs.userId, userId), inArray(jobs.status, ["pending_review", "failed"])));
+
+  const matchingIds = skippable
+    .filter((job) => isExcluded(job.title, [keyword]))
+    .map((job) => job.id);
+
+  if (matchingIds.length > 0) {
+    await db
+      .update(jobs)
+      .set({ status: "skipped", updatedAt: new Date() })
+      .where(and(eq(jobs.userId, userId), inArray(jobs.id, matchingIds)));
+  }
+
+  return { keyword, skippedCount: matchingIds.length, alreadyExcluded };
+}
 
 export async function updateJobStatus(db: Db, userId: string, input: UpdateStatusInput) {
   const [existing] = await db

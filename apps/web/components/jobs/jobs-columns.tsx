@@ -1,14 +1,16 @@
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { DataTableColumnHeader } from "@/components/ui/data-table-column-header";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import type { FitTier, Job, JobStatus } from "@/lib/trpc";
+import { RiInformationLine } from "@remixicon/react";
 import { toTitleCase } from "@repo/shared";
 import type { ColumnDef } from "@tanstack/react-table";
 import { format } from "date-fns";
-import Link from "next/link";
 import { ApplyButton } from "./apply-button";
 import { FitTierBadge } from "./fit-tier-badge";
 import { JobStatusBadge } from "./job-status-badge";
+import { JobTitleCell } from "./job-title-cell";
 import { RestoreButton } from "./restore-button";
 import { SkipButton } from "./skip-button";
 
@@ -40,17 +42,23 @@ export const columns: ColumnDef<Job>[] = [
   },
   {
     accessorKey: "title",
-    header: ({ column }) => <DataTableColumnHeader column={column} title="Title" />,
-    cell: ({ row }) => (
-      <Link
-        href={row.original.url}
-        target="_blank"
-        rel="noopener noreferrer"
-        className="font-medium hover:underline"
-      >
-        {row.original.title}
-      </Link>
+    header: ({ column }) => (
+      <span className="flex items-center gap-1">
+        <DataTableColumnHeader column={column} title="Title" />
+        <Tooltip>
+          <TooltipTrigger
+            aria-label="How to exclude keywords"
+            className="text-muted-foreground hover:text-foreground"
+          >
+            <RiInformationLine className="size-3.5" />
+          </TooltipTrigger>
+          <TooltipContent>
+            Highlight a word or phrase in a title to exclude it from future searches
+          </TooltipContent>
+        </Tooltip>
+      </span>
     ),
+    cell: ({ row }) => <JobTitleCell job={row.original} />,
     enableColumnFilter: false,
   },
   {

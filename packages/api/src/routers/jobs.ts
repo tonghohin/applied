@@ -2,8 +2,8 @@ import {
   getJobCriteriaForUser,
   getLinkedInAccount,
   getProfileForUser,
-  insertSearchRun,
   insertApplyRun,
+  insertSearchRun,
   updateJobApplying,
 } from "@repo/db";
 import { getMissingSearchFields } from "@repo/shared";
@@ -11,6 +11,8 @@ import { TRPCError } from "@trpc/server";
 import { z } from "zod";
 import { applyQueue, searchQueue } from "../queues/index";
 import {
+  excludeKeyword,
+  excludeKeywordSchema,
   listJobs,
   updateJobStatus,
   updateStatusSchema,
@@ -53,6 +55,10 @@ export const jobsRouter = router({
   updateStatus: protectedProcedure
     .input(updateStatusSchema)
     .mutation(({ ctx, input }) => updateJobStatus(ctx.db, ctx.session.user.id, input)),
+
+  excludeKeyword: protectedProcedure
+    .input(excludeKeywordSchema)
+    .mutation(({ ctx, input }) => excludeKeyword(ctx.db, ctx.session.user.id, input)),
 
   applyJobs: protectedProcedure
     .input(z.object({ jobIds: z.array(z.uuid()) }))

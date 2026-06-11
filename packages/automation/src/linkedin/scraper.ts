@@ -1,8 +1,7 @@
 /// <reference lib="dom" />
-import type { WorkType } from "@repo/shared";
+import { type WorkType, isExcluded } from "@repo/shared";
 import type { Page } from "playwright";
 import type { ScrapedJob, SearchCriteria } from "../types";
-import { isExcluded } from "../utils";
 
 const MAX_PAGES = 5;
 const randomDelay = () => Math.floor(Math.random() * 2000) + 1500;
@@ -15,7 +14,10 @@ const WT_MAP: Record<WorkType, string> = {
 };
 
 function buildSearchUrl(jobTitle: string, location: string, workTypes: WorkType[]): string {
-  const f_WT = workTypes.map((w) => WT_MAP[w]).filter(Boolean).join(",");
+  const f_WT = workTypes
+    .map((w) => WT_MAP[w])
+    .filter(Boolean)
+    .join(",");
   const params = new URLSearchParams({ keywords: jobTitle, location, sortBy: "DD" });
   if (f_WT) params.set("f_WT", f_WT);
   return `https://www.linkedin.com/jobs/search/?${params.toString()}`;
@@ -49,7 +51,9 @@ function extractCards() {
     .filter((j) => j.title && j.url);
 }
 
-async function scrapeJobsPage(page: Page): Promise<Omit<ScrapedJob, "workplaceType" | "externalApplyUrl">[]> {
+async function scrapeJobsPage(
+  page: Page
+): Promise<Omit<ScrapedJob, "workplaceType" | "externalApplyUrl">[]> {
   const seen = new Map<string, ReturnType<typeof extractCards>[number]>();
 
   let stableRounds = 0;
@@ -153,7 +157,9 @@ async function fetchJobDetails(
 
     // Fallback: look for a direct non-LinkedIn link labelled as an apply action
     if (!externalApplyUrl) {
-      for (const anchor of Array.from(document.querySelectorAll("a[href]")) as HTMLAnchorElement[]) {
+      for (const anchor of Array.from(
+        document.querySelectorAll("a[href]")
+      ) as HTMLAnchorElement[]) {
         const label = (anchor.getAttribute("aria-label") ?? anchor.textContent ?? "").toLowerCase();
         const href = anchor.href ?? "";
         if (/apply/.test(label) && href && !href.includes("linkedin.com")) {
@@ -179,7 +185,11 @@ export async function scrapeLinkedInJobs(
   let locIdx = 0;
   for (const locationEntry of criteria.locations) {
     if (locIdx++ > 0) await page.waitForTimeout(5000 + Math.random() * 3000);
-    const searchUrl = buildSearchUrl(criteria.jobTitle, locationEntry.location, locationEntry.workTypes);
+    const searchUrl = buildSearchUrl(
+      criteria.jobTitle,
+      locationEntry.location,
+      locationEntry.workTypes
+    );
     for (let pageNum = 0; pageNum < MAX_PAGES; pageNum++) {
       const url = pageNum === 0 ? searchUrl : `${searchUrl}&start=${pageNum * 25}`;
       await gotoWithRetry(page, url);
@@ -199,7 +209,11 @@ export async function scrapeLinkedInJobs(
           continue;
         }
 
-        let details: { description: string; workplaceType: WorkType; externalApplyUrl: string | null } = {
+        let details: {
+          description: string;
+          workplaceType: WorkType;
+          externalApplyUrl: string | null;
+        } = {
           description: "",
           workplaceType: "on-site",
           externalApplyUrl: null,

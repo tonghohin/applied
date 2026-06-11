@@ -4,10 +4,10 @@ vi.mock("@repo/db", () => ({
   platformEnum: { enumValues: ["linkedin"] },
 }));
 
+import { isExcluded } from "@repo/shared";
 import type { Page } from "playwright";
 import type { SearchCriteria } from "../types";
 import { scrapeLinkedInJobs } from "./scraper";
-import { isExcluded } from "../utils";
 
 const details = (description = "") => ({ description, workplaceType: "on-site" as const });
 
@@ -53,9 +53,15 @@ describe("scrapeLinkedInJobs", () => {
   it("stops pagination when listedAt is older than the 30-day cutoff", async () => {
     // scrapeJobsPage needs 4 extractCards calls per page (1 with data + 3 stable rounds)
     const page = makePage([
-      [makeJob("1")], [], [], [], // page 0 scrapeJobsPage: job1 found, then 3 stable
-      details("description 1"),   // fetchJobDetails for job1
-      [makeJob("2", sixtyDaysAgo)], [], [], [], // page 1: old job in 3 stable rounds
+      [makeJob("1")],
+      [],
+      [],
+      [], // page 0 scrapeJobsPage: job1 found, then 3 stable
+      details("description 1"), // fetchJobDetails for job1
+      [makeJob("2", sixtyDaysAgo)],
+      [],
+      [],
+      [], // page 1: old job in 3 stable rounds
     ]);
 
     const results = await scrapeLinkedInJobs(page, criteria);
@@ -69,7 +75,10 @@ describe("scrapeLinkedInJobs", () => {
     const sinceDate = new Date(Date.now() - 1 * 24 * 60 * 60 * 1000); // 1 day ago
 
     const page = makePage([
-      [makeJob("1", twelveHoursAgo), makeJob("2", twoDaysAgo)], [], [], [], // page 0: both cards, then 3 stable
+      [makeJob("1", twelveHoursAgo), makeJob("2", twoDaysAgo)],
+      [],
+      [],
+      [], // page 0: both cards, then 3 stable
       details("description 1"), // fetchJobDetails for job1 only (job2 old vs sinceDate)
     ]);
 
@@ -82,8 +91,11 @@ describe("scrapeLinkedInJobs", () => {
 
   it("includes job with empty description when fetchJobDetails fails", async () => {
     const page = makePage([
-      [makeJob("1")], [], [], [], // page 0: job1, then stable
-      new Error("timeout"),        // fetchJobDetails throws → fallback to empty description
+      [makeJob("1")],
+      [],
+      [],
+      [], // page 0: job1, then stable
+      new Error("timeout"), // fetchJobDetails throws → fallback to empty description
     ]);
 
     const results = await scrapeLinkedInJobs(page, criteria);
@@ -104,9 +116,15 @@ describe("scrapeLinkedInJobs", () => {
 
   it("deduplicates the same URL appearing on multiple pages", async () => {
     const page = makePage([
-      [makeJob("1")], [], [], [], // page 0
-      details("description 1"),   // fetchJobDetails for job1
-      [makeJob("1")], [], [], [], // page 1: same URL → skipped by seen Set in scrapeLinkedInJobs
+      [makeJob("1")],
+      [],
+      [],
+      [], // page 0
+      details("description 1"), // fetchJobDetails for job1
+      [makeJob("1")],
+      [],
+      [],
+      [], // page 1: same URL → skipped by seen Set in scrapeLinkedInJobs
     ]);
 
     const results = await scrapeLinkedInJobs(page, criteria);
@@ -116,7 +134,10 @@ describe("scrapeLinkedInJobs", () => {
 
   it("skips jobs whose title matches an excluded keyword", async () => {
     const page = makePage([
-      [makeJob("1"), { ...makeJob("2"), title: "Java Developer" }], [], [], [], // page 0
+      [makeJob("1"), { ...makeJob("2"), title: "Java Developer" }],
+      [],
+      [],
+      [], // page 0
       details("description 1"), // only job1 gets fetchJobDetails (java job excluded before fetch)
     ]);
 

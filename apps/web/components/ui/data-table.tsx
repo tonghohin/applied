@@ -36,6 +36,7 @@ export function DataTable<TData>({
   getRowId,
   enableRowSelection,
   renderSubRow,
+  rowClassName,
   emptyMessage = "No results.",
   initialSorting = [],
 }: {
@@ -44,6 +45,7 @@ export function DataTable<TData>({
   getRowId?: (row: TData) => string;
   enableRowSelection?: boolean | ((row: Row<TData>) => boolean);
   renderSubRow?: (row: Row<TData>) => React.ReactNode;
+  rowClassName?: (row: Row<TData>) => string | undefined;
   emptyMessage?: string;
   initialSorting?: SortingState;
 }) {
@@ -105,7 +107,10 @@ export function DataTable<TData>({
             ) : (
               table.getRowModel().rows.map((row) => (
                 <Fragment key={row.id}>
-                  <TableRow data-state={row.getIsSelected() ? "selected" : undefined}>
+                  <TableRow
+                    data-state={row.getIsSelected() ? "selected" : undefined}
+                    className={rowClassName?.(row)}
+                  >
                     {row.getVisibleCells().map((cell) => (
                       <TableCell key={cell.id}>
                         {flexRender(cell.column.columnDef.cell, cell.getContext())}
