@@ -41,10 +41,11 @@ export const columns: ColumnDef<Job>[] = [
     enableGlobalFilter: false,
   },
   {
-    accessorKey: "title",
+    id: "job",
+    accessorFn: (row) => `${row.title} ${row.company} ${row.location}`,
     header: ({ column }) => (
       <span className="flex items-center gap-1">
-        <DataTableColumnHeader column={column} title="Title" />
+        <DataTableColumnHeader column={column} title="Job" />
         <Tooltip>
           <TooltipTrigger
             aria-label="How to exclude keywords"
@@ -59,25 +60,6 @@ export const columns: ColumnDef<Job>[] = [
       </span>
     ),
     cell: ({ row }) => <JobTitleCell job={row.original} />,
-    enableColumnFilter: false,
-  },
-  {
-    accessorKey: "company",
-    header: ({ column }) => <DataTableColumnHeader column={column} title="Company" />,
-    cell: ({ getValue }) => {
-      const company = getValue<string>();
-      return (
-        <span className="block max-w-40 truncate" title={company}>
-          {company}
-        </span>
-      );
-    },
-    filterFn: "arrIncludesSome",
-  },
-  {
-    accessorKey: "location",
-    header: ({ column }) => <DataTableColumnHeader column={column} title="Location" />,
-    cell: ({ getValue }) => getValue<string | null>() ?? "—",
     enableColumnFilter: false,
   },
   {

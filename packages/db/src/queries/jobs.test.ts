@@ -31,6 +31,7 @@ const baseJob: NewJob = {
   runId: "run-1",
   title: "Software Engineer",
   company: "Acme",
+  location: "Toronto, ON",
   url: "https://www.linkedin.com/jobs/view/1/",
   platform: "linkedin",
   fitTier: "strong",

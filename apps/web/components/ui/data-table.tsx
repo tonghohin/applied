@@ -39,6 +39,7 @@ export function DataTable<TData>({
   rowClassName,
   emptyMessage = "No results.",
   initialSorting = [],
+  initialColumnFilters = [],
 }: {
   data: TData[];
   columns: ColumnDef<TData>[];
@@ -48,9 +49,10 @@ export function DataTable<TData>({
   rowClassName?: (row: Row<TData>) => string | undefined;
   emptyMessage?: string;
   initialSorting?: SortingState;
+  initialColumnFilters?: ColumnFiltersState;
 }) {
   const [sorting, setSorting] = useState<SortingState>(initialSorting);
-  const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
+  const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>(initialColumnFilters);
   const [globalFilter, setGlobalFilter] = useState("");
   const [rowSelection, setRowSelection] = useState<RowSelectionState>({});
   const [expanded, setExpanded] = useState<ExpandedState>({});

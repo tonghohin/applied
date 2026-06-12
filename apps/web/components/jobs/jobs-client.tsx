@@ -13,8 +13,8 @@ import {
   EmptyTitle,
 } from "@/components/ui/empty";
 import { trpc } from "@/lib/trpc";
-import type { RouterOutputs } from "@repo/api";
 import { RiBriefcaseLine } from "@remixicon/react";
+import type { RouterOutputs } from "@repo/api";
 
 type InitialJobs = RouterOutputs["jobs"]["list"];
 

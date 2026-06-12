@@ -188,7 +188,14 @@ export async function scrapeLinkedInJobs(
             }
           }
 
-          results.push({ ...job, ...details, workplaceType: workType });
+          results.push({
+            ...job,
+            ...details,
+            // Card captions occasionally omit the location — fall back to the
+            // criteria location this search was run under
+            location: job.location || locationEntry.location,
+            workplaceType: workType,
+          });
         }
       }
     }

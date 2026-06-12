@@ -28,7 +28,7 @@ const baseJob = {
   userId: "user-1",
   title: "Software Engineer",
   company: "Acme",
-  location: null,
+  location: "Toronto, ON",
   description: null,
   url: "https://example.com",
   platform: "linkedin" as const,

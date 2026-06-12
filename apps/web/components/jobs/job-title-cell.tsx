@@ -43,19 +43,27 @@ export function JobTitleCell({ job }: { job: Job }) {
   }
 
   return (
-    <span className="flex max-w-70 items-center gap-1.5">
-      <span ref={cellRef} className="whitespace-normal font-medium">
-        {job.title}
+    <span className="flex max-w-70 flex-col gap-0.5">
+      <span className="flex items-center justify-between gap-1.5">
+        <span ref={cellRef} className="whitespace-normal font-medium">
+          {job.title}
+        </span>
+        <Link
+          href={job.url}
+          target="_blank"
+          rel="noopener noreferrer"
+          aria-label="Open job posting"
+          className="shrink-0 text-muted-foreground hover:text-foreground"
+        >
+          <RiExternalLinkLine className="size-3.5" />
+        </Link>
       </span>
-      <Link
-        href={job.url}
-        target="_blank"
-        rel="noopener noreferrer"
-        aria-label="Open job posting"
-        className="shrink-0 text-muted-foreground hover:text-foreground"
+      <span
+        className="truncate text-muted-foreground text-xs"
+        title={`${job.company} · ${job.location}`}
       >
-        <RiExternalLinkLine className="size-3.5" />
-      </Link>
+        {job.company} · {job.location}
+      </span>
       {selection && (
         <Popover
           open
