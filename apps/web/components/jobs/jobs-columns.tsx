@@ -118,9 +118,7 @@ export const columns: ColumnDef<Job>[] = [
     header: ({ column }) => <DataTableColumnHeader column={column} title="Logs" />,
     cell: ({ row }) => {
       const job = row.original;
-      const hasLogs =
-        job.latestApplyRun !== null &&
-        (job.status === "applied" || job.status === "applying" || job.status === "failed");
+      const hasLogs = job.latestApplyRun !== null;
       if (!hasLogs) return <span className="text-muted-foreground text-xs">No logs</span>;
       return (
         <Button variant="ghost" size="xs" onClick={() => row.toggleExpanded()} className="-m-2">
