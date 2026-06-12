@@ -1,3 +1,5 @@
+import type { NoticePeriod } from "@repo/shared";
+
 export type InitialProfile = {
   firstName?: string;
   lastName?: string;
@@ -9,4 +11,5 @@ export type InitialProfile = {
   resume?: string;
   coverLetterInstructions?: string | null;
   requiresSponsorship?: boolean;
+  noticePeriod?: NoticePeriod;
 } | null;

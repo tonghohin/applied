@@ -1,4 +1,5 @@
 import type { Job, Profile } from "@repo/db";
+import { toTitleCase } from "@repo/shared";
 import { type ModelMessage, Output, generateText, stepCountIs, tool } from "ai";
 import { z } from "zod";
 import { createPlaywrightMCPClient } from "../mcp";
@@ -39,7 +40,7 @@ const FORM_FILLING_RULES = `## Form filling rules
 - For yes/no questions about sponsorship: answer based on the applicant's profile — "Yes" if they require sponsorship, "No" if they do not.
 - For open-ended questions (e.g. "Why do you want to work here?", "Describe a challenging project", "What interests you about this role?"): write the answer in first person as the applicant, grounded in the resume and the job details. Be specific — reference actual skills, projects, or experience from the resume and connect them to the role or company. Keep it to 2-4 sentences unless the field indicates a longer answer is expected. Never mention being an AI or an automated agent.
 - For "How did you hear about us?" questions: answer "LinkedIn" (select it if it is a dropdown option, otherwise type it).
-- For notice period / availability / start date questions: answer "2 weeks" or the nearest equivalent option.
+- For notice period / availability / start date questions: answer with the applicant's notice period from the profile, or the nearest equivalent option.
 - For demographic / EEO / self-identification questions (gender, race, ethnicity, veteran status, disability, sexual orientation): select "Prefer not to answer", "Decline to self-identify", or the closest equivalent option. Only if the field is required and no decline option exists, leave it at the default or pick the most neutral option. Never guess demographic information about the applicant.
 - If a required field still cannot be answered from any of the above, use a reasonable placeholder.
 - If a file upload field for a resume appears and a Resume PDF path is provided in the prompt, use browser_file_upload to upload that file. For any other file upload fields, skip them.
@@ -279,6 +280,7 @@ export async function applyToJob(
       `Phone: ${profile.phone}`,
       `Address: ${profile.address}`,
       `Requires visa sponsorship: ${profile.requiresSponsorship ? "Yes" : "No"}`,
+      `Notice period: ${toTitleCase(profile.noticePeriod)}`,
       `Expected salary: ${minSalary}`,
       profile.linkedinUrl ? `LinkedIn: ${profile.linkedinUrl}` : null,
       profile.githubUrl ? `GitHub: ${profile.githubUrl}` : null,

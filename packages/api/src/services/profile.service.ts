@@ -5,7 +5,7 @@ import {
   profiles,
   upsertLinkedInAccount,
 } from "@repo/db";
-import { WORK_TYPES, encrypt } from "@repo/shared";
+import { NOTICE_PERIODS, WORK_TYPES, encrypt } from "@repo/shared";
 import { eq } from "drizzle-orm";
 import { z } from "zod";
 import type { Context } from "../context";
@@ -22,6 +22,7 @@ export const upsertPersonalSchema = z.object({
   githubUrl: z.url().optional().or(z.literal("")),
   websiteUrl: z.url().optional().or(z.literal("")),
   requiresSponsorship: z.boolean(),
+  noticePeriod: z.enum(NOTICE_PERIODS),
 });
 
 export const upsertResumeSchema = z.object({

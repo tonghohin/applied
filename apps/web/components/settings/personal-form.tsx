@@ -10,8 +10,16 @@ import {
   FieldLabel,
 } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { trpc } from "@/lib/trpc";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { NOTICE_PERIODS, toTitleCase } from "@repo/shared";
 import { Controller, useForm } from "react-hook-form";
 import { toast } from "sonner";
 import { z } from "zod";
@@ -26,6 +34,7 @@ const schema = z.object({
   githubUrl: z.string().optional(),
   websiteUrl: z.string().optional(),
   requiresSponsorship: z.boolean(),
+  noticePeriod: z.enum(NOTICE_PERIODS, "Required"),
 });
 
 type FormValues = z.infer<typeof schema>;
@@ -55,6 +64,7 @@ export function PersonalForm({ initial }: { initial?: InitialProfile }) {
       githubUrl: initial?.githubUrl ?? "",
       websiteUrl: initial?.websiteUrl ?? "",
       requiresSponsorship: initial?.requiresSponsorship ?? false,
+      noticePeriod: initial?.noticePeriod ?? undefined,
     },
   });
 
@@ -126,6 +136,39 @@ export function PersonalForm({ initial }: { initial?: InitialProfile }) {
           placeholder="https://yoursite.com"
           {...register("websiteUrl")}
         />
+      </Field>
+      <Field data-invalid={!!errors.noticePeriod}>
+        <FieldLabel htmlFor="noticePeriod">
+          Notice period <span className="text-destructive">*</span>
+        </FieldLabel>
+        <Controller
+          name="noticePeriod"
+          control={control}
+          render={({ field }) => (
+            <Select value={field.value ?? null} onValueChange={field.onChange}>
+              <SelectTrigger
+                id="noticePeriod"
+                className="w-48"
+                aria-invalid={!!errors.noticePeriod}
+              >
+                <SelectValue>
+                  {field.value ? toTitleCase(field.value) : "Select notice period"}
+                </SelectValue>
+              </SelectTrigger>
+              <SelectContent>
+                {NOTICE_PERIODS.map((period) => (
+                  <SelectItem key={period} value={period}>
+                    {toTitleCase(period)}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          )}
+        />
+        <FieldDescription>
+          The agent answers availability and start date questions with this.
+        </FieldDescription>
+        <FieldError errors={[errors.noticePeriod]} />
       </Field>
       <Field orientation="horizontal">
         <Controller

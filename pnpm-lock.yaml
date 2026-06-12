@@ -199,6 +199,9 @@ importers:
       '@repo/db':
         specifier: workspace:*
         version: link:../db
+      '@repo/shared':
+        specifier: workspace:*
+        version: link:../shared
       ai:
         specifier: ^6.0.190
         version: 6.0.190(zod@4.4.3)

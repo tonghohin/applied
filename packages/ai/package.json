@@ -22,6 +22,7 @@
     "@playwright/mcp": "^0.0.75",
     "@repo/automation": "workspace:*",
     "@repo/db": "workspace:*",
+    "@repo/shared": "workspace:*",
     "ai": "^6.0.190",
     "playwright": "^1.60.0",
     "playwright-extra": "^4.3.6",

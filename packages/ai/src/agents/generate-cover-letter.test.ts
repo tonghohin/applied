@@ -42,6 +42,7 @@ const mockProfile = {
   resume: "Jane Doe\n5 years experience",
   coverLetterInstructions: null,
   requiresSponsorship: false,
+  noticePeriod: "2_weeks",
   createdAt: new Date(),
   updatedAt: new Date(),
 } satisfies ProfileWithEmail;

@@ -26,6 +26,7 @@ export async function getProfileWithEmailForUser(db: Db, userId: string) {
       resume: profiles.resume,
       coverLetterInstructions: profiles.coverLetterInstructions,
       requiresSponsorship: profiles.requiresSponsorship,
+      noticePeriod: profiles.noticePeriod,
       createdAt: profiles.createdAt,
       updatedAt: profiles.updatedAt,
       email: users.email,

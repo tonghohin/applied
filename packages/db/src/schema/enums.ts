@@ -1,3 +1,4 @@
+import { NOTICE_PERIODS, WORK_TYPES } from "@repo/shared";
 import { pgEnum } from "drizzle-orm/pg-core";
 
 export const platformEnum = pgEnum("platform", ["linkedin"]);
@@ -9,7 +10,8 @@ export const jobStatusEnum = pgEnum("job_status", [
   "failed",
   "skipped",
 ]);
-export const workplaceTypeEnum = pgEnum("workplace_type", ["on-site", "remote", "hybrid"]);
+export const workplaceTypeEnum = pgEnum("workplace_type", WORK_TYPES);
+export const noticePeriodEnum = pgEnum("notice_period", NOTICE_PERIODS);
 export const searchRunStatusEnum = pgEnum("search_run_status", [
   "pending",
   "running",
