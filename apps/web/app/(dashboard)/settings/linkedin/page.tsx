@@ -11,7 +11,7 @@ export default async function LinkedInSettingsPage() {
   const data = await getProfile(db, session.user.id);
 
   return (
-    <PageLayout title="LinkedIn account">
+    <PageLayout title="LinkedIn account" section="Settings">
       <LinkedInForm savedEmail={data.linkedinAccount?.email ?? null} />
     </PageLayout>
   );

@@ -13,11 +13,13 @@ export default async function DocumentsSettingsPage() {
   const data = await getProfile(db, session.user.id);
 
   return (
-    <PageLayout title="Documents">
+    <PageLayout title="Documents" section="Settings">
       <div className="mx-auto flex max-w-6xl flex-col gap-6">
         <Card>
           <CardHeader>
-            <CardTitle>Resume</CardTitle>
+            <CardTitle>
+              Resume <span className="text-destructive">*</span>
+            </CardTitle>
             <CardDescription>
               The agent generates a PDF from this text for every application.
             </CardDescription>
@@ -28,9 +30,11 @@ export default async function DocumentsSettingsPage() {
         </Card>
         <Card>
           <CardHeader>
-            <CardTitle>Cover letter</CardTitle>
+            <CardTitle>Cover letter instructions</CardTitle>
             <CardDescription>
-              Optional guidance for the AI-written cover letter sent with each application.
+              Optionally describe your preferred tone, length, or things to emphasize. The AI writes
+              a personalized cover letter for each job using your resume — no instructions needed to
+              get started.
             </CardDescription>
           </CardHeader>
           <CardContent>

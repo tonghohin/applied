@@ -1,7 +1,7 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
-import { Field, FieldError, FieldLabel } from "@/components/ui/field";
+import { Field, FieldError } from "@/components/ui/field";
 import { Textarea } from "@/components/ui/textarea";
 import { trpc } from "@/lib/trpc";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -47,11 +47,9 @@ export function ResumeForm({ initial }: { initial?: InitialProfile }) {
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="mx-auto flex max-w-6xl flex-col gap-4">
       <Field data-invalid={!!errors.resume}>
-        <FieldLabel htmlFor="resume">
-          Resume <span className="text-destructive">*</span>
-        </FieldLabel>
         <Textarea
           id="resume"
+          aria-label="Resume"
           rows={20}
           placeholder="Paste your resume here..."
           {...register("resume")}

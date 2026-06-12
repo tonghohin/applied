@@ -11,7 +11,7 @@ export default async function PersonalSettingsPage() {
   const data = await getProfile(db, session.user.id);
 
   return (
-    <PageLayout title="Personal info">
+    <PageLayout title="Personal info" section="Settings">
       <PersonalForm initial={data.profile} />
     </PageLayout>
   );

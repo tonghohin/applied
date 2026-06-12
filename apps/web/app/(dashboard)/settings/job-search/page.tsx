@@ -13,7 +13,7 @@ export default async function JobSearchSettingsPage() {
   const data = await getProfile(db, session.user.id);
 
   return (
-    <PageLayout title="Job search">
+    <PageLayout title="Job search" section="Settings">
       <div className="mx-auto flex max-w-6xl flex-col gap-6">
         <Card>
           <CardHeader>
