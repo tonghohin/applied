@@ -45,7 +45,7 @@ export function CoverLetterForm({ initial }: { initial?: InitialProfile }) {
   const loading = isSubmitting || isPending;
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-4">
+    <form onSubmit={handleSubmit(onSubmit)} className="mx-auto flex max-w-6xl flex-col gap-4">
       <Field data-invalid={!!errors.coverLetterInstructions}>
         <FieldLabel htmlFor="coverLetterInstructions">Cover letter instructions</FieldLabel>
         <Textarea
@@ -62,7 +62,7 @@ export function CoverLetterForm({ initial }: { initial?: InitialProfile }) {
         </FieldDescription>
         <FieldError errors={[errors.coverLetterInstructions]} />
       </Field>
-      <Button type="submit" disabled={loading}>
+      <Button type="submit" disabled={loading} className="self-end">
         {loading ? "Saving…" : "Save"}
       </Button>
     </form>

@@ -6,6 +6,7 @@ import { LinkedInForm } from "@/components/profile/linkedin-form";
 import { PersonalForm } from "@/components/profile/personal-form";
 import { ProfileSkeleton } from "@/components/profile/profile-skeleton";
 import { ResumeForm } from "@/components/profile/resume-form";
+import { ScheduleForm } from "@/components/profile/schedule-form";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { trpc } from "@/lib/trpc";
 import type { RouterOutputs } from "@repo/api";
@@ -30,6 +31,7 @@ export function ProfileContent({ initialData }: { initialData: InitialData }) {
         <TabsTrigger value="cover-letter">Cover letter</TabsTrigger>
         <TabsTrigger value="criteria">Job criteria</TabsTrigger>
         <TabsTrigger value="linkedin">LinkedIn</TabsTrigger>
+        <TabsTrigger value="schedule">Schedule</TabsTrigger>
       </TabsList>
       <TabsContent value="personal" className="mt-4">
         <PersonalForm initial={profile} />
@@ -45,6 +47,9 @@ export function ProfileContent({ initialData }: { initialData: InitialData }) {
       </TabsContent>
       <TabsContent value="linkedin" className="mt-4">
         <LinkedInForm savedEmail={data?.linkedinAccount?.email ?? null} />
+      </TabsContent>
+      <TabsContent value="schedule" className="mt-4">
+        <ScheduleForm initial={data?.schedule ?? null} />
       </TabsContent>
     </Tabs>
   );

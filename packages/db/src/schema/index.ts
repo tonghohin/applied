@@ -5,4 +5,5 @@ export * from "./profiles";
 export * from "./job-criteria";
 export * from "./jobs";
 export * from "./search-runs";
+export * from "./search-schedules";
 export * from "./apply-runs";

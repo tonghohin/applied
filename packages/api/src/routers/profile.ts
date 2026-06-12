@@ -1,4 +1,9 @@
 import {
+  syncSearchScheduler,
+  upsertSchedule,
+  upsertScheduleSchema,
+} from "../services/search-schedule.service";
+import {
   getProfile,
   upsertCoverLetter,
   upsertCoverLetterSchema,
@@ -30,9 +35,20 @@ export const profileRouter = router({
 
   upsertLinkedIn: protectedProcedure
     .input(upsertLinkedInSchema)
-    .mutation(({ ctx, input }) => upsertLinkedIn(ctx.db, ctx.session.user.id, input)),
+    .mutation(async ({ ctx, input }) => {
+      await upsertLinkedIn(ctx.db, ctx.session.user.id, input);
+      await syncSearchScheduler(ctx.db, ctx.session.user.id);
+    }),
 
   upsertCriteria: protectedProcedure
     .input(upsertCriteriaSchema)
-    .mutation(({ ctx, input }) => upsertCriteria(ctx.db, ctx.session.user.id, input)),
+    .mutation(async ({ ctx, input }) => {
+      const row = await upsertCriteria(ctx.db, ctx.session.user.id, input);
+      await syncSearchScheduler(ctx.db, ctx.session.user.id);
+      return row;
+    }),
+
+  upsertSchedule: protectedProcedure
+    .input(upsertScheduleSchema)
+    .mutation(({ ctx, input }) => upsertSchedule(ctx.db, ctx.session.user.id, input)),
 });

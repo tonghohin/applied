@@ -4,9 +4,29 @@ vi.mock("../env", () => ({
   env: { LINKEDIN_ENCRYPTION_KEY: "a".repeat(64) },
 }));
 
-const { mockGetLinkedInAccount, mockUpsertLinkedInAccount } = vi.hoisted(() => ({
+const {
+  mockGetLinkedInAccount,
+  mockUpsertLinkedInAccount,
+  mockGetJobCriteriaForUser,
+  mockGetSearchScheduleForUser,
+  mockUpsertSearchSchedule,
+  mockUpsertJobScheduler,
+  mockRemoveJobScheduler,
+} = vi.hoisted(() => ({
   mockGetLinkedInAccount: vi.fn().mockResolvedValue(null),
   mockUpsertLinkedInAccount: vi.fn().mockResolvedValue(undefined),
+  mockGetJobCriteriaForUser: vi.fn().mockResolvedValue(null),
+  mockGetSearchScheduleForUser: vi.fn().mockResolvedValue(null),
+  mockUpsertSearchSchedule: vi.fn().mockResolvedValue(undefined),
+  mockUpsertJobScheduler: vi.fn().mockResolvedValue(undefined),
+  mockRemoveJobScheduler: vi.fn().mockResolvedValue(undefined),
+}));
+
+vi.mock("../queues/index", () => ({
+  searchQueue: {
+    upsertJobScheduler: mockUpsertJobScheduler,
+    removeJobScheduler: mockRemoveJobScheduler,
+  },
 }));
 
 const mockInsertChain = {
@@ -35,6 +55,9 @@ vi.mock("@repo/db", () => ({
   WORK_TYPES: ["on-site", "remote", "hybrid"],
   getLinkedInAccount: mockGetLinkedInAccount,
   upsertLinkedInAccount: mockUpsertLinkedInAccount,
+  getJobCriteriaForUser: mockGetJobCriteriaForUser,
+  getSearchScheduleForUser: mockGetSearchScheduleForUser,
+  upsertSearchSchedule: mockUpsertSearchSchedule,
 }));
 
 import { decrypt } from "@repo/shared";

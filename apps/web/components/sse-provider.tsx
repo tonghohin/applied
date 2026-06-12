@@ -1,9 +1,9 @@
 "use client";
 
+import { trpc } from "@/lib/trpc";
 import type { SseEvent } from "@repo/api";
 import type { RouterOutputs } from "@repo/api";
 import { useRef } from "react";
-import { trpc } from "@/lib/trpc";
 
 type JobList = RouterOutputs["jobs"]["list"];
 type RunList = RouterOutputs["runs"]["list"];
@@ -68,6 +68,11 @@ export function applySearchRunUpdateEvent(
   runs: RunList,
   event: Extract<SseEvent, { type: "search-run:update" }>
 ): RunList {
+  // Scheduled runs are created by the worker, so the run may not be in the
+  // list yet — prepend it (runs are ordered by startedAt desc).
+  if (!runs.some((run) => run.id === event.run.id)) {
+    return [event.run, ...runs];
+  }
   return runs.map((run) => (run.id === event.run.id ? event.run : run));
 }
 
@@ -75,6 +80,9 @@ export function applyDashboardSearchRunUpdateEvent(
   stats: Stats,
   event: Extract<SseEvent, { type: "search-run:update" }>
 ): Stats {
+  if (!stats.searchRuns.some((run) => run.id === event.run.id)) {
+    return { ...stats, searchRuns: [event.run, ...stats.searchRuns] };
+  }
   return {
     ...stats,
     searchRuns: stats.searchRuns.map((run) => (run.id === event.run.id ? event.run : run)),

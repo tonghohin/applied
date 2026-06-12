@@ -47,8 +47,7 @@ export function LinkedInForm({ savedEmail }: { savedEmail: string | null }) {
   const hasCredentials = savedEmail !== null;
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-4">
-      <p className="text-muted-foreground text-sm">Password is encrypted and never logged.</p>
+    <form onSubmit={handleSubmit(onSubmit)} className="mx-auto flex max-w-6xl flex-col gap-4">
       <Field data-invalid={!!errors.linkedinEmail}>
         <FieldLabel htmlFor="linkedinEmail">
           LinkedIn email <span className="text-destructive">*</span>
@@ -70,10 +69,12 @@ export function LinkedInForm({ savedEmail }: { savedEmail: string | null }) {
           {...register("linkedinPassword")}
           aria-invalid={!!errors.linkedinPassword}
         />
-        <FieldDescription>For security, saved passwords are never shown.</FieldDescription>
+        <FieldDescription>
+          Password is encrypted and never logged. For security, saved passwords are never shown.
+        </FieldDescription>
         <FieldError errors={[errors.linkedinPassword]} />
       </Field>
-      <Button type="submit" disabled={loading}>
+      <Button type="submit" disabled={loading} className="self-end">
         {loading ? "Saving…" : hasCredentials ? "Update credentials" : "Save credentials"}
       </Button>
     </form>

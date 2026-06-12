@@ -118,6 +118,7 @@ describe("applyDashboardJobStatusEvent", () => {
         },
       ],
       searchRuns: [],
+      searchSchedule: { enabled: false, nextRunAt: null },
     };
     const event = {
       type: "job:status" as const,
@@ -189,11 +190,28 @@ describe("applySearchRunUpdateEvent", () => {
     expect(result[0]).toBe(updatedRun);
     expect(result[1]).toBe(runs[1]);
   });
+
+  it("prepends a run that is not in the list yet", () => {
+    const runs: RunList = [baseRun];
+    const newRun = { ...baseRun, id: "run-new", status: "pending" as const };
+    const event: Extract<SseEvent, { type: "search-run:update" }> = {
+      type: "search-run:update",
+      run: newRun,
+    };
+    const result = applySearchRunUpdateEvent(runs, event);
+    expect(result).toHaveLength(2);
+    expect(result[0]).toBe(newRun);
+    expect(result[1]).toBe(baseRun);
+  });
 });
 
 describe("applyDashboardSearchRunUpdateEvent", () => {
   it("replaces the matching run in stats.searchRuns", () => {
-    const stats: Stats = { jobs: [], searchRuns: [baseRun] };
+    const stats: Stats = {
+      jobs: [],
+      searchRuns: [baseRun],
+      searchSchedule: { enabled: false, nextRunAt: null },
+    };
     const updatedRun = { ...baseRun, status: "completed" as const, jobCount: 5 };
     const event: Extract<SseEvent, { type: "search-run:update" }> = {
       type: "search-run:update",
@@ -202,5 +220,22 @@ describe("applyDashboardSearchRunUpdateEvent", () => {
     const result = applyDashboardSearchRunUpdateEvent(stats, event);
     expect(result.searchRuns[0]).toBe(updatedRun);
     expect(result.jobs).toEqual([]);
+  });
+
+  it("prepends a run that is not in stats.searchRuns yet", () => {
+    const stats: Stats = {
+      jobs: [],
+      searchRuns: [baseRun],
+      searchSchedule: { enabled: false, nextRunAt: null },
+    };
+    const newRun = { ...baseRun, id: "run-new", status: "pending" as const };
+    const event: Extract<SseEvent, { type: "search-run:update" }> = {
+      type: "search-run:update",
+      run: newRun,
+    };
+    const result = applyDashboardSearchRunUpdateEvent(stats, event);
+    expect(result.searchRuns).toHaveLength(2);
+    expect(result.searchRuns[0]).toBe(newRun);
+    expect(result.searchRuns[1]).toBe(baseRun);
   });
 });

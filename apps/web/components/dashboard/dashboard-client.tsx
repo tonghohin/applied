@@ -35,7 +35,7 @@ export function DashboardClient({
   linkedInConnected: boolean;
 }) {
   const { data } = trpc.dashboard.getStats.useQuery(undefined, { initialData });
-  const { jobs, searchRuns } = data ?? initialData;
+  const { jobs, searchRuns, searchSchedule } = data ?? initialData;
 
   const isEmpty = jobs.length === 0 && searchRuns.length === 0;
 
@@ -76,7 +76,7 @@ export function DashboardClient({
               <ActivityFeed jobs={jobs} />
             </div>
             <div className="grid grid-rows-[auto_auto_1fr] gap-5 lg:col-span-2">
-              <AgentStatus searchRuns={searchRuns} />
+              <AgentStatus searchRuns={searchRuns} searchSchedule={searchSchedule} />
               <ApplicationStatus jobs={jobs} />
               <SearchCriteria criteria={criteria} linkedInConnected={linkedInConnected} />
             </div>

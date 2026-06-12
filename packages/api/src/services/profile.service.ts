@@ -1,4 +1,10 @@
-import { getLinkedInAccount, jobCriteria, profiles, upsertLinkedInAccount } from "@repo/db";
+import {
+  getLinkedInAccount,
+  getSearchScheduleForUser,
+  jobCriteria,
+  profiles,
+  upsertLinkedInAccount,
+} from "@repo/db";
 import { WORK_TYPES, encrypt } from "@repo/shared";
 import { eq } from "drizzle-orm";
 import { z } from "zod";
@@ -52,7 +58,7 @@ export type UpsertLinkedInInput = z.infer<typeof upsertLinkedInSchema>;
 export type UpsertCriteriaInput = z.infer<typeof upsertCriteriaSchema>;
 
 export async function getProfile(db: Db, userId: string) {
-  const [profile, criteria, linkedinAccount] = await Promise.all([
+  const [profile, criteria, linkedinAccount, schedule] = await Promise.all([
     db
       .select()
       .from(profiles)
@@ -64,8 +70,9 @@ export async function getProfile(db: Db, userId: string) {
       .where(eq(jobCriteria.userId, userId))
       .then((r) => r[0] ?? null),
     getLinkedInAccount(db, userId),
+    getSearchScheduleForUser(db, userId),
   ]);
-  return { profile, criteria, linkedinAccount };
+  return { profile, criteria, linkedinAccount, schedule };
 }
 
 export async function upsertPersonal(db: Db, userId: string, input: UpsertPersonalInput) {

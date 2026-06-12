@@ -105,7 +105,7 @@ export function CriteriaForm({
   const loading = isSubmitting || isPending;
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-4">
+    <form onSubmit={handleSubmit(onSubmit)} className="mx-auto flex max-w-6xl flex-col gap-4">
       <Field data-invalid={!!errors.jobTitle}>
         <FieldLabel htmlFor="jobTitle">
           Job title <span className="text-destructive">*</span>
@@ -168,7 +168,7 @@ export function CriteriaForm({
                 Remove
               </Button>
             </div>
-            <div className="flex gap-2">
+            <div className="flex gap-2 self-start">
               {WORK_TYPE_OPTIONS.map(({ value, label }) => {
                 const id = `wt-${index}-${value}`;
                 return (
@@ -178,7 +178,10 @@ export function CriteriaForm({
                       checked={locations[index]?.workTypes?.includes(value) ?? false}
                       onCheckedChange={() => toggleWorkType(index, value)}
                     />
-                    <FieldLabel htmlFor={id} className="cursor-pointer font-normal">
+                    <FieldLabel
+                      htmlFor={id}
+                      className="cursor-pointer whitespace-nowrap font-normal"
+                    >
                       {label}
                     </FieldLabel>
                   </Field>
@@ -221,7 +224,7 @@ export function CriteriaForm({
         <FieldError errors={[errors.minSalary]} />
       </Field>
 
-      <Button type="submit" disabled={loading}>
+      <Button type="submit" disabled={loading} className="self-end">
         {loading ? "Saving…" : "Save criteria"}
       </Button>
     </form>

@@ -45,7 +45,7 @@ export function ResumeForm({ initial }: { initial?: InitialProfile }) {
   const loading = isSubmitting || isPending;
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-4">
+    <form onSubmit={handleSubmit(onSubmit)} className="mx-auto flex max-w-6xl flex-col gap-4">
       <Field data-invalid={!!errors.resume}>
         <FieldLabel htmlFor="resume">
           Resume <span className="text-destructive">*</span>
@@ -59,7 +59,7 @@ export function ResumeForm({ initial }: { initial?: InitialProfile }) {
         />
         <FieldError errors={[errors.resume]} />
       </Field>
-      <Button type="submit" disabled={loading}>
+      <Button type="submit" disabled={loading} className="self-end">
         {loading ? "Saving…" : "Save"}
       </Button>
     </form>

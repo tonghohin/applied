@@ -13,6 +13,19 @@ function resolves<T>(data: T) {
 const mockSelect = vi.fn();
 const mockDb = { select: mockSelect } as never;
 
+const { mockGetJobScheduler, mockGetSearchScheduleForUser } = vi.hoisted(() => ({
+  mockGetJobScheduler: vi.fn().mockResolvedValue(undefined),
+  mockGetSearchScheduleForUser: vi.fn().mockResolvedValue(null),
+}));
+
+vi.mock("../env", () => ({
+  env: { LINKEDIN_ENCRYPTION_KEY: "a".repeat(64), REDIS_URL: "redis://localhost:6379" },
+}));
+
+vi.mock("../queues/index", () => ({
+  searchQueue: { getJobScheduler: mockGetJobScheduler },
+}));
+
 vi.mock("@repo/db", () => ({
   jobs: {
     userId: "userId",
@@ -26,6 +39,7 @@ vi.mock("@repo/db", () => ({
     company: "company",
   },
   listSearchRuns: vi.fn(),
+  getSearchScheduleForUser: mockGetSearchScheduleForUser,
 }));
 
 vi.mock("drizzle-orm", () => ({
@@ -100,5 +114,37 @@ describe("getDashboardStats", () => {
     const result = await getDashboardStats(mockDb, "user-1");
 
     expect(result.searchRuns[0]).toMatchObject(run);
+  });
+
+  it("reports the schedule as disabled when no schedule row exists", async () => {
+    setupMocks();
+    mockGetSearchScheduleForUser.mockResolvedValueOnce(null);
+
+    const result = await getDashboardStats(mockDb, "user-1");
+
+    expect(result.searchSchedule).toEqual({ enabled: false, nextRunAt: null });
+    expect(mockGetJobScheduler).not.toHaveBeenCalled();
+  });
+
+  it("maps the Redis scheduler's next millis to a Date when enabled", async () => {
+    setupMocks();
+    const nextMillis = Date.now() + 60 * 60 * 1000;
+    mockGetSearchScheduleForUser.mockResolvedValueOnce({ enabled: true });
+    mockGetJobScheduler.mockResolvedValueOnce({ next: nextMillis });
+
+    const result = await getDashboardStats(mockDb, "user-1");
+
+    expect(result.searchSchedule).toEqual({ enabled: true, nextRunAt: new Date(nextMillis) });
+    expect(mockGetJobScheduler).toHaveBeenCalledWith("search-schedule:user-1");
+  });
+
+  it("returns a null nextRunAt when enabled but no Redis scheduler exists", async () => {
+    setupMocks();
+    mockGetSearchScheduleForUser.mockResolvedValueOnce({ enabled: true });
+    mockGetJobScheduler.mockResolvedValueOnce(undefined);
+
+    const result = await getDashboardStats(mockDb, "user-1");
+
+    expect(result.searchSchedule).toEqual({ enabled: true, nextRunAt: null });
   });
 });

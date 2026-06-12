@@ -2,16 +2,20 @@ import { runSearch } from "@repo/automation";
 import {
   clearLinkedInSession,
   db,
+  getJobCriteriaForUser,
   getLinkedInAccount,
+  getProfileForUser,
+  hasActiveSearchRun,
+  insertSearchRun,
   saveLinkedInSession,
   updateSearchRun,
 } from "@repo/db";
-import { decrypt, encrypt } from "@repo/shared";
+import { decrypt, encrypt, getMissingSearchFields } from "@repo/shared";
 import { Worker } from "bullmq";
 import { env } from "../env";
 import { publishEvent } from "../redis";
 
-type SearchJobData = { userId: string; runId: string };
+type SearchJobData = { userId: string; runId?: string };
 
 async function processSearch(userId: string, runId: string) {
   const account = await getLinkedInAccount(db, userId);
@@ -56,10 +60,48 @@ async function processSearch(userId: string, runId: string) {
   }
 }
 
+async function processScheduledTick(userId: string) {
+  const [profile, criteria, account] = await Promise.all([
+    getProfileForUser(db, userId),
+    getJobCriteriaForUser(db, userId),
+    getLinkedInAccount(db, userId),
+  ]);
+
+  const missingFields = getMissingSearchFields(profile, criteria, account);
+  if (missingFields.length > 0) {
+    console.log(
+      `[search-worker] scheduled search skipped for user ${userId}: missing ${missingFields.join(", ")}`
+    );
+    return;
+  }
+
+  if (await hasActiveSearchRun(db, userId)) {
+    console.log(
+      `[search-worker] scheduled search skipped for user ${userId}: a run is already active`
+    );
+    return;
+  }
+
+  const run = await insertSearchRun(db, {
+    userId,
+    platform: "linkedin",
+    status: "pending",
+    startedAt: new Date(),
+  });
+  if (!run) throw new Error("Failed to create search run");
+  publishEvent(userId, { type: "search-run:update", run });
+
+  await processSearch(userId, run.id);
+}
+
 export const searchWorker = new Worker<SearchJobData>(
   "search",
   async (job) => {
-    await processSearch(job.data.userId, job.data.runId);
+    if (job.data.runId) {
+      await processSearch(job.data.userId, job.data.runId);
+    } else {
+      await processScheduledTick(job.data.userId);
+    }
   },
   {
     connection: { url: env.REDIS_URL },
