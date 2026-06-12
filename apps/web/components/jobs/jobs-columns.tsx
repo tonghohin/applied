@@ -4,9 +4,9 @@ import { DataTableColumnHeader } from "@/components/ui/data-table-column-header"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import type { FitTier, Job, JobStatus } from "@/lib/trpc";
 import { RiInformationLine } from "@remixicon/react";
-import { toTitleCase } from "@repo/shared";
+import { capitalize, toTitleCase } from "@repo/shared";
 import type { ColumnDef } from "@tanstack/react-table";
-import { format } from "date-fns";
+import { formatDistanceToNow } from "date-fns";
 import { ApplyButton } from "./apply-button";
 import { FitTierBadge } from "./fit-tier-badge";
 import { JobStatusBadge } from "./job-status-badge";
@@ -106,7 +106,7 @@ export const columns: ColumnDef<Job>[] = [
     header: ({ column }) => <DataTableColumnHeader column={column} title="Added" />,
     cell: ({ getValue }) => {
       const value = getValue<Date>();
-      return format(value, "MMM d, yyyy");
+      return capitalize(formatDistanceToNow(value, { addSuffix: true }));
     },
     sortingFn: "datetime",
     enableColumnFilter: false,
