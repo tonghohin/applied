@@ -17,4 +17,5 @@ export interface SearchCriteria {
   jobTitle: string;
   locations: LocationEntry[];
   excludeKeywords: string[];
+  excludeCompanies: string[];
 }

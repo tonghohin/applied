@@ -7,13 +7,14 @@ import {
   PopoverDescription,
   PopoverHeader,
   PopoverTitle,
+  PopoverTrigger,
 } from "@/components/ui/popover";
 import { useTextSelection } from "@/hooks/use-text-selection";
 import type { Job } from "@/lib/trpc";
 import { trpc } from "@/lib/trpc";
 import { RiExternalLinkLine } from "@remixicon/react";
 import Link from "next/link";
-import { useRef } from "react";
+import { useRef, useState } from "react";
 import { toast } from "sonner";
 
 export function JobTitleCell({ job }: { job: Job }) {
@@ -24,6 +25,8 @@ export function JobTitleCell({ job }: { job: Job }) {
   });
   const utils = trpc.useUtils();
   const excludeMutation = trpc.jobs.excludeKeyword.useMutation();
+  const [companyPopoverOpen, setCompanyPopoverOpen] = useState(false);
+  const excludeCompanyMutation = trpc.jobs.excludeCompany.useMutation();
 
   async function handleExclude() {
     if (!selection) return;
@@ -39,6 +42,22 @@ export function JobTitleCell({ job }: { job: Job }) {
       toast.error(error instanceof Error ? error.message : "Failed to exclude keyword");
     } finally {
       clearSelection();
+    }
+  }
+
+  async function handleExcludeCompany() {
+    try {
+      const result = await excludeCompanyMutation.mutateAsync({ company: job.company });
+      utils.jobs.list.invalidate();
+      toast.success(
+        result.alreadyExcluded
+          ? `"${result.company}" was already excluded — skipped ${result.skippedCount} matching job(s)`
+          : `Excluded "${result.company}" — skipped ${result.skippedCount} matching job(s)`
+      );
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Failed to exclude company");
+    } finally {
+      setCompanyPopoverOpen(false);
     }
   }
 
@@ -62,7 +81,32 @@ export function JobTitleCell({ job }: { job: Job }) {
         className="truncate text-muted-foreground text-xs"
         title={`${job.company} · ${job.location}`}
       >
-        {job.company} · {job.location}
+        <Popover open={companyPopoverOpen} onOpenChange={setCompanyPopoverOpen}>
+          <PopoverTrigger
+            className="cursor-pointer underline-offset-2 hover:text-foreground hover:underline"
+            aria-label={`Exclude jobs from ${job.company}`}
+          >
+            {job.company}
+          </PopoverTrigger>
+          <PopoverContent initialFocus={false}>
+            <PopoverHeader>
+              <PopoverTitle>Exclude {job.company}</PopoverTitle>
+              <PopoverDescription>
+                Adds it to your excluded companies: future searches skip its jobs, and its jobs
+                already in your list are marked as skipped.
+              </PopoverDescription>
+            </PopoverHeader>
+            <Button
+              size="xs"
+              variant="outline"
+              disabled={excludeCompanyMutation.isPending}
+              onClick={handleExcludeCompany}
+            >
+              {excludeCompanyMutation.isPending ? "Excluding…" : "Exclude"}
+            </Button>
+          </PopoverContent>
+        </Popover>{" "}
+        · {job.location}
       </span>
       {selection && (
         <Popover

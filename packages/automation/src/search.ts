@@ -115,6 +115,7 @@ export async function runSearch(
         jobTitle: criteriaRow.jobTitle,
         locations: criteriaRow.locations,
         excludeKeywords: criteriaRow.excludeKeywords,
+        excludeCompanies: criteriaRow.excludeCompanies,
       },
       knownUrls,
       options?.maxPages

@@ -13,7 +13,13 @@ const mockUpdate = vi.fn().mockReturnValue({ set: updateSet });
 const mockDb = { select: mockSelect, update: mockUpdate } as never;
 
 vi.mock("@repo/db", () => ({
-  jobs: { userId: "userId_col", id: "id_col", status: "status_col", title: "title_col" },
+  jobs: {
+    userId: "userId_col",
+    id: "id_col",
+    status: "status_col",
+    title: "title_col",
+    company: "company_col",
+  },
   jobCriteria: { userId: "criteria_userId_col" },
   jobStatusEnum: { enumValues: ["pending_review", "applied", "failed", "skipped"] },
   getJobCriteriaForUser: vi.fn(),
@@ -36,7 +42,7 @@ vi.mock("@trpc/server", () => ({
 }));
 
 import { getJobCriteriaForUser, jobCriteria, listLatestApplyRunsByJobIds } from "@repo/db";
-import { excludeKeyword, excludeKeywordSchema, listJobs } from "./jobs.service";
+import { excludeCompany, excludeKeyword, excludeKeywordSchema, listJobs } from "./jobs.service";
 
 const mockJob = (id: string) => ({
   id,
@@ -102,7 +108,7 @@ describe("listJobs", () => {
   });
 });
 
-const mockCriteria = (excludeKeywords: string[]) => ({
+const mockCriteria = (excludeKeywords: string[], excludeCompanies: string[] = []) => ({
   id: "criteria-1",
   userId: "user-1",
   jobTitle: "Engineer",
@@ -110,6 +116,7 @@ const mockCriteria = (excludeKeywords: string[]) => ({
   locations: [],
   seniority: [],
   excludeKeywords,
+  excludeCompanies,
   minSalary: 1,
   createdAt: new Date(),
   updatedAt: new Date(),
@@ -181,6 +188,73 @@ describe("excludeKeyword", () => {
     selectWhere.mockResolvedValueOnce([{ id: "job-1", title: "Rust Developer" }]);
 
     const result = await excludeKeyword(mockDb, "user-1", { keyword: "java" });
+
+    // only the criteria update ran, no jobs status update
+    expect(mockUpdate).toHaveBeenCalledTimes(1);
+    expect(mockUpdate).toHaveBeenCalledWith(jobCriteria);
+    expect(result.skippedCount).toBe(0);
+  });
+});
+
+describe("excludeCompany", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it("throws PRECONDITION_FAILED when the user has no criteria row", async () => {
+    vi.mocked(getJobCriteriaForUser).mockResolvedValueOnce(undefined);
+
+    await expect(excludeCompany(mockDb, "user-1", { company: "Globex" })).rejects.toMatchObject({
+      name: "PRECONDITION_FAILED",
+    });
+    expect(mockUpdate).not.toHaveBeenCalled();
+  });
+
+  it("appends the company to excludeCompanies when it is not present", async () => {
+    vi.mocked(getJobCriteriaForUser).mockResolvedValueOnce(mockCriteria([], ["Acme"]));
+    selectWhere.mockResolvedValueOnce([]);
+
+    const result = await excludeCompany(mockDb, "user-1", { company: "Globex" });
+
+    expect(mockUpdate).toHaveBeenCalledWith(jobCriteria);
+    expect(updateSet).toHaveBeenCalledWith({ excludeCompanies: ["Acme", "Globex"] });
+    expect(result).toEqual({ company: "Globex", skippedCount: 0, alreadyExcluded: false });
+  });
+
+  it("does not append when the company already exists case-insensitively", async () => {
+    vi.mocked(getJobCriteriaForUser).mockResolvedValueOnce(mockCriteria([], ["globex"]));
+    selectWhere.mockResolvedValueOnce([]);
+
+    const result = await excludeCompany(mockDb, "user-1", { company: "Globex" });
+
+    expect(mockUpdate).not.toHaveBeenCalledWith(jobCriteria);
+    expect(result.alreadyExcluded).toBe(true);
+  });
+
+  it("skips only jobs whose companies match on word boundaries", async () => {
+    const { inArray } = await import("drizzle-orm");
+    vi.mocked(getJobCriteriaForUser).mockResolvedValueOnce(mockCriteria([]));
+    selectWhere.mockResolvedValueOnce([
+      { id: "job-1", company: "Globex Inc" },
+      { id: "job-2", company: "Globexia" },
+      { id: "job-3", company: "GLOBEX" },
+    ]);
+
+    const result = await excludeCompany(mockDb, "user-1", { company: "globex" });
+
+    expect(inArray).toHaveBeenCalledWith("status_col", ["pending_review", "failed"]);
+    expect(inArray).toHaveBeenCalledWith("id_col", ["job-1", "job-3"]);
+    expect(updateSet).toHaveBeenCalledWith(
+      expect.objectContaining({ status: "skipped", updatedAt: expect.any(Date) })
+    );
+    expect(result.skippedCount).toBe(2);
+  });
+
+  it("does not update jobs when nothing matches", async () => {
+    vi.mocked(getJobCriteriaForUser).mockResolvedValueOnce(mockCriteria([]));
+    selectWhere.mockResolvedValueOnce([{ id: "job-1", company: "Initech" }]);
+
+    const result = await excludeCompany(mockDb, "user-1", { company: "Globex" });
 
     // only the criteria update ran, no jobs status update
     expect(mockUpdate).toHaveBeenCalledTimes(1);

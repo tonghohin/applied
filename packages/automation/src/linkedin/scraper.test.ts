@@ -17,6 +17,7 @@ const criteria: SearchCriteria = {
   jobTitle: "Software Engineer",
   locations: [{ location: "Remote", workTypes: ["on-site"] }],
   excludeKeywords: [],
+  excludeCompanies: [],
 };
 
 const noKnownUrls = new Set<string>();
@@ -202,6 +203,24 @@ describe("scrapeLinkedInJobs", () => {
     const results = await scrapeLinkedInJobs(
       page,
       { ...criteria, excludeKeywords: ["java"] },
+      noKnownUrls
+    );
+
+    expect(results).toHaveLength(1);
+    expect(results[0]?.url).toBe("https://www.linkedin.com/jobs/view/1/");
+  });
+
+  it("skips jobs from excluded companies before fetching details", async () => {
+    const page = makePage([
+      [makeJob("1"), { ...makeJob("2"), company: "Globex Inc" }],
+      [],
+      [], // page 0
+      details("description 1"), // only job1 gets fetchJobDetails (Globex job excluded before fetch)
+    ]);
+
+    const results = await scrapeLinkedInJobs(
+      page,
+      { ...criteria, excludeCompanies: ["globex"] },
       noKnownUrls
     );
 

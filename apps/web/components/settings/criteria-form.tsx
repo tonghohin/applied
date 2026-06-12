@@ -29,6 +29,7 @@ const schema = z.object({
   locations: z.array(locationSchema).min(1, "Add at least one location"),
   seniority: z.string(),
   excludeKeywords: z.string(),
+  excludeCompanies: z.string(),
   minSalary: z.string().min(1, "Required"),
 });
 
@@ -43,6 +44,7 @@ export function CriteriaForm({
     locations?: LocationEntry[] | null;
     seniority?: string[];
     excludeKeywords?: string[] | null;
+    excludeCompanies?: string[] | null;
     minSalary?: number | null;
   } | null;
 }) {
@@ -68,6 +70,7 @@ export function CriteriaForm({
       locations: initial?.locations ?? [],
       seniority: initial?.seniority?.join(", ") ?? "",
       excludeKeywords: initial?.excludeKeywords?.join(", ") ?? "",
+      excludeCompanies: initial?.excludeCompanies?.join(", ") ?? "",
       minSalary: initial?.minSalary?.toString() ?? "",
     },
   });
@@ -95,6 +98,7 @@ export function CriteriaForm({
         locations: values.locations,
         seniority: splitCsv(values.seniority),
         excludeKeywords: splitCsv(values.excludeKeywords),
+        excludeCompanies: splitCsv(values.excludeCompanies),
         minSalary: Number(values.minSalary),
       });
     } catch {
@@ -204,6 +208,18 @@ export function CriteriaForm({
         />
         <FieldDescription>
           Jobs whose title contains any of these words will be skipped entirely.
+        </FieldDescription>
+      </Field>
+
+      <Field>
+        <FieldLabel htmlFor="excludeCompanies">Exclude companies (comma-separated)</FieldLabel>
+        <Input
+          id="excludeCompanies"
+          placeholder="Acme Corp, Globex"
+          {...register("excludeCompanies")}
+        />
+        <FieldDescription>
+          Jobs from any of these companies will be skipped entirely.
         </FieldDescription>
       </Field>
 

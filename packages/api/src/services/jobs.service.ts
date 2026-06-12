@@ -87,6 +87,50 @@ export async function excludeKeyword(db: Db, userId: string, input: ExcludeKeywo
   return { keyword, skippedCount: matchingIds.length, alreadyExcluded };
 }
 
+export const excludeCompanySchema = z.object({
+  company: z.string().trim().min(2).max(100),
+});
+
+export type ExcludeCompanyInput = z.infer<typeof excludeCompanySchema>;
+
+export async function excludeCompany(db: Db, userId: string, input: ExcludeCompanyInput) {
+  const criteria = await getJobCriteriaForUser(db, userId);
+
+  if (!criteria) {
+    throw new TRPCError({ code: "PRECONDITION_FAILED", message: "Set up job criteria first" });
+  }
+
+  const { company } = input;
+  const alreadyExcluded = criteria.excludeCompanies.some(
+    (existing) => existing.toLowerCase() === company.toLowerCase()
+  );
+
+  if (!alreadyExcluded) {
+    await db
+      .update(jobCriteria)
+      .set({ excludeCompanies: [...criteria.excludeCompanies, company] })
+      .where(eq(jobCriteria.userId, userId));
+  }
+
+  const skippable = await db
+    .select({ id: jobs.id, company: jobs.company })
+    .from(jobs)
+    .where(and(eq(jobs.userId, userId), inArray(jobs.status, ["pending_review", "failed"])));
+
+  const matchingIds = skippable
+    .filter((job) => isExcluded(job.company, [company]))
+    .map((job) => job.id);
+
+  if (matchingIds.length > 0) {
+    await db
+      .update(jobs)
+      .set({ status: "skipped", updatedAt: new Date() })
+      .where(and(eq(jobs.userId, userId), inArray(jobs.id, matchingIds)));
+  }
+
+  return { company, skippedCount: matchingIds.length, alreadyExcluded };
+}
+
 export async function updateJobStatus(db: Db, userId: string, input: UpdateStatusInput) {
   const [existing] = await db
     .select({ id: jobs.id })

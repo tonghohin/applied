@@ -127,6 +127,13 @@
       "when": 1781295528475,
       "tag": "0017_notice-period-not-null",
       "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "7",
+      "when": 1781298837196,
+      "tag": "0018_job-criteria-exclude-companies",
+      "breakpoints": true
     }
   ]
 }

@@ -175,6 +175,7 @@ export async function scrapeLinkedInJobs(
 
           if (knownUrls.has(job.url)) continue;
           if (isExcluded(job.title, criteria.excludeKeywords)) continue;
+          if (isExcluded(job.company, criteria.excludeCompanies)) continue;
 
           let details: { description: string } = { description: "" };
           for (let attempt = 1; attempt <= 2; attempt++) {

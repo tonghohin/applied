@@ -71,7 +71,7 @@ export function AppSidebar() {
               </SidebarMenuButton>
             </SidebarMenuItem>
           ))}
-          <Collapsible render={<SidebarMenuItem />}>
+          <Collapsible defaultOpen render={<SidebarMenuItem />}>
             <CollapsibleTrigger render={<SidebarMenuButton tooltip="Settings" />}>
               <RiSettings3Line />
               Settings

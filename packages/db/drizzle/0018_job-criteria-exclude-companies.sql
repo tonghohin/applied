@@ -1,0 +1,1 @@
+ALTER TABLE "job_criteria" ADD COLUMN "exclude_companies" text[] DEFAULT '{}' NOT NULL;

@@ -11,6 +11,8 @@ import { TRPCError } from "@trpc/server";
 import { z } from "zod";
 import { applyQueue, searchQueue } from "../queues/index";
 import {
+  excludeCompany,
+  excludeCompanySchema,
   excludeKeyword,
   excludeKeywordSchema,
   listJobs,
@@ -59,6 +61,10 @@ export const jobsRouter = router({
   excludeKeyword: protectedProcedure
     .input(excludeKeywordSchema)
     .mutation(({ ctx, input }) => excludeKeyword(ctx.db, ctx.session.user.id, input)),
+
+  excludeCompany: protectedProcedure
+    .input(excludeCompanySchema)
+    .mutation(({ ctx, input }) => excludeCompany(ctx.db, ctx.session.user.id, input)),
 
   applyJobs: protectedProcedure
     .input(z.object({ jobIds: z.array(z.uuid()) }))
