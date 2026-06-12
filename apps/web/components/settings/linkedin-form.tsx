@@ -19,7 +19,7 @@ type FormValues = z.infer<typeof schema>;
 
 export function LinkedInForm({ savedEmail }: { savedEmail: string | null }) {
   const utils = trpc.useUtils();
-  const { mutateAsync, isPending } = trpc.profile.upsertLinkedIn.useMutation({
+  const { mutateAsync, isPending, isSuccess } = trpc.profile.upsertLinkedIn.useMutation({
     onSuccess: () => {
       toast.success("LinkedIn credentials saved");
       utils.profile.getProfile.invalidate();
@@ -44,7 +44,7 @@ export function LinkedInForm({ savedEmail }: { savedEmail: string | null }) {
   }
 
   const loading = isSubmitting || isPending;
-  const hasCredentials = savedEmail !== null;
+  const hasCredentials = savedEmail !== null || isSuccess;
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="mx-auto flex max-w-6xl flex-col gap-4">

@@ -35,7 +35,12 @@ export function SearchCriteria({
       <CardHeader>
         <CardTitle>Search criteria</CardTitle>
         <CardAction>
-          <Button variant="ghost" size="sm" nativeButton={false} render={<Link href="/profile" />}>
+          <Button
+            variant="ghost"
+            size="sm"
+            nativeButton={false}
+            render={<Link href="/settings/job-search" />}
+          >
             Edit <RiArrowRightLine />
           </Button>
         </CardAction>

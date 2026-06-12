@@ -2,6 +2,7 @@
 
 import { AppliedIcon } from "@/components/applied-logo";
 import { ThemeToggle } from "@/components/theme/theme-toggle";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import {
   Sidebar,
   SidebarContent,
@@ -10,14 +11,18 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
+  SidebarMenuSub,
+  SidebarMenuSubButton,
+  SidebarMenuSubItem,
 } from "@/components/ui/sidebar";
 import { authClient } from "@/lib/auth-client";
 import {
+  RiArrowRightSLine,
   RiBriefcaseLine,
   RiDashboardLine,
   RiHistoryLine,
   RiLogoutBoxLine,
-  RiUserLine,
+  RiSettings3Line,
 } from "@remixicon/react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
@@ -26,7 +31,13 @@ const NAV_LINKS = [
   { href: "/dashboard", label: "Dashboard", icon: RiDashboardLine, exact: true },
   { href: "/jobs", label: "Jobs", icon: RiBriefcaseLine, exact: false },
   { href: "/runs", label: "Runs", icon: RiHistoryLine, exact: false },
-  { href: "/profile", label: "Profile", icon: RiUserLine, exact: false },
+];
+
+const SETTINGS_LINKS = [
+  { href: "/settings/personal", label: "Personal info" },
+  { href: "/settings/documents", label: "Documents" },
+  { href: "/settings/job-search", label: "Job search" },
+  { href: "/settings/linkedin", label: "LinkedIn account" },
 ];
 
 export function AppSidebar() {
@@ -60,6 +71,27 @@ export function AppSidebar() {
               </SidebarMenuButton>
             </SidebarMenuItem>
           ))}
+          <Collapsible render={<SidebarMenuItem />}>
+            <CollapsibleTrigger render={<SidebarMenuButton tooltip="Settings" />}>
+              <RiSettings3Line />
+              Settings
+              <RiArrowRightSLine className="ml-auto transition-transform duration-200 group-data-open/collapsible:rotate-90" />
+            </CollapsibleTrigger>
+            <CollapsibleContent>
+              <SidebarMenuSub>
+                {SETTINGS_LINKS.map(({ href, label }) => (
+                  <SidebarMenuSubItem key={href}>
+                    <SidebarMenuSubButton
+                      render={<Link href={href} />}
+                      isActive={pathname === href}
+                    >
+                      <span>{label}</span>
+                    </SidebarMenuSubButton>
+                  </SidebarMenuSubItem>
+                ))}
+              </SidebarMenuSub>
+            </CollapsibleContent>
+          </Collapsible>
         </SidebarMenu>
       </SidebarContent>
       <SidebarFooter>
