@@ -45,10 +45,14 @@ const FORM_FILLING_RULES = `## Form filling rules
 - For demographic / EEO / self-identification questions (gender, race, ethnicity, veteran status, disability, sexual orientation): select "Prefer not to answer", "Decline to self-identify", or the closest equivalent option. Only if the field is required and no decline option exists, leave it at the default or pick the most neutral option. Never guess demographic information about the applicant.
 - If a required field still cannot be answered from any of the above, use a reasonable placeholder.
 - If a file upload field for a resume appears and a Resume PDF path is provided in the prompt, use browser_file_upload to upload that file. For any other file upload fields, skip them.
-- Before filling any text field, check its current value in the snapshot. If it already contains the correct value (forms often pre-fill phone, email, or name from the account or a previous application), SKIP it — do not type into it again. If it contains a wrong or partial value, clear it first with "Control+a" then type the correct value. Never type into a non-empty field without clearing it.
 - Fill text fields one at a time. Do not use browser_fill_form or browser_type.
 - Before interacting with any field or button, ALWAYS first use browser_hover to move the mouse over the element, then click it. This simulates natural mouse movement and is required to avoid spam detection.
-- To fill a text field: hover the element → click it to focus → press "Control+a" with browser_press_key to select all existing content → use browser_press_sequentially with delay:80 to type the new value character by character. The delay:80 parameter simulates human typing speed and is critical — do not omit it.
+- Text field procedure — follow these steps in EXACT order, every time, no exceptions:
+  1. Read the field's current value from the snapshot.
+  2. If the field already shows the correct value → STOP. Do not hover, click, or type. Skip to the next field.
+  3. hover the field → click it to focus → press "Control+a" with browser_press_key → use browser_press_sequentially with delay:80 to type the new value.
+  - CRITICAL: "Control+a" is MANDATORY in step 3, even when the field looks empty. Skipping it and typing directly WILL append to any pre-filled content (e.g. "Hin" + "Hin" = "HinHin"). You must always select-all before typing.
+  - The delay:80 parameter in browser_press_sequentially is required — do not omit it.
 - NEVER use Backspace or Delete to clear a field character by character. Always use "Control+a" (selects all) before typing — this replaces whatever was there in a single keystroke.
 - After filling each text field, add a browser_wait_for with time:600 before moving to the next field.
 - Only use browser_type as a fallback if browser_press_sequentially fails on a specific field.
