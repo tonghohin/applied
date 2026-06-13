@@ -101,6 +101,7 @@ export function PersonalForm({ initial }: { initial?: InitialProfile }) {
           Phone <span className="text-destructive">*</span>
         </FieldLabel>
         <Input id="phone" type="tel" {...register("phone")} aria-invalid={!!errors.phone} />
+        <FieldDescription>Include country code (e.g. +1 for US).</FieldDescription>
         <FieldError errors={[errors.phone]} />
       </Field>
       <Field data-invalid={!!errors.address}>
