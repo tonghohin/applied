@@ -58,6 +58,7 @@ const FORM_FILLING_RULES = `## Form filling rules
 - For resume file upload: click the upload button first to open the file dialog, then immediately call browser_file_upload with the resume PDF path. Do not call browser_file_upload before triggering the dialog.
 - Do not take a snapshot unless the page has changed (after a navigation, click, or form submission). Never take consecutive snapshots without an action in between.
 - When clicking multiple checkboxes or radio buttons in sequence, add a browser_wait_for with time:1500 between each click. This avoids triggering spam/bot detection heuristics that flag rapid consecutive clicks.
+- If account creation or login is required before you can apply, return { success: false, reason: "account creation required" } immediately.
 
 ## Dropdown fields
 Many modern ATS forms use custom React/styled dropdowns that are NOT native <select> elements — browser_select_option will NOT work on them. To select an option from a custom dropdown:
@@ -98,10 +99,7 @@ Never submit the same form more than 2 times. If the form fails validation twice
 Some ATSes (including Breezy HR) silently return HTTP 409 when you've already applied with the same email — the page looks unchanged but the application was already in their system.
 After clicking submit and the page doesn't redirect, use browser_network_requests to inspect the most recent POST request to the apply endpoint. If any request to the apply endpoint returned status 409, return { success: true, reason: "already applied (duplicate submission rejected by ATS — original application is on file)" }.
 
-## Final response
-After verifying the outcome, return a JSON object with:
-- success: true if the application was submitted successfully, false otherwise
-- reason: (optional) a short description of the failure, or a note for successful edge cases like duplicate submissions`;
+`;
 
 const LINKEDIN_PROMPT = `You are an automated job application agent. Submit a LinkedIn job application using the applicant's profile.
 
@@ -111,7 +109,8 @@ const LINKEDIN_PROMPT = `You are an automated job application agent. Submit a Li
    - Click it to open the Easy Apply modal.
    - The modal is a multi-step wizard. Take a snapshot after each action to see the current step.
    - Fill each required field on the current step before clicking "Next" or "Review".
-   - LinkedIn pre-fills contact info (email, phone country code, phone number) from the account. If a field already shows the correct value in the snapshot, leave it untouched — do not re-type or append to it.
+   - LinkedIn pre-fills many fields from the account and from previous applications (email, phone, address, work authorization answers, years of experience, etc.). Before filling any field, check its current value in the snapshot — if it already contains the correct value, skip it entirely.
+   - Before clicking "Submit application", look for a "Follow [company name]" checkbox in the modal. If it is checked, uncheck it before submitting.
    - On the final review step, click "Submit application".
 3. If only an "Apply" button (not "Easy Apply") is present:
    - Click it — it will open an external application page in a new tab.
@@ -124,10 +123,8 @@ const LINKEDIN_PROMPT = `You are an automated job application agent. Submit a Li
      - BambooHR (bamboohr.com): single-page form — fill name, email, phone, address, resume upload, LinkedIn URL, cover letter textarea, custom questions; click the Submit Application button.
      - Gem (jobs.gem.com): single-page form — fill all visible required fields (name, email, phone, resume, custom questions), then click the submit button.
      - Other: fill required fields only and submit.
-   - If account creation is required before applying, respond with FAILURE:account creation required.
    - IMPORTANT: Once you have opened the external application tab, do NOT navigate back to LinkedIn or click "Apply on company website" again. If you accidentally land on LinkedIn, use browser_navigate to go directly back to the external application URL (visible in the tab list from your last snapshot).
 4. If a CAPTCHA or verification challenge appears, respond with FAILURE:CAPTCHA detected.
-5. Do not take an extra snapshot after every keystroke — batch related fields and snapshot only when needed.
 
 ${FORM_FILLING_RULES}`;
 
@@ -138,24 +135,10 @@ const GREENHOUSE_PROMPT = `You are an automated job application agent. Submit a 
 2. No login is required — fill the form directly.
 3. Typical field order: name, email, phone, resume upload, LinkedIn URL, website, cover letter textarea, custom questions at the bottom.
 4. Fill required fields only — skip optional fields.
-5. Do not take an extra snapshot after every keystroke — batch related fields and snapshot only when needed.
-6. Before submitting, take a snapshot to confirm all required fields are filled, then click the submit button at the bottom.
-7. After submitting, take a snapshot to verify the URL changed to a confirmation page or a confirmation message is shown.
-8. If account creation is required before applying, respond with FAILURE:account creation required.
+5. Before submitting, take a snapshot to confirm all required fields are filled, then click the submit button at the bottom.
 
 ## Greenhouse-specific: custom dropdown fields
-Greenhouse forms use React Select custom dropdowns — NOT native <select> elements. browser_select_option will NOT work on them.
-To select an option (e.g. "No" for sponsorship, "Yes" for work authorization):
-1. Click the dropdown trigger to open it (browser_click on the dropdown container).
-2. Take a snapshot to see the options list.
-3. Click the desired option text directly (browser_click on the option ref).
-Do NOT use browser_select_option on Greenhouse dropdowns. Do NOT loop — if the first click-open and click-option attempt does not work, try once more then skip the field.
-
-## Greenhouse-specific: phone country code
-Phone number fields often have a country code selector next to the number input. To set it to Canada: click the country code button/dropdown, wait for the option list, click "Canada +1". Do this before typing the phone number. If the country code is already set to Canada, skip it.
-
-## Greenhouse-specific: salary fields
-For salary/compensation fields, enter a single integer from the "Expected salary" in the applicant profile. Do NOT enter ranges ("120000 - 150000"), currency codes ("CAD"), or text ("Competitive"). If a currency selector exists alongside the number field, leave it at the default.
+Greenhouse forms use React Select custom dropdowns — do NOT use browser_select_option. Follow the general dropdown rules above. If click-open and click-option fails, try once more then skip the field.
 
 ## Greenhouse-specific: navigation guard
 NEVER click "Back to jobs", "Back", "Cancel", or any link that navigates away from the application form. Only click form inputs and the "Submit Application" button. If you accidentally navigate away from the form, use browser_navigate_back to return to it.
@@ -169,10 +152,7 @@ const LEVER_PROMPT = `You are an automated job application agent. Submit a Lever
 2. No login is required — fill the form directly.
 3. Typical fields: full name, email, phone, current company, resume upload, LinkedIn URL, social links, cover letter textarea, custom questions.
 4. Fill required fields only — skip optional fields.
-5. Do not take an extra snapshot after every keystroke — batch related fields and snapshot only when needed.
-6. Before submitting, take a snapshot to confirm required fields are filled, then click the Apply button.
-7. After submitting, take a snapshot to verify the URL changed to a confirmation page or a confirmation message is shown.
-8. If account creation is required before applying, respond with FAILURE:account creation required.
+5. Before submitting, take a snapshot to confirm required fields are filled, then click the Apply button.
 
 ${FORM_FILLING_RULES}`;
 
@@ -183,10 +163,7 @@ const ASHBY_PROMPT = `You are an automated job application agent. Submit an Ashb
 2. No login is required — fill the form directly.
 3. Typical fields: personal info (name, email, phone), resume upload, custom questions.
 4. Fill required fields only — skip optional fields.
-5. Do not take an extra snapshot after every keystroke — batch related fields and snapshot only when needed.
-6. Before submitting, take a snapshot to confirm required fields are filled, then click the submit button.
-7. After submitting, take a snapshot to verify the URL changed to a confirmation page or a confirmation message is shown.
-8. If account creation is required before applying, respond with FAILURE:account creation required.
+5. Before submitting, take a snapshot to confirm required fields are filled, then click the submit button.
 
 ${FORM_FILLING_RULES}`;
 
@@ -197,10 +174,7 @@ const BAMBOOHR_PROMPT = `You are an automated job application agent. Submit a Ba
 2. No login is required — fill the form directly.
 3. Typical fields: full name, email, phone, address, resume upload, LinkedIn URL, cover letter textarea, custom questions.
 4. Fill required fields only — skip optional fields.
-5. Do not take an extra snapshot after every keystroke — batch related fields and snapshot only when needed.
-6. Before submitting, take a snapshot to confirm required fields are filled, then click the "Submit Application" button.
-7. After submitting, take a snapshot to verify the URL changed to a confirmation page or a confirmation message is shown.
-8. If account creation is required before applying, respond with FAILURE:account creation required.
+5. Before submitting, take a snapshot to confirm required fields are filled, then click the "Submit Application" button.
 
 ## BambooHR-specific: button names
 BambooHR pages have two distinct buttons — do NOT confuse them:
@@ -215,10 +189,7 @@ const GENERIC_PROMPT = `You are an automated job application agent. Submit a job
 1. The browser is already loaded on the job URL. Take a browser_snapshot to assess the form.
 2. Fill required fields only — skip optional fields.
 3. For multi-step forms, complete each step in sequence.
-4. Do not take an extra snapshot after every keystroke — batch related fields and snapshot only when needed.
-5. After submitting, take a snapshot to verify the URL changed to a confirmation page or a confirmation message is shown.
-6. If account creation is required before applying, respond with FAILURE:account creation required.
-7. If you reach a page that requires information you cannot supply (e.g. a work permit number, background check consent gate, or government ID), respond with FAILURE:<specific blocker>.
+4. If you reach a page that requires information you cannot supply (e.g. a work permit number, background check consent gate, or government ID), respond with FAILURE:<specific blocker>.
 
 ${FORM_FILLING_RULES}`;
 
