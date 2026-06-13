@@ -44,6 +44,7 @@ const FORM_FILLING_RULES = `## Form filling rules
 - For demographic / EEO / self-identification questions (gender, race, ethnicity, veteran status, disability, sexual orientation): select "Prefer not to answer", "Decline to self-identify", or the closest equivalent option. Only if the field is required and no decline option exists, leave it at the default or pick the most neutral option. Never guess demographic information about the applicant.
 - If a required field still cannot be answered from any of the above, use a reasonable placeholder.
 - If a file upload field for a resume appears and a Resume PDF path is provided in the prompt, use browser_file_upload to upload that file. For any other file upload fields, skip them.
+- Before filling any text field, check its current value in the snapshot. If it already contains the correct value (forms often pre-fill phone, email, or name from the account or a previous application), SKIP it — do not type into it again. If it contains a wrong or partial value, clear it first with "Control+a" then type the correct value. Never type into a non-empty field without clearing it.
 - Fill text fields one at a time. Do not use browser_fill_form or browser_type.
 - Before interacting with any field or button, ALWAYS first use browser_hover to move the mouse over the element, then click it. This simulates natural mouse movement and is required to avoid spam detection.
 - To fill a text field: hover the element → click it to focus → press "Control+a" with browser_press_key to clear existing content → use browser_press_sequentially with delay:80 to type the new value character by character. The delay:80 parameter simulates human typing speed and is critical — do not omit it.
@@ -108,6 +109,7 @@ const LINKEDIN_PROMPT = `You are an automated job application agent. Submit a Li
    - Click it to open the Easy Apply modal.
    - The modal is a multi-step wizard. Take a snapshot after each action to see the current step.
    - Fill each required field on the current step before clicking "Next" or "Review".
+   - LinkedIn pre-fills contact info (email, phone country code, phone number) from the account. If a field already shows the correct value in the snapshot, leave it untouched — do not re-type or append to it.
    - On the final review step, click "Submit application".
 3. If only an "Apply" button (not "Easy Apply") is present:
    - Click it — it will open an external application page in a new tab.
