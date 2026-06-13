@@ -23,13 +23,14 @@ export type ApplyResult = z.infer<typeof applyResultSchema>;
 
 export type ProfileWithEmail = Profile & { email: string };
 
-type ApplyPlatform = "linkedin" | "greenhouse" | "lever" | "ashby" | "generic";
+type ApplyPlatform = "linkedin" | "greenhouse" | "lever" | "ashby" | "bamboohr" | "generic";
 
 function detectPlatform(url: string): ApplyPlatform {
   if (url.includes("linkedin.com")) return "linkedin";
   if (url.includes("greenhouse.io")) return "greenhouse";
   if (url.includes("lever.co")) return "lever";
   if (url.includes("ashbyhq.com")) return "ashby";
+  if (url.includes("bamboohr.com")) return "bamboohr";
   return "generic";
 }
 
@@ -120,6 +121,7 @@ const LINKEDIN_PROMPT = `You are an automated job application agent. Submit a Li
      - Lever (lever.co): fill name, email, phone, current company, resume upload, LinkedIn URL, social links, cover letter textarea, custom questions; click Apply.
      - Ashby (ashbyhq.com): fill personal info, resume upload, custom questions; click submit.
      - Breezy HR (breezy.hr): multi-step form — fill each page's required fields, click Next/Continue until the final step, then click Submit. After submitting, confirm the URL changed to a thank-you page.
+     - BambooHR (bamboohr.com): single-page form — fill name, email, phone, address, resume upload, LinkedIn URL, cover letter textarea, custom questions; click the Submit Application button.
      - Gem (jobs.gem.com): single-page form — fill all visible required fields (name, email, phone, resume, custom questions), then click the submit button.
      - Other: fill required fields only and submit.
    - If account creation is required before applying, respond with FAILURE:account creation required.
@@ -188,6 +190,25 @@ const ASHBY_PROMPT = `You are an automated job application agent. Submit an Ashb
 
 ${FORM_FILLING_RULES}`;
 
+const BAMBOOHR_PROMPT = `You are an automated job application agent. Submit a BambooHR job application using the applicant's profile.
+
+## Instructions
+1. The browser is already loaded on the job URL. Take a browser_snapshot to understand the form layout.
+2. No login is required — fill the form directly.
+3. Typical fields: full name, email, phone, address, resume upload, LinkedIn URL, cover letter textarea, custom questions.
+4. Fill required fields only — skip optional fields.
+5. Do not take an extra snapshot after every keystroke — batch related fields and snapshot only when needed.
+6. Before submitting, take a snapshot to confirm required fields are filled, then click the "Submit Application" button.
+7. After submitting, take a snapshot to verify the URL changed to a confirmation page or a confirmation message is shown.
+8. If account creation is required before applying, respond with FAILURE:account creation required.
+
+## BambooHR-specific: button names
+BambooHR pages have two distinct buttons — do NOT confuse them:
+- "Apply for This Job" — a CTA at the top of the page that just scrolls to the form. Do NOT click this.
+- "Submit Application" — the actual submit button at the bottom of the form. Click this to submit.
+
+${FORM_FILLING_RULES}`;
+
 const GENERIC_PROMPT = `You are an automated job application agent. Submit a job application using the applicant's profile.
 
 ## Instructions
@@ -206,6 +227,7 @@ const PROMPTS: Record<ApplyPlatform, string> = {
   greenhouse: GREENHOUSE_PROMPT,
   lever: LEVER_PROMPT,
   ashby: ASHBY_PROMPT,
+  bamboohr: BAMBOOHR_PROMPT,
   generic: GENERIC_PROMPT,
 };
 
@@ -265,7 +287,7 @@ export async function applyToJob(
       ),
       generate_cover_letter: tool({
         description:
-          "Generate a personalized cover letter for this job application. Call this when the form has a required cover letter field.",
+          'Generate a personalized cover letter for this job application. Call this ONLY when the form has an explicit field labelled "Cover Letter" or "Cover letter". Do NOT call this for generic open-ended questions, experience descriptions, or motivation fields.',
         inputSchema: z.object({}),
         execute: async () => generateCoverLetter(job, profile),
       }),
@@ -306,7 +328,7 @@ export async function applyToJob(
       // combine function calling with a JSON response mime type — Vertex accepts it.
       providerOptions: { gateway: { only: ["vertex"] } },
       tools,
-      stopWhen: stepCountIs(100),
+      stopWhen: stepCountIs(150),
       output: Output.object({ schema: applyResultSchema }),
       system: PROMPTS[platform],
       prompt: `Apply to this job:\nURL: ${job.url}\nTitle: ${job.title} at ${job.company}\n\nApplicant profile:\n${profileSummary}${resumePdfPath ? `\n\nResume PDF path: ${resumePdfPath}` : ""}`,

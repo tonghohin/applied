@@ -65,13 +65,13 @@ describe("generateCoverLetter", () => {
     expect(callArg).not.toHaveProperty("stopWhen");
   });
 
-  it("uses google/gemini-2.0-flash-lite model", async () => {
+  it("uses google/gemini-2.5-flash model", async () => {
     vi.mocked(generateText).mockResolvedValueOnce({ text: "Dear Hiring Manager," } as never);
 
     await generateCoverLetter(mockJob, mockProfile);
 
     const callArg = vi.mocked(generateText).mock.calls[0]?.[0];
-    expect(callArg).toMatchObject({ model: "google/gemini-2.0-flash-lite" });
+    expect(callArg).toMatchObject({ model: "google/gemini-2.5-flash" });
   });
 
   it("enables telemetry", async () => {

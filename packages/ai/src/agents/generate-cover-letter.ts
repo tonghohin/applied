@@ -8,7 +8,7 @@ export async function generateCoverLetter(job: Job, profile: ProfileWithEmail) {
     : "";
 
   const { text } = await generateText({
-    model: "google/gemini-2.0-flash-lite",
+    model: "google/gemini-2.5-flash-lite",
     system:
       "You are a professional cover letter writer. Write a concise, personalized cover letter " +
       "for the given job and applicant. Return only the cover letter body — no subject line, " +
