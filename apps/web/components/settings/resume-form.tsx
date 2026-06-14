@@ -51,7 +51,7 @@ export function ResumeForm({ initial }: { initial?: InitialProfile }) {
           id="resume"
           aria-label="Resume"
           rows={20}
-          placeholder="Paste your resume here..."
+          placeholder="Paste your resume in Markdown format. Tip: paste your existing resume into any AI assistant and ask it to convert it to Markdown."
           {...register("resume")}
           aria-invalid={!!errors.resume}
         />
