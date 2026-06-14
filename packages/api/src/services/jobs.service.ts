@@ -33,7 +33,20 @@ export async function listJobs(db: Db, userId: string) {
     jobRows.map((j) => j.id)
   );
   const applyRunByJobId = new Map(applyRuns.map((r) => [r.jobId, r]));
-  return jobRows.map((job) => ({ ...job, latestApplyRun: applyRunByJobId.get(job.id) ?? null }));
+
+  const appliedCountByCompany = new Map<string, number>();
+  for (const job of jobRows) {
+    if (job.status === "applied") {
+      const key = job.company.toLowerCase();
+      appliedCountByCompany.set(key, (appliedCountByCompany.get(key) ?? 0) + 1);
+    }
+  }
+
+  return jobRows.map((job) => ({
+    ...job,
+    latestApplyRun: applyRunByJobId.get(job.id) ?? null,
+    appliedCountAtCompany: appliedCountByCompany.get(job.company.toLowerCase()) ?? 0,
+  }));
 }
 
 export const updateStatusSchema = z.object({

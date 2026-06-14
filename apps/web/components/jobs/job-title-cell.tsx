@@ -9,6 +9,7 @@ import {
   PopoverTitle,
   PopoverTrigger,
 } from "@/components/ui/popover";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { useTextSelection } from "@/hooks/use-text-selection";
 import type { Job } from "@/lib/trpc";
 import { trpc } from "@/lib/trpc";
@@ -106,7 +107,18 @@ export function JobTitleCell({ job }: { job: Job }) {
             </Button>
           </PopoverContent>
         </Popover>{" "}
-        · {job.location}
+        · {job.location}{" "}
+        {job.appliedCountAtCompany > 0 && (
+          <Tooltip>
+            <TooltipTrigger className="cursor-default">
+              <span className="text-warning"> ({job.appliedCountAtCompany}×)</span>
+            </TooltipTrigger>
+            <TooltipContent>
+              Applied to {job.company} {job.appliedCountAtCompany} time
+              {job.appliedCountAtCompany > 1 ? "s" : ""} before
+            </TooltipContent>
+          </Tooltip>
+        )}
       </span>
       {selection && (
         <Popover

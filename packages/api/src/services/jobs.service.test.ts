@@ -106,6 +106,23 @@ describe("listJobs", () => {
 
     expect(listLatestApplyRunsByJobIds).toHaveBeenCalledWith(mockDb, ["job-1", "job-2", "job-3"]);
   });
+
+  it("counts applied jobs at the same company (case-insensitive)", async () => {
+    const applied1 = { ...mockJob("job-1"), company: "Acme", status: "applied" as const };
+    const applied2 = { ...mockJob("job-2"), company: "acme", status: "applied" as const };
+    const pending = { ...mockJob("job-3"), company: "Acme", status: "pending_review" as const };
+    const other = { ...mockJob("job-4"), company: "Other Co", status: "applied" as const };
+
+    selectWhere.mockResolvedValueOnce([applied1, applied2, pending, other]);
+    vi.mocked(listLatestApplyRunsByJobIds).mockResolvedValueOnce([]);
+
+    const result = await listJobs(mockDb, "user-1");
+
+    expect(result.find((j) => j.id === "job-1")?.appliedCountAtCompany).toBe(2);
+    expect(result.find((j) => j.id === "job-2")?.appliedCountAtCompany).toBe(2);
+    expect(result.find((j) => j.id === "job-3")?.appliedCountAtCompany).toBe(2);
+    expect(result.find((j) => j.id === "job-4")?.appliedCountAtCompany).toBe(1);
+  });
 });
 
 const mockCriteria = (excludeKeywords: string[], excludeCompanies: string[] = []) => ({
