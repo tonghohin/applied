@@ -2,7 +2,12 @@ import { DataTableColumnHeader } from "@/components/ui/data-table-column-header"
 import type { Run, RunStatus } from "@/lib/trpc";
 import { toTitleCase } from "@repo/shared";
 import type { ColumnDef } from "@tanstack/react-table";
-import { differenceInMilliseconds, format, formatDuration, intervalToDuration } from "date-fns";
+import {
+  differenceInMilliseconds,
+  formatDistanceToNow,
+  formatDuration,
+  intervalToDuration,
+} from "date-fns";
 import { RunStatusBadge } from "./run-status-badge";
 
 export const columns: ColumnDef<Run>[] = [
@@ -20,19 +25,11 @@ export const columns: ColumnDef<Run>[] = [
     enableGlobalFilter: false,
   },
   {
-    accessorKey: "startedAt",
-    header: ({ column }) => <DataTableColumnHeader column={column} title="Started" />,
-    cell: ({ getValue }) => format(getValue<Date>(), "MMM d, yyyy h:mm a"),
-    sortingFn: "datetime",
-    enableColumnFilter: false,
-    enableGlobalFilter: false,
-  },
-  {
     accessorKey: "completedAt",
     header: ({ column }) => <DataTableColumnHeader column={column} title="Completed" />,
     cell: ({ getValue }) => {
       const value = getValue<Date | null>();
-      return value ? format(value, "MMM d, yyyy h:mm a") : "—";
+      return value ? toTitleCase(formatDistanceToNow(value, { addSuffix: true })) : "—";
     },
     sortingFn: "datetime",
     enableColumnFilter: false,
@@ -53,7 +50,7 @@ export const columns: ColumnDef<Run>[] = [
   },
   {
     accessorKey: "jobCount",
-    header: ({ column }) => <DataTableColumnHeader column={column} title="Jobs Found" />,
+    header: ({ column }) => <DataTableColumnHeader column={column} title="Jobs" />,
     cell: ({ row }) => (row.original.status === "failed" ? "—" : row.original.jobCount),
     enableColumnFilter: false,
     enableGlobalFilter: false,
