@@ -42,6 +42,7 @@ const baseJob = {
   updatedAt: new Date("2026-01-01"),
   latestApplyRun: null,
   appliedCountAtCompany: 0,
+  appliedTitlesAtCompany: [],
 };
 
 const otherJob = { ...baseJob, id: "job-2", title: "Backend Engineer" };

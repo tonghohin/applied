@@ -35,10 +35,14 @@ export async function listJobs(db: Db, userId: string) {
   const applyRunByJobId = new Map(applyRuns.map((r) => [r.jobId, r]));
 
   const appliedCountByCompany = new Map<string, number>();
+  const appliedTitlesByCompany = new Map<string, string[]>();
   for (const job of jobRows) {
     if (job.status === "applied") {
       const key = job.company.toLowerCase();
       appliedCountByCompany.set(key, (appliedCountByCompany.get(key) ?? 0) + 1);
+      const titles = appliedTitlesByCompany.get(key) ?? [];
+      titles.push(job.title);
+      appliedTitlesByCompany.set(key, titles);
     }
   }
 
@@ -46,6 +50,7 @@ export async function listJobs(db: Db, userId: string) {
     ...job,
     latestApplyRun: applyRunByJobId.get(job.id) ?? null,
     appliedCountAtCompany: appliedCountByCompany.get(job.company.toLowerCase()) ?? 0,
+    appliedTitlesAtCompany: appliedTitlesByCompany.get(job.company.toLowerCase()) ?? [],
   }));
 }
 

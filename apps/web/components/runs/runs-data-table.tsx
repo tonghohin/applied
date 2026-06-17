@@ -8,7 +8,7 @@ export function RunsDataTable({ runs }: { runs: Run[] }) {
       data={runs}
       columns={columns}
       getRowId={(row) => row.id}
-      initialSorting={[{ id: "startedAt", desc: true }]}
+      initialSorting={[{ id: "completedAt", desc: true }]}
       emptyMessage="No runs yet. Start a job search to see results here."
     />
   );
