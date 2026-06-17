@@ -144,10 +144,15 @@ async function fetchJobDetails(page: Page, url: string): Promise<{ description: 
   });
 }
 
+export function identityKey(company: string, title: string, location: string): string {
+  return `${company.toLowerCase().trim()}|${title.toLowerCase().trim()}|${location.toLowerCase().trim()}`;
+}
+
 export async function scrapeLinkedInJobs(
   page: Page,
   criteria: SearchCriteria,
   knownUrls: Set<string>,
+  knownIdentities: Set<string>,
   maxPages: number = DEFAULT_MAX_PAGES
 ): Promise<ScrapedJob[]> {
   const results: ScrapedJob[] = [];
@@ -174,6 +179,12 @@ export async function scrapeLinkedInJobs(
           seen.add(job.url);
 
           if (knownUrls.has(job.url)) continue;
+
+          // Card captions occasionally omit the location — fall back to the
+          // criteria location this search was run under
+          const resolvedLocation = job.location || locationEntry.location;
+          if (knownIdentities.has(identityKey(job.company, job.title, resolvedLocation))) continue;
+
           if (isExcluded(job.title, criteria.excludeKeywords)) continue;
           if (isExcluded(job.company, criteria.excludeCompanies)) continue;
 
@@ -192,9 +203,7 @@ export async function scrapeLinkedInJobs(
           results.push({
             ...job,
             ...details,
-            // Card captions occasionally omit the location — fall back to the
-            // criteria location this search was run under
-            location: job.location || locationEntry.location,
+            location: resolvedLocation,
             workplaceType: workType,
           });
         }

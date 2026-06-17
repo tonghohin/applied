@@ -21,6 +21,7 @@ const criteria: SearchCriteria = {
 };
 
 const noKnownUrls = new Set<string>();
+const noKnownIdentities = new Set<string>();
 
 function makeJob(id: string) {
   return {
@@ -56,7 +57,7 @@ describe("scrapeLinkedInJobs", () => {
   it("hovers a job card so wheel scrolling targets the job-list panel", async () => {
     const page = makePage([[makeJob("1")], [], [], details("description 1")]);
 
-    await scrapeLinkedInJobs(page, criteria, noKnownUrls);
+    await scrapeLinkedInJobs(page, criteria, noKnownUrls, noKnownIdentities);
 
     expect(vi.mocked(page.hover)).toHaveBeenCalledWith(
       "[data-occludable-job-id]",
@@ -68,7 +69,7 @@ describe("scrapeLinkedInJobs", () => {
     // Empty first page: 2 stable extractCards rounds, then pagination stops
     const page = makePage([[], []]);
 
-    await scrapeLinkedInJobs(page, criteria, noKnownUrls);
+    await scrapeLinkedInJobs(page, criteria, noKnownUrls, noKnownIdentities);
 
     const [firstUrl] = vi.mocked(page.goto).mock.calls[0] ?? [];
     expect(firstUrl).toContain("f_TPR=r604800");
@@ -93,7 +94,7 @@ describe("scrapeLinkedInJobs", () => {
       details("hybrid job"),
     ]);
 
-    const results = await scrapeLinkedInJobs(page, multiType, noKnownUrls);
+    const results = await scrapeLinkedInJobs(page, multiType, noKnownUrls, noKnownIdentities);
 
     const visitedUrls = vi.mocked(page.goto).mock.calls.map(([url]) => String(url));
     expect(visitedUrls.some((url) => url.includes("f_WT=2"))).toBe(true);
@@ -113,7 +114,25 @@ describe("scrapeLinkedInJobs", () => {
       details("description 1"), // fetchJobDetails for job1 only (job2 already stored)
     ]);
 
-    const results = await scrapeLinkedInJobs(page, criteria, knownUrls);
+    const results = await scrapeLinkedInJobs(page, criteria, knownUrls, noKnownIdentities);
+
+    expect(results).toHaveLength(1);
+    expect(results[0]?.url).toBe("https://www.linkedin.com/jobs/view/1/");
+    const visitedUrls = vi.mocked(page.goto).mock.calls.map(([url]) => url);
+    expect(visitedUrls).not.toContain("https://www.linkedin.com/jobs/view/2/");
+  });
+
+  it("skips jobs with a matching company+title+location identity without fetching their details", async () => {
+    // job "2" has the same company/title/location as an existing DB entry
+    const knownIdentities = new Set(["acme|job 2|remote"]);
+    const page = makePage([
+      [makeJob("1"), makeJob("2")],
+      [],
+      [], // page 0: both cards, then 2 stable
+      details("description 1"), // fetchJobDetails for job1 only (job2 identity already known)
+    ]);
+
+    const results = await scrapeLinkedInJobs(page, criteria, noKnownUrls, knownIdentities);
 
     expect(results).toHaveLength(1);
     expect(results[0]?.url).toBe("https://www.linkedin.com/jobs/view/1/");
@@ -130,7 +149,7 @@ describe("scrapeLinkedInJobs", () => {
       details("recovered"), // retry succeeds
     ]);
 
-    const results = await scrapeLinkedInJobs(page, criteria, noKnownUrls);
+    const results = await scrapeLinkedInJobs(page, criteria, noKnownUrls, noKnownIdentities);
 
     expect(results).toHaveLength(1);
     expect(results[0]?.description).toBe("recovered");
@@ -145,7 +164,7 @@ describe("scrapeLinkedInJobs", () => {
       new Error("timeout"), // retry also fails → fallback details, job still kept
     ]);
 
-    const results = await scrapeLinkedInJobs(page, criteria, noKnownUrls);
+    const results = await scrapeLinkedInJobs(page, criteria, noKnownUrls, noKnownIdentities);
 
     expect(results).toHaveLength(1);
     expect(results[0]?.description).toBe("");
@@ -156,7 +175,7 @@ describe("scrapeLinkedInJobs", () => {
     const jobWithBadge = { ...makeJob("1"), title: "Senior Engineer with verification" };
     const page = makePage([[jobWithBadge], [], [], details("description 1")]);
 
-    const results = await scrapeLinkedInJobs(page, criteria, noKnownUrls);
+    const results = await scrapeLinkedInJobs(page, criteria, noKnownUrls, noKnownIdentities);
 
     expect(results[0]?.title).toBe("Senior Engineer");
   });
@@ -172,7 +191,7 @@ describe("scrapeLinkedInJobs", () => {
       [], // page 1: same URL → skipped by seen Set in scrapeLinkedInJobs
     ]);
 
-    const results = await scrapeLinkedInJobs(page, criteria, noKnownUrls);
+    const results = await scrapeLinkedInJobs(page, criteria, noKnownUrls, noKnownIdentities);
 
     expect(results).toHaveLength(1);
   });
@@ -185,7 +204,7 @@ describe("scrapeLinkedInJobs", () => {
       details("description 1"), // fetchJobDetails for job1
     ]);
 
-    const results = await scrapeLinkedInJobs(page, criteria, noKnownUrls, 1);
+    const results = await scrapeLinkedInJobs(page, criteria, noKnownUrls, noKnownIdentities, 1);
 
     expect(results).toHaveLength(1);
     const visitedUrls = vi.mocked(page.goto).mock.calls.map(([url]) => String(url));
@@ -203,7 +222,8 @@ describe("scrapeLinkedInJobs", () => {
     const results = await scrapeLinkedInJobs(
       page,
       { ...criteria, excludeKeywords: ["java"] },
-      noKnownUrls
+      noKnownUrls,
+      noKnownIdentities
     );
 
     expect(results).toHaveLength(1);
@@ -221,7 +241,8 @@ describe("scrapeLinkedInJobs", () => {
     const results = await scrapeLinkedInJobs(
       page,
       { ...criteria, excludeCompanies: ["globex"] },
-      noKnownUrls
+      noKnownUrls,
+      noKnownIdentities
     );
 
     expect(results).toHaveLength(1);

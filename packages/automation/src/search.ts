@@ -1,6 +1,7 @@
 import {
   type Db,
   getJobCriteriaForUser,
+  getJobIdentitiesForUser,
   getJobUrlsForUser,
   insertJobs,
   updateSearchRun,
@@ -8,7 +9,7 @@ import {
 import type { Browser, BrowserContext, BrowserContextOptions, Page } from "playwright";
 import { browserManager } from "./browser";
 import { loginToLinkedIn } from "./linkedin/login";
-import { scrapeLinkedInJobs } from "./linkedin/scraper";
+import { identityKey, scrapeLinkedInJobs } from "./linkedin/scraper";
 import { scoreJob } from "./scorer";
 import { launchStealthBrowser, stealthContextOptions, stealthPatch } from "./stealth";
 
@@ -108,7 +109,14 @@ export async function runSearch(
   }
 
   try {
-    const knownUrls = new Set(await getJobUrlsForUser(db, userId));
+    const [knownUrlsList, knownIdentitiesList] = await Promise.all([
+      getJobUrlsForUser(db, userId),
+      getJobIdentitiesForUser(db, userId),
+    ]);
+    const knownUrls = new Set(knownUrlsList);
+    const knownIdentities = new Set(
+      knownIdentitiesList.map((row) => identityKey(row.company, row.title, row.location))
+    );
     const scraped = await scrapeLinkedInJobs(
       page,
       {
@@ -118,6 +126,7 @@ export async function runSearch(
         excludeCompanies: criteriaRow.excludeCompanies,
       },
       knownUrls,
+      knownIdentities,
       options?.maxPages
     );
 

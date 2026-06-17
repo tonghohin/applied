@@ -23,7 +23,7 @@ vi.mock("drizzle-orm", () => ({
   and: vi.fn((...args: unknown[]) => args),
 }));
 
-import { getJobUrlsForUser, insertJobs } from "./jobs";
+import { getJobIdentitiesForUser, getJobUrlsForUser, insertJobs } from "./jobs";
 import type { NewJob } from "./jobs";
 
 const baseJob: NewJob = {
@@ -59,6 +59,30 @@ describe("insertJobs", () => {
 
     expect(values).toHaveBeenCalledWith([]);
     expect(result).toBe(0);
+  });
+});
+
+describe("getJobIdentitiesForUser", () => {
+  it("returns the identities of the user's jobs", async () => {
+    selectWhere.mockResolvedValueOnce([
+      { company: "Acme", title: "Software Engineer", location: "Toronto, ON" },
+      { company: "Globex", title: "Backend Developer", location: "Remote" },
+    ]);
+
+    const result = await getJobIdentitiesForUser(mockDb, "user-1");
+
+    expect(result).toEqual([
+      { company: "Acme", title: "Software Engineer", location: "Toronto, ON" },
+      { company: "Globex", title: "Backend Developer", location: "Remote" },
+    ]);
+  });
+
+  it("returns an empty array when the user has no jobs", async () => {
+    selectWhere.mockResolvedValueOnce([]);
+
+    const result = await getJobIdentitiesForUser(mockDb, "user-1");
+
+    expect(result).toEqual([]);
   });
 });
 

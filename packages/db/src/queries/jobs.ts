@@ -26,6 +26,14 @@ export async function getJobUrlsForUser(db: Db, userId: string) {
   return result.map((row) => row.url);
 }
 
+export async function getJobIdentitiesForUser(db: Db, userId: string) {
+  const result = await db
+    .select({ company: jobs.company, title: jobs.title, location: jobs.location })
+    .from(jobs)
+    .where(eq(jobs.userId, userId));
+  return result;
+}
+
 export async function updateJobApplying(db: Db, jobId: string) {
   await db
     .update(jobs)
