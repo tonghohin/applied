@@ -45,23 +45,21 @@ const FORM_FILLING_RULES = `## Form filling rules
 - For demographic / EEO / self-identification questions (gender, race, ethnicity, veteran status, disability, sexual orientation): select "Prefer not to answer", "Decline to self-identify", or the closest equivalent option. Only if the field is required and no decline option exists, leave it at the default or pick the most neutral option. Never guess demographic information about the applicant.
 - If a required field still cannot be answered from any of the above, use a reasonable placeholder.
 - If a file upload field for a resume appears and a Resume PDF path is provided in the prompt, use browser_file_upload to upload that file. For any other file upload fields, skip them.
-- Fill text fields one at a time. Do not use browser_fill_form or browser_type.
+- Fill text fields one at a time. Do not use browser_fill_form.
 - Before interacting with any field or button, ALWAYS first use browser_hover to move the mouse over the element, then click it. This simulates natural mouse movement and is required to avoid spam detection.
 - Text field procedure — follow these steps in EXACT order, every time, no exceptions:
   1. Read the field's current value from the snapshot.
   2. If the field already shows the correct value → STOP. Do not hover, click, or type. Skip to the next field.
-  3. hover the field → click it to focus → press "Control+a" with browser_press_key → use browser_press_sequentially with delay:80 to type the new value.
-  - CRITICAL: "Control+a" is MANDATORY in step 3, even when the field looks empty. Skipping it and typing directly WILL append to any pre-filled content (e.g. "Hin" + "Hin" = "HinHin"). You must always select-all before typing.
-  - The delay:80 parameter in browser_press_sequentially is required — do not omit it.
-- NEVER use Backspace or Delete to clear a field character by character. Always use "Control+a" (selects all) before typing — this replaces whatever was there in a single keystroke.
+  3. hover the field → click it to focus → call browser_type with the correct value and NO slowly parameter.
+     Omitting slowly makes browser_type use Playwright's fill(), which atomically clears any existing content and sets the new value in one operation — no race condition from async pre-fill or React re-renders.
 - After filling each text field, add a browser_wait_for with time:600 before moving to the next field.
-- Only use browser_type as a fallback if browser_press_sequentially fails on a specific field.
-- For location/address/city autocomplete fields: after typing the value, use browser_wait_for with a short text condition to wait for the dropdown to appear, then press "ArrowDown" and "Enter" with browser_press_key to select the first autocomplete suggestion. If no autocomplete dropdown appears, the typed value is accepted as-is.
+- For location/address/city autocomplete fields: after typing the value, use browser_wait_for with time:2 to allow the dropdown to load asynchronously, then press "ArrowDown" with browser_press_key to highlight the first suggestion, then press "Enter" to confirm the selection. Always press ArrowDown + Enter even if the dropdown is not visible in your last snapshot — the suggestions load asynchronously after typing. After pressing Enter, take a snapshot to verify the field contains the expected value; if it is still empty, type the value again and repeat.
 - When targeting elements from a snapshot, use the bare ref value as the target (e.g. if the snapshot shows [ref=e123], use target: "e123"). Never use "ref=e123" or "[ref=e123]" as a selector — those are invalid.
 - Prefer targeting by accessible role and name when refs fail: use getByRole("button", { name: "Submit" }) or getByRole("textbox", { name: "Email" }) syntax as the target value.
 - For resume file upload: click the upload button first to open the file dialog, then immediately call browser_file_upload with the resume PDF path. Do not call browser_file_upload before triggering the dialog.
 - Do not take a snapshot unless the page has changed (after a navigation, click, or form submission). Never take consecutive snapshots without an action in between.
 - When clicking multiple checkboxes or radio buttons in sequence, add a browser_wait_for with time:1500 between each click. This avoids triggering spam/bot detection heuristics that flag rapid consecutive clicks.
+- For checkbox and radio inputs that appear in the accessibility snapshot without a [ref] (e.g. inside a container like "generic [ref=e1121]: checkbox 'Yes'"): use getByRole("checkbox", { name: "Yes" }) or getByRole("radio", { name: "Yes" }) as the target — never click the parent container. After clicking, take a snapshot to confirm [checked] appears on the element before proceeding. If it does not show [checked], click it once more with the same getByRole target.
 - If account creation or login is required before you can apply, return { success: false, reason: "account creation required" } immediately.
 
 ## Dropdown fields
@@ -114,14 +112,16 @@ const LINKEDIN_PROMPT = `You are an automated job application agent. Submit a Li
    - The modal is a multi-step wizard. Take a snapshot after each action to see the current step.
    - Fill each required field on the current step before clicking "Next" or "Review".
    - LinkedIn pre-fills many fields from the account and from previous applications (email, phone, address, work authorization answers, years of experience, etc.). Before filling any field, check its current value in the snapshot — if it already contains the correct value, skip it entirely.
+   - On the final review step, the modal is scrollable and "Submit application" is often below the fold. After arriving at the review step, take a snapshot. If "Submit application" is not visible, press "End" with browser_press_key to scroll to the bottom of the modal, then take a fresh snapshot.
    - Before clicking "Submit application", look for a "Follow [company name]" checkbox in the modal. If it is checked, uncheck it before submitting.
-   - On the final review step, click "Submit application".
+   - Click "Submit application" using its ref from the snapshot, or getByRole("button", { name: "Submit application" }) if no ref is available.
+   - IMPORTANT — Easy Apply text field override: LinkedIn's own domain has bot detection, so use browser_press_sequentially with delay:80 instead of browser_type for text fields inside the Easy Apply modal. Procedure: hover → click → press "Control+a" with browser_press_key → browser_press_sequentially with delay:80.
 3. If only an "Apply" button (not "Easy Apply") is present:
    - Click it — it will open an external application page in a new tab.
    - Use browser_tabs to switch to the new tab, then take a snapshot to identify the ATS.
    - Apply the matching rules below:
      - Greenhouse (greenhouse.io): fill name, email, phone, resume upload, LinkedIn URL, cover letter textarea, custom questions; click the submit button at the bottom.
-     - Lever (lever.co): fill name, email, phone, current company, resume upload, LinkedIn URL, social links, cover letter textarea, custom questions; click Apply.
+     - Lever (lever.co): dismiss any LinkedIn pre-fill prompt ("Dismiss" button), then wait 3 seconds and take a fresh snapshot before filling fields — the form auto-fills name/email/phone asynchronously. Fill name, email, phone, current company, resume upload, LinkedIn URL, social links, cover letter textarea, custom questions. For text fields use browser_type WITHOUT slowly (uses fill(), atomic clear+set, no doubling). Before submitting, verify no field has a doubled value. Click Apply.
      - Ashby (ashbyhq.com): fill personal info, resume upload, custom questions; click submit.
      - Breezy HR (breezy.hr): multi-step form — fill each page's required fields, click Next/Continue until the final step, then click Submit. After submitting, confirm the URL changed to a thank-you page.
      - BambooHR (bamboohr.com): single-page form — fill name, email, phone, address, resume upload, LinkedIn URL, cover letter textarea, custom questions; click the Submit Application button.
@@ -153,10 +153,12 @@ const LEVER_PROMPT = `You are an automated job application agent. Submit a Lever
 
 ## Instructions
 1. The browser is already loaded on the job URL. Take a browser_snapshot to understand the form layout.
+   - If you see a "Dismiss" button or any LinkedIn pre-fill / "Apply with LinkedIn" prompt, click it to dismiss.
+   - Then use browser_wait_for with time:3 and take a FRESH snapshot before filling any fields. Lever's LinkedIn integration asynchronously pre-fills name, email, and phone after the page loads — the fresh snapshot will show these values so you can skip already-correct fields.
 2. No login is required — fill the form directly.
 3. Typical fields: full name, email, phone, current company, resume upload, LinkedIn URL, social links, cover letter textarea, custom questions.
 4. Fill required fields only — skip optional fields.
-5. Before submitting, take a snapshot to confirm required fields are filled, then click the Apply button.
+5. Before submitting, take a snapshot to verify every required field shows the correct value. If any field has a wrong or doubled value, fix it before submitting. Then click the Apply button.
 
 ${FORM_FILLING_RULES}`;
 
@@ -302,6 +304,7 @@ export async function applyToJob(
       // step, and the gateway's fallback route (Google AI Studio) rejects requests that
       // combine function calling with a JSON response mime type — Vertex accepts it.
       providerOptions: { gateway: { only: ["vertex"] } },
+      maxRetries: 6,
       tools,
       stopWhen: stepCountIs(150),
       output: Output.object({ schema: applyResultSchema }),
