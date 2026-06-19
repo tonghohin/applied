@@ -7,13 +7,9 @@ import { RiInformationLine } from "@remixicon/react";
 import { capitalize, toTitleCase } from "@repo/shared";
 import type { ColumnDef } from "@tanstack/react-table";
 import { formatDistanceToNow } from "date-fns";
-import { ApplyButton } from "./apply-button";
 import { FitTierBadge } from "./fit-tier-badge";
 import { JobStatusBadge } from "./job-status-badge";
 import { JobTitleCell } from "./job-title-cell";
-import { MarkAppliedButton } from "./mark-applied-button";
-import { RestoreButton } from "./restore-button";
-import { SkipButton } from "./skip-button";
 
 export const columns: ColumnDef<Job>[] = [
   {
@@ -60,7 +56,7 @@ export const columns: ColumnDef<Job>[] = [
         </Tooltip>
       </span>
     ),
-    cell: ({ row }) => <JobTitleCell job={row.original} />,
+    cell: ({ row, table }) => <JobTitleCell job={row.original} table={table} row={row} />,
     enableColumnFilter: false,
   },
   {
@@ -111,27 +107,5 @@ export const columns: ColumnDef<Job>[] = [
     },
     enableSorting: false,
     enableColumnFilter: false,
-  },
-  {
-    id: "actions",
-    cell: ({ row, table }) => {
-      const { id, status } = row.original;
-      if (!row.getCanSelect()) return null;
-      if (status === "skipped")
-        return (
-          <div className="flex gap-1">
-            <RestoreButton jobId={id} table={table} />
-            <MarkAppliedButton jobId={id} table={table} />
-          </div>
-        );
-      return (
-        <div className="flex gap-1">
-          <ApplyButton jobId={id} table={table} />
-          <MarkAppliedButton jobId={id} table={table} />
-          <SkipButton jobId={id} table={table} />
-        </div>
-      );
-    },
-    enableSorting: false,
   },
 ];

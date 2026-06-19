@@ -14,11 +14,24 @@ import { useTextSelection } from "@/hooks/use-text-selection";
 import type { Job } from "@/lib/trpc";
 import { trpc } from "@/lib/trpc";
 import { RiExternalLinkLine } from "@remixicon/react";
+import type { Row, Table } from "@tanstack/react-table";
 import Link from "next/link";
 import { useRef, useState } from "react";
 import { toast } from "sonner";
+import { ApplyButton } from "./apply-button";
+import { MarkAppliedButton } from "./mark-applied-button";
+import { RestoreButton } from "./restore-button";
+import { SkipButton } from "./skip-button";
 
-export function JobTitleCell({ job }: { job: Job }) {
+export function JobTitleCell({
+  job,
+  table,
+  row,
+}: {
+  job: Job;
+  table: Table<Job>;
+  row: Row<Job>;
+}) {
   const cellRef = useRef<HTMLSpanElement>(null);
   const { selection, clearSelection } = useTextSelection(cellRef, {
     minLength: 2,
@@ -63,91 +76,110 @@ export function JobTitleCell({ job }: { job: Job }) {
   }
 
   return (
-    <span className="flex max-w-70 flex-col gap-0.5">
-      <span className="flex items-center justify-between gap-1.5">
-        <span ref={cellRef} className="whitespace-normal font-medium">
-          {job.title}
-        </span>
-        <Link
-          href={job.url}
-          target="_blank"
-          rel="noopener noreferrer"
-          aria-label="Open job posting"
-          className="shrink-0 text-muted-foreground hover:text-foreground"
-        >
-          <RiExternalLinkLine className="size-3.5" />
-        </Link>
-      </span>
-      <span
-        className="truncate text-muted-foreground text-xs"
-        title={`${job.company} · ${job.location}`}
-      >
-        <Popover open={companyPopoverOpen} onOpenChange={setCompanyPopoverOpen}>
-          <PopoverTrigger
-            className="cursor-pointer underline-offset-2 hover:text-foreground hover:underline"
-            aria-label={`Exclude jobs from ${job.company}`}
+    <span className="flex items-center gap-1.5">
+      <span className="flex flex-1 flex-col gap-0.5">
+        <span className="flex items-center gap-1.5">
+          <span ref={cellRef} className="whitespace-normal font-medium">
+            {job.title}
+          </span>
+          <Link
+            href={job.url}
+            target="_blank"
+            rel="noopener noreferrer"
+            aria-label="Open job posting"
+            className="shrink-0 text-muted-foreground hover:text-foreground"
           >
-            {job.company}
-          </PopoverTrigger>
-          <PopoverContent initialFocus={false}>
-            <PopoverHeader>
-              <PopoverTitle>Exclude {job.company}</PopoverTitle>
-              <PopoverDescription>
-                Adds it to your excluded companies: future searches skip its jobs, and its jobs
-                already in your list are marked as skipped.
-              </PopoverDescription>
-            </PopoverHeader>
-            <Button
-              size="xs"
-              variant="outline"
-              disabled={excludeCompanyMutation.isPending}
-              onClick={handleExcludeCompany}
+            <RiExternalLinkLine className="size-3.5" />
+          </Link>
+        </span>
+
+        <span
+          className="truncate text-muted-foreground text-xs"
+          title={`${job.company} · ${job.location}`}
+        >
+          <Popover open={companyPopoverOpen} onOpenChange={setCompanyPopoverOpen}>
+            <PopoverTrigger
+              className="cursor-pointer underline-offset-2 hover:text-foreground hover:underline"
+              aria-label={`Exclude jobs from ${job.company}`}
             >
-              {excludeCompanyMutation.isPending ? "Excluding…" : "Exclude"}
-            </Button>
-          </PopoverContent>
-        </Popover>{" "}
-        · {job.location}{" "}
-        {job.appliedCountAtCompany > 0 && (
-          <Tooltip>
-            <TooltipTrigger className="cursor-default">
-              <span className="text-warning"> ({job.appliedCountAtCompany}×)</span>
-            </TooltipTrigger>
-            <TooltipContent>
-              Applied to {job.company} {job.appliedCountAtCompany} time
-              {job.appliedCountAtCompany > 1 ? "s" : ""} before
-            </TooltipContent>
-          </Tooltip>
+              {job.company}
+            </PopoverTrigger>
+            <PopoverContent initialFocus={false}>
+              <PopoverHeader>
+                <PopoverTitle>Exclude {job.company}</PopoverTitle>
+                <PopoverDescription>
+                  Adds it to your excluded companies: future searches skip its jobs, and its jobs
+                  already in your list are marked as skipped.
+                </PopoverDescription>
+              </PopoverHeader>
+              <Button
+                size="xs"
+                variant="outline"
+                disabled={excludeCompanyMutation.isPending}
+                onClick={handleExcludeCompany}
+              >
+                {excludeCompanyMutation.isPending ? "Excluding…" : "Exclude"}
+              </Button>
+            </PopoverContent>
+          </Popover>{" "}
+          · {job.location}{" "}
+          {job.appliedCountAtCompany > 0 && (
+            <Tooltip>
+              <TooltipTrigger className="cursor-default">
+                <span className="text-warning"> ({job.appliedCountAtCompany}×)</span>
+              </TooltipTrigger>
+              <TooltipContent>
+                Applied to {job.company} {job.appliedCountAtCompany} time
+                {job.appliedCountAtCompany > 1 ? "s" : ""} before
+              </TooltipContent>
+            </Tooltip>
+          )}
+        </span>
+        {selection && (
+          <Popover
+            open
+            onOpenChange={(open) => {
+              if (!open) clearSelection();
+            }}
+          >
+            <PopoverContent
+              anchor={{ getBoundingClientRect: () => selection.rect }}
+              initialFocus={false}
+            >
+              <PopoverHeader>
+                <PopoverTitle>Exclude {selection.text}</PopoverTitle>
+                <PopoverDescription>
+                  Adds it to your excluded keywords: future searches skip matching titles, and
+                  matching jobs already in your list are marked as skipped.
+                </PopoverDescription>
+              </PopoverHeader>
+              <Button
+                size="xs"
+                variant="outline"
+                disabled={excludeMutation.isPending}
+                onClick={handleExclude}
+              >
+                {excludeMutation.isPending ? "Excluding…" : "Exclude"}
+              </Button>
+            </PopoverContent>
+          </Popover>
         )}
       </span>
-      {selection && (
-        <Popover
-          open
-          onOpenChange={(open) => {
-            if (!open) clearSelection();
-          }}
-        >
-          <PopoverContent
-            anchor={{ getBoundingClientRect: () => selection.rect }}
-            initialFocus={false}
-          >
-            <PopoverHeader>
-              <PopoverTitle>Exclude {selection.text}</PopoverTitle>
-              <PopoverDescription>
-                Adds it to your excluded keywords: future searches skip matching titles, and
-                matching jobs already in your list are marked as skipped.
-              </PopoverDescription>
-            </PopoverHeader>
-            <Button
-              size="xs"
-              variant="outline"
-              disabled={excludeMutation.isPending}
-              onClick={handleExclude}
-            >
-              {excludeMutation.isPending ? "Excluding…" : "Exclude"}
-            </Button>
-          </PopoverContent>
-        </Popover>
+      {row.getCanSelect() && (
+        <span className="flex gap-1">
+          {job.status === "skipped" ? (
+            <>
+              <RestoreButton jobId={job.id} table={table} />
+              <MarkAppliedButton jobId={job.id} table={table} />
+            </>
+          ) : (
+            <>
+              <ApplyButton jobId={job.id} table={table} />
+              <MarkAppliedButton jobId={job.id} table={table} />
+              <SkipButton jobId={job.id} table={table} />
+            </>
+          )}
+        </span>
       )}
     </span>
   );

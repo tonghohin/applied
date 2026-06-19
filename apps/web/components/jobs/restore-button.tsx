@@ -1,8 +1,10 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import type { Job } from "@/lib/trpc";
 import { trpc } from "@/lib/trpc";
+import { RiHistoryLine } from "@remixicon/react";
 import type { Table } from "@tanstack/react-table";
 
 export function RestoreButton({ jobId, table }: { jobId: string; table: Table<Job> }) {
@@ -20,13 +22,21 @@ export function RestoreButton({ jobId, table }: { jobId: string; table: Table<Jo
   }
 
   return (
-    <Button
-      size="xs"
-      variant="outline"
-      disabled={restoreMutation.isPending}
-      onClick={handleRestore}
-    >
-      Restore
-    </Button>
+    <Tooltip>
+      <TooltipTrigger
+        render={
+          <Button
+            size="icon-sm"
+            variant="outline"
+            disabled={restoreMutation.isPending}
+            onClick={handleRestore}
+            aria-label="Restore"
+          />
+        }
+      >
+        <RiHistoryLine />
+      </TooltipTrigger>
+      <TooltipContent>Restore</TooltipContent>
+    </Tooltip>
   );
 }

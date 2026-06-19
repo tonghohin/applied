@@ -1,8 +1,10 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import type { Job } from "@/lib/trpc";
 import { trpc } from "@/lib/trpc";
+import { RiCloseLine, RiXboxLine } from "@remixicon/react";
 import type { Table } from "@tanstack/react-table";
 
 export function SkipButton({ jobId, table }: { jobId: string; table: Table<Job> }) {
@@ -20,8 +22,21 @@ export function SkipButton({ jobId, table }: { jobId: string; table: Table<Job> 
   }
 
   return (
-    <Button size="xs" variant="outline" disabled={skipMutation.isPending} onClick={handleSkip}>
-      Skip
-    </Button>
+    <Tooltip>
+      <TooltipTrigger
+        render={
+          <Button
+            size="icon-sm"
+            variant="outline"
+            disabled={skipMutation.isPending}
+            onClick={handleSkip}
+            aria-label="Skip"
+          />
+        }
+      >
+        <RiCloseLine />
+      </TooltipTrigger>
+      <TooltipContent>Skip</TooltipContent>
+    </Tooltip>
   );
 }

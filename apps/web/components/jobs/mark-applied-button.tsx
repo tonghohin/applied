@@ -1,8 +1,10 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import type { Job } from "@/lib/trpc";
 import { trpc } from "@/lib/trpc";
+import { RiCheckLine } from "@remixicon/react";
 import type { Table } from "@tanstack/react-table";
 
 export function MarkAppliedButton({ jobId, table }: { jobId: string; table: Table<Job> }) {
@@ -20,13 +22,21 @@ export function MarkAppliedButton({ jobId, table }: { jobId: string; table: Tabl
   }
 
   return (
-    <Button
-      size="xs"
-      variant="outline"
-      disabled={markAppliedMutation.isPending}
-      onClick={handleMarkApplied}
-    >
-      Mark Applied
-    </Button>
+    <Tooltip>
+      <TooltipTrigger
+        render={
+          <Button
+            size="icon-sm"
+            variant="outline"
+            disabled={markAppliedMutation.isPending}
+            onClick={handleMarkApplied}
+            aria-label="Mark as applied"
+          />
+        }
+      >
+        <RiCheckLine />
+      </TooltipTrigger>
+      <TooltipContent>Mark as applied</TooltipContent>
+    </Tooltip>
   );
 }
