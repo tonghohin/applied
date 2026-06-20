@@ -19,9 +19,6 @@ import Link from "next/link";
 import { useRef, useState } from "react";
 import { toast } from "sonner";
 import { ApplyButton } from "./apply-button";
-import { MarkAppliedButton } from "./mark-applied-button";
-import { RestoreButton } from "./restore-button";
-import { SkipButton } from "./skip-button";
 
 export function JobTitleCell({
   job,
@@ -165,20 +162,9 @@ export function JobTitleCell({
           </Popover>
         )}
       </span>
-      {row.getCanSelect() && (
+      {row.getCanSelect() && job.status !== "skipped" && (
         <span className="flex gap-1">
-          {job.status === "skipped" ? (
-            <>
-              <RestoreButton jobId={job.id} table={table} />
-              <MarkAppliedButton jobId={job.id} table={table} />
-            </>
-          ) : (
-            <>
-              <ApplyButton jobId={job.id} table={table} />
-              <MarkAppliedButton jobId={job.id} table={table} />
-              <SkipButton jobId={job.id} table={table} />
-            </>
-          )}
+          <ApplyButton jobId={job.id} table={table} />
         </span>
       )}
     </span>

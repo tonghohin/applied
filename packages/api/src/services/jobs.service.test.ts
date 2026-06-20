@@ -21,7 +21,7 @@ vi.mock("@repo/db", () => ({
     company: "company_col",
   },
   jobCriteria: { userId: "criteria_userId_col" },
-  jobStatusEnum: { enumValues: ["pending_review", "applied", "failed", "skipped"] },
+  jobStatusEnum: { enumValues: ["pending_review", "applied", "rejected", "failed", "skipped"] },
   getJobCriteriaForUser: vi.fn(),
   listLatestApplyRunsByJobIds: vi.fn(),
 }));

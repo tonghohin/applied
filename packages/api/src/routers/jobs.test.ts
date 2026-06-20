@@ -70,7 +70,7 @@ vi.mock("@repo/db", () => ({
   jobs: { userId: "userId_col", id: "id_col" },
   jobCriteria: { userId: "userId_col" },
   profiles: { userId: "userId_col" },
-  jobStatusEnum: { enumValues: ["pending_review", "applied", "failed", "skipped"] },
+  jobStatusEnum: { enumValues: ["pending_review", "applied", "rejected", "failed", "skipped"] },
   getProfileForUser: mockGetProfile,
   getJobCriteriaForUser: mockGetCriteria,
   getLinkedInAccount: mockGetLinkedInAccount,

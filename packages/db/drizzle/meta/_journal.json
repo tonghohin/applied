@@ -134,6 +134,13 @@
       "when": 1781298837196,
       "tag": "0018_job-criteria-exclude-companies",
       "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "7",
+      "when": 1781968221836,
+      "tag": "0019_graceful_proteus",
+      "breakpoints": true
     }
   ]
 }

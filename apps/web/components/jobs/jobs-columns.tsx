@@ -2,13 +2,13 @@ import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { DataTableColumnHeader } from "@/components/ui/data-table-column-header";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import type { FitTier, Job, JobStatus } from "@/lib/trpc";
+import type { FitTier, Job } from "@/lib/trpc";
 import { RiInformationLine } from "@remixicon/react";
 import { capitalize, toTitleCase } from "@repo/shared";
 import type { ColumnDef } from "@tanstack/react-table";
 import { formatDistanceToNow } from "date-fns";
 import { FitTierBadge } from "./fit-tier-badge";
-import { JobStatusBadge } from "./job-status-badge";
+import { JobStatusSelect } from "./job-status-select";
 import { JobTitleCell } from "./job-title-cell";
 
 export const columns: ColumnDef<Job>[] = [
@@ -76,7 +76,7 @@ export const columns: ColumnDef<Job>[] = [
   {
     accessorKey: "status",
     header: ({ column }) => <DataTableColumnHeader column={column} title="Status" />,
-    cell: ({ getValue }) => <JobStatusBadge status={getValue<JobStatus>()} />,
+    cell: ({ row }) => <JobStatusSelect job={row.original} />,
     filterFn: "arrIncludesSome",
     enableGlobalFilter: false,
   },

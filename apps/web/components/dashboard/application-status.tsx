@@ -14,13 +14,21 @@ const chartConfig = {
   pending_review: { label: "Pending Review", color: "var(--chart-3)" },
   applying: { label: "Applying", color: "var(--chart-2)" },
   applied: { label: "Applied", color: "var(--chart-1)" },
+  rejected: { label: "Rejected", color: "var(--chart-4)" },
   failed: { label: "Failed", color: "var(--destructive)" },
   skipped: { label: "Skipped", color: "var(--chart-5)" },
 } satisfies ChartConfig;
 
 type JobStatus = (typeof jobStatusEnum.enumValues)[number];
 
-const PIPELINE_STAGES: JobStatus[] = ["pending_review", "applying", "applied", "failed", "skipped"];
+const PIPELINE_STAGES: JobStatus[] = [
+  "pending_review",
+  "applying",
+  "applied",
+  "rejected",
+  "failed",
+  "skipped",
+];
 
 export function ApplicationStatus({ jobs }: { jobs: DashboardJob[] }) {
   const chartData = PIPELINE_STAGES.map((key) => ({
