@@ -38,7 +38,7 @@ function extractCards() {
       const jobId = card.getAttribute("data-occludable-job-id");
       return {
         title: linkEl?.getAttribute("aria-label") ?? linkEl?.textContent?.trim() ?? "",
-        company: companyEl?.textContent?.trim() ?? "",
+        company: (companyEl?.textContent?.trim() ?? "").replace(/\.+$/, ""),
         location: (locationEl?.textContent?.trim() ?? "")
           .replace(/\s*[·•]\s*(remote|hybrid|on-site|onsite)\s*$/i, "")
           .replace(/\s*\((remote|hybrid|on-site|onsite)\)\s*$/i, "")
