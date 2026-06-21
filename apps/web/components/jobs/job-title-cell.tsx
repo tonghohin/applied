@@ -14,21 +14,11 @@ import { useTextSelection } from "@/hooks/use-text-selection";
 import type { Job } from "@/lib/trpc";
 import { trpc } from "@/lib/trpc";
 import { RiExternalLinkLine } from "@remixicon/react";
-import type { Row, Table } from "@tanstack/react-table";
+import type { Table } from "@tanstack/react-table";
 import Link from "next/link";
 import { useRef, useState } from "react";
 import { toast } from "sonner";
-import { ApplyButton } from "./apply-button";
-
-export function JobTitleCell({
-  job,
-  table,
-  row,
-}: {
-  job: Job;
-  table: Table<Job>;
-  row: Row<Job>;
-}) {
+export function JobTitleCell({ job, table }: { job: Job; table: Table<Job> }) {
   const cellRef = useRef<HTMLSpanElement>(null);
   const { selection, clearSelection } = useTextSelection(cellRef, {
     minLength: 2,
@@ -132,6 +122,7 @@ export function JobTitleCell({
             </Tooltip>
           )}
         </span>
+
         {selection && (
           <Popover
             open
@@ -162,11 +153,6 @@ export function JobTitleCell({
           </Popover>
         )}
       </span>
-      {row.getCanSelect() && job.status !== "skipped" && (
-        <span className="flex gap-1">
-          <ApplyButton jobId={job.id} table={table} />
-        </span>
-      )}
     </span>
   );
 }

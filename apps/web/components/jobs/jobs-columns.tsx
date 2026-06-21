@@ -1,3 +1,4 @@
+import { ApplyButton } from "./apply-button";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { DataTableColumnHeader } from "@/components/ui/data-table-column-header";
@@ -56,8 +57,15 @@ export const columns: ColumnDef<Job>[] = [
         </Tooltip>
       </span>
     ),
-    cell: ({ row, table }) => <JobTitleCell job={row.original} table={table} row={row} />,
+    cell: ({ row, table }) => <JobTitleCell job={row.original} table={table} />,
     enableColumnFilter: false,
+  },
+  {
+    accessorKey: "status",
+    header: ({ column }) => <DataTableColumnHeader column={column} title="Status" />,
+    cell: ({ row }) => <JobStatusSelect job={row.original} />,
+    filterFn: "arrIncludesSome",
+    enableGlobalFilter: false,
   },
   {
     accessorKey: "workplaceType",
@@ -70,13 +78,6 @@ export const columns: ColumnDef<Job>[] = [
     accessorKey: "fitTier",
     header: ({ column }) => <DataTableColumnHeader column={column} title="Fit" />,
     cell: ({ getValue }) => <FitTierBadge tier={getValue<FitTier>()} />,
-    filterFn: "arrIncludesSome",
-    enableGlobalFilter: false,
-  },
-  {
-    accessorKey: "status",
-    header: ({ column }) => <DataTableColumnHeader column={column} title="Status" />,
-    cell: ({ row }) => <JobStatusSelect job={row.original} />,
     filterFn: "arrIncludesSome",
     enableGlobalFilter: false,
   },
@@ -107,5 +108,16 @@ export const columns: ColumnDef<Job>[] = [
     },
     enableSorting: false,
     enableColumnFilter: false,
+  },
+  {
+    id: "apply",
+    cell: ({ row, table }) => {
+      if (!row.getCanSelect() || row.original.status === "skipped") return null;
+      return <ApplyButton jobId={row.original.id} table={table} />;
+    },
+    enableSorting: false,
+    enableColumnFilter: false,
+    enableGlobalFilter: false,
+    enableHiding: false,
   },
 ];
