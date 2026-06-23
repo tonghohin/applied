@@ -17,14 +17,14 @@
     "vitest": "^4.1.7"
   },
   "dependencies": {
-    "@better-auth/drizzle-adapter": "^1.6.11",
+    "@better-auth/drizzle-adapter": "^1.6.20",
     "@repo/db": "workspace:*",
     "@repo/shared": "workspace:^",
     "@trpc/server": "^11.17.0",
-    "better-auth": "^1.6.11",
+    "better-auth": "^1.6.20",
     "bullmq": "^5.77.2",
-    "ioredis": "^5.6.1",
     "drizzle-orm": "^0.45.2",
+    "ioredis": "^5.6.1",
     "superjson": "^2.2.6",
     "zod": "^4.4.3"
   }
