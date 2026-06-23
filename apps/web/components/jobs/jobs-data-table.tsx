@@ -3,13 +3,7 @@ import type { Job, JobStatus } from "@/lib/trpc";
 import { ApplyRunLog } from "./apply-run-log";
 import { columns } from "./jobs-columns";
 
-const DEFAULT_VISIBLE_STATUSES: JobStatus[] = [
-  "pending_review",
-  "applying",
-  "applied",
-  "rejected",
-  "failed",
-];
+const DEFAULT_VISIBLE_STATUSES: JobStatus[] = ["pending_review", "applying", "failed"];
 
 export function JobsDataTable({ jobs }: { jobs: Job[] }) {
   return (
