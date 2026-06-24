@@ -124,6 +124,7 @@ export async function runSearch(
         locations: criteriaRow.locations,
         excludeKeywords: criteriaRow.excludeKeywords,
         excludeCompanies: criteriaRow.excludeCompanies,
+        skipDuplicateIdentity: criteriaRow.skipDuplicateIdentity,
       },
       knownUrls,
       knownIdentities,

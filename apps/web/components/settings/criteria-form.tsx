@@ -31,6 +31,7 @@ const schema = z.object({
   excludeKeywords: z.string(),
   excludeCompanies: z.string(),
   minSalary: z.string().min(1, "Required"),
+  skipDuplicateIdentity: z.boolean(),
 });
 
 type FormValues = z.infer<typeof schema>;
@@ -46,6 +47,7 @@ export function CriteriaForm({
     excludeKeywords?: string[] | null;
     excludeCompanies?: string[] | null;
     minSalary?: number | null;
+    skipDuplicateIdentity?: boolean | null;
   } | null;
 }) {
   const utils = trpc.useUtils();
@@ -61,6 +63,7 @@ export function CriteriaForm({
     handleSubmit,
     control,
     setValue,
+    watch,
     formState: { errors, isSubmitting },
   } = useForm<FormValues>({
     resolver: zodResolver(schema),
@@ -72,6 +75,7 @@ export function CriteriaForm({
       excludeKeywords: initial?.excludeKeywords?.join(", ") ?? "",
       excludeCompanies: initial?.excludeCompanies?.join(", ") ?? "",
       minSalary: initial?.minSalary?.toString() ?? "",
+      skipDuplicateIdentity: initial?.skipDuplicateIdentity ?? true,
     },
   });
 
@@ -100,6 +104,7 @@ export function CriteriaForm({
         excludeKeywords: splitCsv(values.excludeKeywords),
         excludeCompanies: splitCsv(values.excludeCompanies),
         minSalary: Number(values.minSalary),
+        skipDuplicateIdentity: values.skipDuplicateIdentity,
       });
     } catch {
       toast.error("Failed to save job criteria");
@@ -221,6 +226,24 @@ export function CriteriaForm({
         <FieldDescription>
           Jobs from any of these companies will be skipped entirely.
         </FieldDescription>
+      </Field>
+
+      <Field orientation="horizontal">
+        <Checkbox
+          id="skipDuplicateIdentity"
+          checked={!!watch("skipDuplicateIdentity")}
+          onCheckedChange={(checked) =>
+            setValue("skipDuplicateIdentity", !!checked, { shouldDirty: true })
+          }
+        />
+        <div>
+          <FieldLabel htmlFor="skipDuplicateIdentity" className="cursor-pointer">
+            Skip duplicate postings
+          </FieldLabel>
+          <FieldDescription>
+            Skip jobs where the same company, title, and location already exist in your list.
+          </FieldDescription>
+        </div>
       </Field>
 
       <Field>

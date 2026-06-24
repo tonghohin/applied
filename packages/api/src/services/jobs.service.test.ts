@@ -135,6 +135,7 @@ const mockCriteria = (excludeKeywords: string[], excludeCompanies: string[] = []
   excludeKeywords,
   excludeCompanies,
   minSalary: 1,
+  skipDuplicateIdentity: true,
   createdAt: new Date(),
   updatedAt: new Date(),
 });

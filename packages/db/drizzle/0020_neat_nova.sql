@@ -1,0 +1,1 @@
+ALTER TABLE "job_criteria" ADD COLUMN "skip_duplicate_identity" boolean DEFAULT true NOT NULL;

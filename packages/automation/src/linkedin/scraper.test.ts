@@ -18,6 +18,7 @@ const criteria: SearchCriteria = {
   locations: [{ location: "Remote", workTypes: ["on-site"] }],
   excludeKeywords: [],
   excludeCompanies: [],
+  skipDuplicateIdentity: true,
 };
 
 const noKnownUrls = new Set<string>();

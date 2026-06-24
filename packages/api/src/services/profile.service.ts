@@ -51,6 +51,7 @@ export const upsertCriteriaSchema = z.object({
   excludeKeywords: z.array(z.string()).default([]),
   excludeCompanies: z.array(z.string()).default([]),
   minSalary: z.number().int().positive(),
+  skipDuplicateIdentity: z.boolean().default(true),
 });
 
 export type UpsertPersonalInput = z.infer<typeof upsertPersonalSchema>;

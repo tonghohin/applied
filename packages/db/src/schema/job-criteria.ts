@@ -1,5 +1,5 @@
 import type { LocationEntry } from "@repo/shared";
-import { integer, jsonb, pgTable, text, uuid } from "drizzle-orm/pg-core";
+import { boolean, integer, jsonb, pgTable, text, uuid } from "drizzle-orm/pg-core";
 import { users } from "./auth";
 
 export const jobCriteria = pgTable("job_criteria", {
@@ -15,4 +15,5 @@ export const jobCriteria = pgTable("job_criteria", {
   excludeKeywords: text("exclude_keywords").array().notNull().default([]),
   excludeCompanies: text("exclude_companies").array().notNull().default([]),
   minSalary: integer("min_salary").notNull(),
+  skipDuplicateIdentity: boolean("skip_duplicate_identity").notNull().default(true),
 });

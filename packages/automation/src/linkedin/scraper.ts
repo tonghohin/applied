@@ -183,7 +183,7 @@ export async function scrapeLinkedInJobs(
           // Card captions occasionally omit the location — fall back to the
           // criteria location this search was run under
           const resolvedLocation = job.location || locationEntry.location;
-          if (knownIdentities.has(identityKey(job.company, job.title, resolvedLocation))) continue;
+          if (criteria.skipDuplicateIdentity && knownIdentities.has(identityKey(job.company, job.title, resolvedLocation))) continue;
 
           if (isExcluded(job.title, criteria.excludeKeywords)) continue;
           if (isExcluded(job.company, criteria.excludeCompanies)) continue;

@@ -18,4 +18,5 @@ export interface SearchCriteria {
   locations: LocationEntry[];
   excludeKeywords: string[];
   excludeCompanies: string[];
+  skipDuplicateIdentity: boolean;
 }
