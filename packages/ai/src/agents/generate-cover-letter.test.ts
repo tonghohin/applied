@@ -71,7 +71,7 @@ describe("generateCoverLetter", () => {
     await generateCoverLetter(mockJob, mockProfile);
 
     const callArg = vi.mocked(generateText).mock.calls[0]?.[0];
-    expect(callArg).toMatchObject({ model: "google/gemini-2.5-flash" });
+    expect(callArg).toMatchObject({ model: "google/gemini-2.5-flash-lite" });
   });
 
   it("enables telemetry", async () => {
