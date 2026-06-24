@@ -85,7 +85,11 @@ pnpm migrate
 pnpm dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) and sign in with Google.
+Open [http://localhost:3000](http://localhost:3000) and create an account.
+
+## Disclaimer
+
+This tool automates interactions with LinkedIn in ways that may violate their [User Agreement](https://www.linkedin.com/legal/user-agreement). Use it at your own risk. The authors are not responsible for any consequences including account suspension or legal action.
 
 ## Development
 
