@@ -63,7 +63,7 @@ export const columns: ColumnDef<Job>[] = [
   {
     accessorKey: "status",
     header: ({ column }) => <DataTableColumnHeader column={column} title="Status" />,
-    cell: ({ row }) => <JobStatusSelect job={row.original} />,
+    cell: ({ row, table }) => <JobStatusSelect job={row.original} row={row} table={table} />,
     filterFn: "arrIncludesSome",
     enableGlobalFilter: false,
   },

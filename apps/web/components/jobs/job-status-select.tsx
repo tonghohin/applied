@@ -12,11 +12,20 @@ import {
 import type { Job, JobStatus } from "@/lib/trpc";
 import { trpc } from "@/lib/trpc";
 import { toTitleCase } from "@repo/shared";
+import type { Row, Table } from "@tanstack/react-table";
 import { JobStatusBadge, STATUS_ICON } from "./job-status-badge";
 
 const SELECTABLE_STATUSES: JobStatus[] = ["pending_review", "applied", "rejected", "skipped"];
 
-export function JobStatusSelect({ job }: { job: Job }) {
+export function JobStatusSelect({
+  job,
+  row,
+  table,
+}: {
+  job: Job;
+  row: Row<Job>;
+  table: Table<Job>;
+}) {
   const utils = trpc.useUtils();
   const updateMutation = trpc.jobs.updateStatus.useMutation();
 
@@ -24,9 +33,23 @@ export function JobStatusSelect({ job }: { job: Job }) {
     return <JobStatusBadge status={job.status} />;
   }
 
-  async function handleValueChange(status: string) {
+  async function handleValueChange(status: JobStatus) {
     if (status === job.status) return;
-    await updateMutation.mutateAsync({ jobId: job.id, status: status as JobStatus });
+
+    const newStatus = status;
+    const selectedRows = table.getSelectedRowModel().rows;
+    const isCurrentRowSelected = row.getIsSelected();
+
+    if (isCurrentRowSelected && selectedRows.length > 1) {
+      await Promise.all(
+        selectedRows.map((selectedRow) =>
+          updateMutation.mutateAsync({ jobId: selectedRow.original.id, status: newStatus })
+        )
+      );
+    } else {
+      await updateMutation.mutateAsync({ jobId: job.id, status: newStatus });
+    }
+
     utils.jobs.list.invalidate();
   }
 
