@@ -5,10 +5,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Field, FieldError, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { PasswordInput } from "@/components/ui/password-input";
-import { Separator } from "@/components/ui/separator";
 import { authClient } from "@/lib/auth-client";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { RiGoogleFill } from "@remixicon/react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
@@ -48,10 +46,6 @@ export default function SignUpPage() {
     } else {
       router.push("/jobs");
     }
-  }
-
-  async function handleGoogle() {
-    await authClient.signIn.social({ provider: "google", callbackURL: "/jobs" });
   }
 
   return (
@@ -98,15 +92,6 @@ export default function SignUpPage() {
               {isSubmitting ? "Creating account…" : "Create account"}
             </Button>
           </form>
-          <div className="flex items-center gap-3">
-            <Separator className="flex-1" />
-            <span className="text-muted-foreground text-sm">Or continue with</span>
-            <Separator className="flex-1" />
-          </div>
-          <Button variant="outline" className="w-full" onClick={handleGoogle}>
-            <RiGoogleFill />
-            Continue with Google
-          </Button>
           <p className="text-center text-muted-foreground text-sm">
             Already have an account?{" "}
             <Link href="/sign-in" className="underline-offset-4 hover:underline">

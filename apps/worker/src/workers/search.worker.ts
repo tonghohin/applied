@@ -18,18 +18,18 @@ import { publishEvent } from "../redis";
 type SearchJobData = { userId: string; runId?: string };
 
 async function processSearch(userId: string, runId: string) {
-  const account = await getLinkedInAccount(db, userId);
-  if (!account) throw new Error("LinkedIn credentials not configured");
-
-  const password = decrypt(account.passwordEncrypted, env.LINKEDIN_ENCRYPTION_KEY);
-  const existingSessionJson = account.sessionEncrypted
-    ? decrypt(account.sessionEncrypted, env.LINKEDIN_ENCRYPTION_KEY)
-    : undefined;
-
   const runningRun = await updateSearchRun(db, runId, { status: "running" });
   if (runningRun) publishEvent(userId, { type: "search-run:update", run: runningRun });
 
   try {
+    const account = await getLinkedInAccount(db, userId);
+    if (!account) throw new Error("LinkedIn credentials not configured");
+
+    const password = decrypt(account.passwordEncrypted, env.LINKEDIN_ENCRYPTION_KEY);
+    const existingSessionJson = account.sessionEncrypted
+      ? decrypt(account.sessionEncrypted, env.LINKEDIN_ENCRYPTION_KEY)
+      : undefined;
+
     const { jobCount, newSessionJson } = await runSearch(
       db,
       userId,

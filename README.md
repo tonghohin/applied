@@ -8,13 +8,14 @@ Automated job application tool. Scrapes LinkedIn for matching positions, scores 
 2. Click **Search Jobs** — the scraper finds matching LinkedIn postings and scores each one
 3. Review the results in the dashboard (Strong / Potential / Weak fit)
 4. Select the jobs you want and click **Apply to Selected** — a Gemini-powered agent fills out and submits each application, generating a personalized cover letter and a PDF resume on the fly
+5. Optionally configure a schedule to run searches automatically on a daily or weekly cron
 
 ## Stack
 
 | Layer          | Tech                              |
 | -------------- | --------------------------------- |
 | Frontend + API | Next.js 16 App Router             |
-| Auth           | Better Auth (Google OAuth)        |
+| Auth           | Better Auth                       |
 | Job queue      | BullMQ + Redis                    |
 | Database       | PostgreSQL + Drizzle ORM          |
 | Scraper        | Playwright (LinkedIn)             |
@@ -32,11 +33,12 @@ packages/
   db/         Drizzle schema + migrations + repository query functions
   automation/ LinkedIn scraper + job scorer
   ai/         Gemini apply agent + resume PDF generator
+  shared/     Shared utilities and constants (used by api + worker)
 ```
 
 ## Getting started
 
-**Prerequisites:** Node.js 20+, pnpm, Docker
+**Prerequisites:** Node.js 20+, pnpm 11+, Docker
 
 ### 1. Clone and install
 
@@ -49,37 +51,15 @@ pnpm --filter @repo/automation exec playwright install chromium
 
 ### 2. Set up environment variables
 
-**`apps/web/.env.local`** — Next.js frontend + API
-
-```
-NEXT_PUBLIC_BASE_URL=http://localhost:3000
-
-DATABASE_URL=postgresql://applied:applied@localhost:5432/applied
-BETTER_AUTH_SECRET=<random 32+ char string>
-BETTER_AUTH_URL=http://localhost:3000
-GOOGLE_CLIENT_ID=<from Google Cloud Console>
-GOOGLE_CLIENT_SECRET=<from Google Cloud Console>
-LINKEDIN_ENCRYPTION_KEY=<64 hex chars — openssl rand -hex 32>
-REDIS_URL=redis://localhost:6379
+```bash
+cp apps/web/.env.example apps/web/.env.local
+cp apps/worker/.env.example apps/worker/.env
+cp packages/db/.env.example packages/db/.env
 ```
 
-**`apps/worker/.env`** — BullMQ worker
+Most values are pre-filled and work out of the box. You only need to add:
 
-```
-DATABASE_URL=postgresql://applied:applied@localhost:5432/applied
-REDIS_URL=redis://localhost:6379
-AI_GATEWAY_API_KEY=<from Vercel AI Gateway dashboard>
-LINKEDIN_ENCRYPTION_KEY=<64 hex chars — same as above>
-LANGFUSE_PUBLIC_KEY=pk-lf-local-public-key
-LANGFUSE_SECRET_KEY=sk-lf-local-secret-key
-LANGFUSE_BASE_URL=http://localhost:3001
-```
-
-**`packages/db/.env`** — drizzle-kit migrations
-
-```
-DATABASE_URL=postgresql://applied:applied@localhost:5432/applied
-```
+- `AI_GATEWAY_API_KEY` in `apps/worker/.env` — from [v0.dev/gateway](https://v0.dev/gateway) (requires a Vercel account)
 
 ### 3. Start infrastructure
 
