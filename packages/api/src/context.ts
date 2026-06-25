@@ -1,10 +1,10 @@
 import { type Db, db } from "@repo/db";
-import { auth } from "./auth";
+import { getAuth } from "./auth";
 
-type Session = Awaited<ReturnType<typeof auth.api.getSession>>;
+type Session = Awaited<ReturnType<ReturnType<typeof getAuth>["api"]["getSession"]>>;
 
 export async function createContext(req: Request): Promise<{ db: Db; session: Session }> {
-  const session = await auth.api.getSession({ headers: req.headers });
+  const session = await getAuth().api.getSession({ headers: req.headers });
   return { db, session };
 }
 

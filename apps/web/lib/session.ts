@@ -1,7 +1,7 @@
-import { auth } from "@repo/api";
+import { getAuth } from "@repo/api";
 import { headers } from "next/headers";
 import { cache } from "react";
 
 export const getSession = cache(async () => {
-  return auth.api.getSession({ headers: await headers() });
+  return getAuth().api.getSession({ headers: await headers() });
 });

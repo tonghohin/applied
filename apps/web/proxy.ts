@@ -1,4 +1,4 @@
-import { auth } from "@repo/api";
+import { getAuth } from "@repo/api";
 import { headers } from "next/headers";
 import { type NextRequest, NextResponse } from "next/server";
 
@@ -10,7 +10,7 @@ export async function proxy(request: NextRequest) {
   const isAuth = pathname.startsWith("/sign-in") || pathname.startsWith("/sign-up");
 
   if (isProtected || isAuth) {
-    const session = await auth.api.getSession({ headers: await headers() });
+    const session = await getAuth().api.getSession({ headers: await headers() });
 
     if (isProtected && !session) {
       return NextResponse.redirect(new URL("/sign-in", request.url));
