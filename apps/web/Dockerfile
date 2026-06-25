@@ -17,6 +17,7 @@ FROM base AS builder
 RUN npm install -g pnpm
 COPY --from=installer /app .
 COPY --from=pruner /app/out/full/ .
+COPY --from=pruner /app/tsconfig.json ./tsconfig.json
 ARG NEXT_PUBLIC_BASE_URL=http://localhost:3000
 ENV NEXT_PUBLIC_BASE_URL=$NEXT_PUBLIC_BASE_URL
 RUN pnpm turbo build --filter=web
