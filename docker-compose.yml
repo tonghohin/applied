@@ -1,0 +1,70 @@
+services:
+  db:
+    image: postgres:16
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: applied
+      POSTGRES_PASSWORD: applied
+      POSTGRES_DB: applied
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U applied"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  cache:
+    image: redis:7-alpine
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  migrate:
+    image: ${WORKER_IMAGE:-ghcr.io/your-github-username/applied-worker:latest}
+    working_dir: /app/packages/db
+    command: ["node", "--import", "tsx/esm", "node_modules/.bin/drizzle-kit", "migrate"]
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql://applied:applied@db:5432/applied
+    restart: "no"
+
+  web:
+    image: ${WEB_IMAGE:-ghcr.io/your-github-username/applied-web:latest}
+    restart: unless-stopped
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+      cache:
+        condition: service_healthy
+    ports:
+      - "3000:3000"
+    environment:
+      DATABASE_URL: postgresql://applied:applied@db:5432/applied
+      REDIS_URL: redis://cache:6379
+      BETTER_AUTH_URL: http://localhost:3000
+      # Change before exposing to the internet: openssl rand -base64 32
+      BETTER_AUTH_SECRET: ${BETTER_AUTH_SECRET:-this-is-a-default-secret-change-before-going-public}
+
+  worker:
+    image: ${WORKER_IMAGE:-ghcr.io/your-github-username/applied-worker:latest}
+    restart: unless-stopped
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+      cache:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql://applied:applied@db:5432/applied
+      REDIS_URL: redis://cache:6379
+      # Change before exposing to the internet: openssl rand -hex 32
+      LINKEDIN_ENCRYPTION_KEY: ${LINKEDIN_ENCRYPTION_KEY:-0000000000000000000000000000000000000000000000000000000000000000}
+      AI_GATEWAY_API_KEY: ${AI_GATEWAY_API_KEY}
+
+volumes:
+  pgdata:

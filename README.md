@@ -15,7 +15,7 @@ Automated job application tool. Scrapes LinkedIn for matching positions, scores 
 | Layer          | Tech                              |
 | -------------- | --------------------------------- |
 | Frontend + API | Next.js 16 App Router             |
-| Auth           | Better Auth                       |
+| Auth           | Better Auth (email + password)    |
 | Job queue      | BullMQ + Redis                    |
 | Database       | PostgreSQL + Drizzle ORM          |
 | Scraper        | Playwright (LinkedIn)             |
@@ -38,67 +38,36 @@ packages/
 
 ## Getting started
 
-**Prerequisites:** Node.js 20+, pnpm 11+, Docker
+### Self-hosting with Docker
 
-### 1. Clone and install
+**Prerequisites:** [Docker](https://docs.docker.com/get-docker/) with Compose v2.20+ (ships with Docker Desktop 4.22+)
+
+#### 1. Clone
 
 ```bash
 git clone <repo-url>
 cd applied
-pnpm install
-pnpm --filter @repo/automation exec playwright install chromium
 ```
 
-### 2. Set up environment variables
+#### 2. Start
 
 ```bash
-cp apps/web/.env.example apps/web/.env.local
-cp apps/worker/.env.example apps/worker/.env
-cp packages/db/.env.example packages/db/.env
-```
-
-Most values are pre-filled and work out of the box. You only need to add:
-
-- `AI_GATEWAY_API_KEY` in `apps/worker/.env` — from [v0.dev/gateway](https://v0.dev/gateway) (requires a Vercel account)
-
-### 3. Start infrastructure
-
-```bash
-# Project services (Postgres + Redis)
+echo "AI_GATEWAY_API_KEY=your-key" > .env
 docker compose up -d
-
-# Langfuse observability (ClickHouse + MinIO + Langfuse)
-docker compose -p langfuse -f docker-compose.langfuse.yml up -d
 ```
 
-Langfuse UI: [http://localhost:3001](http://localhost:3001) — login `admin@local.dev` / `admin123`.
+That's it. Everything else is pre-configured. Migrations run automatically before the app comes up.
 
-### 4. Run migrations
+> **Before exposing to the internet:** set `BETTER_AUTH_SECRET` (`openssl rand -base64 32`) and `LINKEDIN_ENCRYPTION_KEY` (`openssl rand -hex 32`) in your `.env` file.
 
-```bash
-pnpm migrate
-```
+#### 3. Open the app
 
-### 5. Start the app
+Go to [http://localhost:3000](http://localhost:3000) and create an account.
 
-```bash
-pnpm dev
-```
+## Contributing
 
-Open [http://localhost:3000](http://localhost:3000) and create an account.
+See [CONTRIBUTING.md](CONTRIBUTING.md) for local development setup, commands, and architecture notes.
 
 ## Disclaimer
 
 This tool automates interactions with LinkedIn in ways that may violate their [User Agreement](https://www.linkedin.com/legal/user-agreement). Use it at your own risk. The authors are not responsible for any consequences including account suspension or legal action.
-
-## Development
-
-```bash
-pnpm test
-pnpm typecheck
-pnpm lint
-
-# After schema changes in packages/db/src/schema/
-pnpm generate
-pnpm migrate
-```

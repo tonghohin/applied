@@ -1,0 +1,15 @@
+.git
+.turbo
+node_modules
+.next
+dist
+
+# Per-app env files (never bake secrets into images)
+**/.env
+**/.env.local
+**/.env.*
+
+# Dev artifacts
+**/*.log
+coverage
+.nyc_output
