@@ -28,6 +28,7 @@ vi.mock("../mcp", () => ({
 vi.mock("ai", () => ({
   generateText: vi.fn(),
   isStepCount: vi.fn().mockReturnValue({}),
+  isLoopFinished: vi.fn().mockReturnValue({}),
   tool: vi.fn().mockReturnValue({}),
   Output: { object: vi.fn().mockReturnValue({}) },
   createGateway: vi.fn().mockReturnValue((modelId: string) => modelId),

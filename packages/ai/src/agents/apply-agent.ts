@@ -1,6 +1,6 @@
 import type { Job, Profile } from "@repo/db";
 import { toTitleCase } from "@repo/shared";
-import { type ModelMessage, Output, createGateway, generateText, isStepCount, tool } from "ai";
+import { type ModelMessage, Output, createGateway, generateText, isLoopFinished, isStepCount, tool } from "ai";
 import { z } from "zod";
 import { createPlaywrightMCPClient } from "../mcp";
 import { generateCoverLetter } from "./generate-cover-letter";
@@ -308,8 +308,10 @@ export async function applyToJob(
       providerOptions: { gateway: { only: ["vertex"] } },
       maxRetries: 6,
       tools,
-      stopWhen: isStepCount(150),
+      stopWhen: [isLoopFinished(), isStepCount(150)],
+      timeout: { toolMs: 30_000, stepMs: 120_000 },
       output: Output.object({ schema: applyResultSchema }),
+      telemetry: { functionId: "apply-job" },
       instructions: PROMPTS[platform],
       prompt: `Apply to this job:\nURL: ${job.url}\nTitle: ${job.title} at ${job.company}\n\nApplicant profile:\n${profileSummary}${resumePdfPath ? `\n\nResume PDF path: ${resumePdfPath}` : ""}`,
       prepareStep: ({ messages }) => {
