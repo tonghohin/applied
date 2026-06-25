@@ -1,13 +1,20 @@
-# Applied
+<div align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="apps/web/public/lockup-on-dark.svg">
+    <img src="apps/web/public/lockup.svg" alt="Applied" height="72">
+  </picture>
 
-Automated job application tool. Scrapes LinkedIn for matching positions, scores them against your profile, and uses an AI agent to submit Easy Apply applications on your behalf.
+  <p>Automated job application tool — find, score, and apply to LinkedIn positions hands-free.</p>
+</div>
+
+---
 
 ## How it works
 
-1. You fill in your profile (target job titles, skills, resume, location preferences)
+1. Fill in your profile — target job titles, skills, resume, and location preferences
 2. Click **Search Jobs** — the scraper finds matching LinkedIn postings and scores each one
-3. Review the results in the dashboard (Strong / Potential / Weak fit)
-4. Select the jobs you want and click **Apply to Selected** — a Gemini-powered agent fills out and submits each application, generating a personalized cover letter and a PDF resume on the fly
+3. Review results in the dashboard, grouped by **Strong / Potential / Weak** fit
+4. Select jobs and click **Apply to Selected** — an AI agent fills out and submits each application, generating a personalized cover letter and PDF resume on the fly
 5. Optionally configure a schedule to run searches automatically on a daily or weekly cron
 
 ## Stack
@@ -19,7 +26,7 @@ Automated job application tool. Scrapes LinkedIn for matching positions, scores 
 | Job queue      | BullMQ + Redis                    |
 | Database       | PostgreSQL + Drizzle ORM          |
 | Scraper        | Playwright (LinkedIn)             |
-| AI Agent       | Gemini 2.5 Flash + Playwright MCP |
+| AI Agent       | LLM agent + Playwright MCP        |
 | Observability  | Langfuse (self-hosted)            |
 
 ## Monorepo structure
@@ -32,35 +39,38 @@ packages/
   api/        tRPC routers, services, BullMQ queue definitions
   db/         Drizzle schema + migrations + repository query functions
   automation/ LinkedIn scraper + job scorer
-  ai/         Gemini apply agent + resume PDF generator
+  ai/         AI apply agent + resume PDF generator
   shared/     Shared utilities and constants (used by api + worker)
 ```
 
 ## Getting started
 
-### Self-hosting with Docker
-
 **Prerequisites:** [Docker](https://docs.docker.com/get-docker/) with Compose v2.20+ (ships with Docker Desktop 4.22+)
 
-#### 1. Clone
+### 1. Clone
 
 ```bash
 git clone <repo-url>
 cd applied
 ```
 
-#### 2. Start
+### 2. Configure
 
 ```bash
 echo "AI_GATEWAY_API_KEY=your-key" > .env
+```
+
+> **Before exposing to the internet:** also set `BETTER_AUTH_SECRET` (`openssl rand -base64 32`) and `LINKEDIN_ENCRYPTION_KEY` (`openssl rand -hex 32`) in `.env`.
+
+### 3. Start
+
+```bash
 docker compose up -d
 ```
 
-That's it. Everything else is pre-configured. Migrations run automatically before the app comes up.
+Migrations run automatically before the app starts. Everything else is pre-configured.
 
-> **Before exposing to the internet:** set `BETTER_AUTH_SECRET` (`openssl rand -base64 32`) and `LINKEDIN_ENCRYPTION_KEY` (`openssl rand -hex 32`) in your `.env` file.
-
-#### 3. Open the app
+### 4. Open
 
 Go to [http://localhost:3000](http://localhost:3000) and create an account.
 
