@@ -13,7 +13,7 @@ RUN npm install -g pnpm
 COPY --from=pruner /app/out/json/ .
 COPY --from=pruner /app/out/pnpm-lock.yaml ./pnpm-lock.yaml
 RUN pnpm install --frozen-lockfile
-RUN pnpm exec playwright install chromium --with-deps
+RUN pnpm --filter @repo/automation exec playwright install chromium --with-deps
 COPY --from=pruner /app/out/full/ .
 RUN addgroup --system nodejs \
     && adduser --system --ingroup nodejs worker \
