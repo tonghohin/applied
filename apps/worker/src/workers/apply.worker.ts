@@ -1,6 +1,6 @@
 import { propagateAttributes } from "@langfuse/tracing";
 import { processApplyJob } from "@repo/ai";
-import { db, getLinkedInAccount, updateApplyRun, updateJobFailed } from "@repo/db";
+import { getDb, getLinkedInAccount, updateApplyRun, updateJobFailed } from "@repo/db";
 import type { ApplyRunLog } from "@repo/db";
 import { decrypt } from "@repo/shared";
 import { Worker } from "bullmq";
@@ -14,7 +14,7 @@ export const applyWorker = new Worker<ApplyJobData>(
   "apply",
   async (job) => {
     const { jobId, userId, runId } = job.data;
-    const account = await getLinkedInAccount(db, userId);
+    const account = await getLinkedInAccount(getDb(), userId);
     const linkedinSessionJson = account?.sessionEncrypted
       ? decrypt(account.sessionEncrypted, env.LINKEDIN_ENCRYPTION_KEY)
       : undefined;
@@ -26,7 +26,7 @@ export const applyWorker = new Worker<ApplyJobData>(
       publishEvent(userId, { type: "apply-run:log", jobId, runId, log: entry });
     };
 
-    const runningRun = await updateApplyRun(db, runId, { status: "running" });
+    const runningRun = await updateApplyRun(getDb(), runId, { status: "running" });
     if (runningRun) publishEvent(userId, { type: "apply-run:update", jobId, run: runningRun });
 
     try {
@@ -39,11 +39,11 @@ export const applyWorker = new Worker<ApplyJobData>(
           tags: ["apply"],
         },
         async () => {
-          applyResult = await processApplyJob(db, jobId, userId, linkedinSessionJson, log);
+          applyResult = await processApplyJob(getDb(), jobId, userId, linkedinSessionJson, log);
         }
       );
       const completedAt = new Date();
-      const completedRun = await updateApplyRun(db, runId, {
+      const completedRun = await updateApplyRun(getDb(), runId, {
         status: "completed",
         completedAt,
         logs,
@@ -78,8 +78,8 @@ export const applyWorker = new Worker<ApplyJobData>(
       const failureReason = err instanceof Error ? err.message : String(err);
       // processApplyJob only updates the job row when applyToJob returns; on a thrown
       // error the job would otherwise stay in "applying" forever.
-      await updateJobFailed(db, jobId, failureReason);
-      const failedRun = await updateApplyRun(db, runId, {
+      await updateJobFailed(getDb(), jobId, failureReason);
+      const failedRun = await updateApplyRun(getDb(), runId, {
         status: "failed",
         completedAt,
         errorMessage: failureReason,

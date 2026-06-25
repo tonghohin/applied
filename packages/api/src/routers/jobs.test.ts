@@ -66,7 +66,7 @@ const completeCriteria = {
 };
 
 vi.mock("@repo/db", () => ({
-  db: { select: vi.fn(), insert: vi.fn() },
+  getDb: () => ({ select: vi.fn(), insert: vi.fn() }),
   jobs: { userId: "userId_col", id: "id_col" },
   jobCriteria: { userId: "userId_col" },
   profiles: { userId: "userId_col" },

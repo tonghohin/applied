@@ -1,9 +1,23 @@
 import { drizzle } from "drizzle-orm/node-postgres";
 import { Pool } from "pg";
-import { env } from "./env";
+import { z } from "zod";
 import * as schema from "./schema/index";
 
-const pool = new Pool({ connectionString: env.DATABASE_URL });
+const envSchema = z.object({
+  DATABASE_URL: z.url("DATABASE_URL must be a valid URL"),
+});
 
-export const db = drizzle(pool, { schema });
-export type Db = typeof db;
+function createDb() {
+  const { DATABASE_URL } = envSchema.parse(process.env);
+  const pool = new Pool({ connectionString: DATABASE_URL });
+  return drizzle(pool, { schema });
+}
+
+let _db: ReturnType<typeof createDb> | undefined;
+
+export function getDb() {
+  if (!_db) _db = createDb();
+  return _db;
+}
+
+export type Db = ReturnType<typeof createDb>;

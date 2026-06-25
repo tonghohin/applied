@@ -1,7 +1,7 @@
 import { DashboardClient } from "@/components/dashboard/dashboard-client";
 import { getSession } from "@/lib/session";
 import { getDashboardStats } from "@repo/api";
-import { db, getJobCriteriaForUser, getLinkedInAccount } from "@repo/db";
+import { getDb, getJobCriteriaForUser, getLinkedInAccount } from "@repo/db";
 import { redirect } from "next/navigation";
 
 export default async function DashboardPage() {
@@ -9,9 +9,9 @@ export default async function DashboardPage() {
   if (!session) redirect("/sign-in");
 
   const [stats, criteria, linkedInAccount] = await Promise.all([
-    getDashboardStats(db, session.user.id),
-    getJobCriteriaForUser(db, session.user.id),
-    getLinkedInAccount(db, session.user.id),
+    getDashboardStats(getDb(), session.user.id),
+    getJobCriteriaForUser(getDb(), session.user.id),
+    getLinkedInAccount(getDb(), session.user.id),
   ]);
 
   return (

@@ -46,10 +46,10 @@ const mockDb = {
 };
 
 vi.mock("@repo/db", () => ({
-  db: {
+  getDb: () => ({
     select: vi.fn(),
     insert: vi.fn(),
-  },
+  }),
   profiles: { userId: "userId_col" },
   jobCriteria: { userId: "userId_col" },
   WORK_TYPES: ["on-site", "remote", "hybrid"],

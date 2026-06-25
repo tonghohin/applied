@@ -16,7 +16,7 @@ vi.mock("bullmq", () => ({
 }));
 
 vi.mock("@repo/db", () => ({
-  db: {},
+  getDb: () => ({}),
   listScheduleSyncTargets: mockListScheduleSyncTargets,
 }));
 

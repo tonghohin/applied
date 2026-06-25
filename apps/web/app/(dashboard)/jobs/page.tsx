@@ -1,12 +1,12 @@
 import { JobsClient } from "@/components/jobs/jobs-client";
 import { getSession } from "@/lib/session";
 import { listJobs } from "@repo/api";
-import { db } from "@repo/db";
+import { getDb } from "@repo/db";
 import { redirect } from "next/navigation";
 
 export default async function JobsPage() {
   const session = await getSession();
   if (!session) redirect("/sign-in");
-  const jobs = await listJobs(db, session.user.id);
+  const jobs = await listJobs(getDb(), session.user.id);
   return <JobsClient initialJobs={jobs} />;
 }

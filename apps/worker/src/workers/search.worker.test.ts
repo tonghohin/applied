@@ -46,7 +46,7 @@ vi.mock("@repo/automation", () => ({
 }));
 
 vi.mock("@repo/db", () => ({
-  db: {},
+  getDb: () => ({}),
   clearLinkedInSession: mockClearLinkedInSession,
   getJobCriteriaForUser: mockGetJobCriteriaForUser,
   getLinkedInAccount: mockGetLinkedInAccount,

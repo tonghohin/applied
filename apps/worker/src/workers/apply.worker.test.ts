@@ -28,7 +28,7 @@ vi.mock("bullmq", () => ({
 }));
 
 vi.mock("@repo/db", () => ({
-  db: {},
+  getDb: () => ({}),
   getLinkedInAccount: mockGetLinkedInAccount,
   updateApplyRun: mockUpdateApplyRun,
   updateJobFailed: mockUpdateJobFailed,

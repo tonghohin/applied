@@ -1,4 +1,4 @@
-import { db, listScheduleSyncTargets } from "@repo/db";
+import { getDb, listScheduleSyncTargets } from "@repo/db";
 import { buildSearchCronPattern } from "@repo/shared";
 import { Queue } from "bullmq";
 import { env } from "./env";
@@ -12,7 +12,7 @@ export const searchSchedulerQueue = new Queue<SearchJobData>("search", {
 });
 
 export async function syncAllSearchSchedulers() {
-  const targets = await listScheduleSyncTargets(db);
+  const targets = await listScheduleSyncTargets(getDb());
   for (const { schedule, hasCriteria, hasLinkedIn } of targets) {
     const schedulerId = `search-schedule:${schedule.userId}`;
     if (schedule.enabled && hasCriteria && hasLinkedIn) {

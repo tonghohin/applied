@@ -1,7 +1,7 @@
 import { runSearch } from "@repo/automation";
 import {
   clearLinkedInSession,
-  db,
+  getDb,
   getJobCriteriaForUser,
   getLinkedInAccount,
   getProfileForUser,
@@ -18,11 +18,11 @@ import { publishEvent } from "../redis";
 type SearchJobData = { userId: string; runId?: string };
 
 async function processSearch(userId: string, runId: string) {
-  const runningRun = await updateSearchRun(db, runId, { status: "running" });
+  const runningRun = await updateSearchRun(getDb(), runId, { status: "running" });
   if (runningRun) publishEvent(userId, { type: "search-run:update", run: runningRun });
 
   try {
-    const account = await getLinkedInAccount(db, userId);
+    const account = await getLinkedInAccount(getDb(), userId);
     if (!account) throw new Error("LinkedIn credentials not configured");
 
     const password = decrypt(account.passwordEncrypted, env.LINKEDIN_ENCRYPTION_KEY);
@@ -31,7 +31,7 @@ async function processSearch(userId: string, runId: string) {
       : undefined;
 
     const { jobCount, newSessionJson } = await runSearch(
-      db,
+      getDb(),
       userId,
       account.email,
       password,
@@ -39,9 +39,9 @@ async function processSearch(userId: string, runId: string) {
       existingSessionJson
     );
     if (newSessionJson) {
-      await saveLinkedInSession(db, userId, encrypt(newSessionJson, env.LINKEDIN_ENCRYPTION_KEY));
+      await saveLinkedInSession(getDb(), userId, encrypt(newSessionJson, env.LINKEDIN_ENCRYPTION_KEY));
     }
-    const completedRun = await updateSearchRun(db, runId, {
+    const completedRun = await updateSearchRun(getDb(), runId, {
       status: "completed",
       completedAt: new Date(),
       jobCount,
@@ -49,22 +49,22 @@ async function processSearch(userId: string, runId: string) {
     if (completedRun) publishEvent(userId, { type: "search-run:update", run: completedRun });
   } catch (err) {
     const isCaptcha = err instanceof Error && err.message.toLowerCase().includes("captcha");
-    const failedRun = await updateSearchRun(db, runId, {
+    const failedRun = await updateSearchRun(getDb(), runId, {
       status: "failed",
       completedAt: new Date(),
       errorMessage: err instanceof Error ? err.message : String(err),
     });
     if (failedRun) publishEvent(userId, { type: "search-run:update", run: failedRun });
-    if (isCaptcha) await clearLinkedInSession(db, userId);
+    if (isCaptcha) await clearLinkedInSession(getDb(), userId);
     throw err;
   }
 }
 
 async function processScheduledTick(userId: string) {
   const [profile, criteria, account] = await Promise.all([
-    getProfileForUser(db, userId),
-    getJobCriteriaForUser(db, userId),
-    getLinkedInAccount(db, userId),
+    getProfileForUser(getDb(), userId),
+    getJobCriteriaForUser(getDb(), userId),
+    getLinkedInAccount(getDb(), userId),
   ]);
 
   const missingFields = getMissingSearchFields(profile, criteria, account);
@@ -75,14 +75,14 @@ async function processScheduledTick(userId: string) {
     return;
   }
 
-  if (await hasActiveSearchRun(db, userId)) {
+  if (await hasActiveSearchRun(getDb(), userId)) {
     console.log(
       `[search-worker] scheduled search skipped for user ${userId}: a run is already active`
     );
     return;
   }
 
-  const run = await insertSearchRun(db, {
+  const run = await insertSearchRun(getDb(), {
     userId,
     platform: "linkedin",
     status: "pending",

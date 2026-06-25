@@ -1,5 +1,5 @@
 import { drizzleAdapter } from "@better-auth/drizzle-adapter";
-import { db } from "@repo/db";
+import { getDb } from "@repo/db";
 import { betterAuth, type BetterAuthOptions } from "better-auth";
 import { lastLoginMethod } from "better-auth/plugins";
 import { z } from "zod";
@@ -14,7 +14,7 @@ function createAuth() {
   const options: BetterAuthOptions = {
     secret: parsedEnv.BETTER_AUTH_SECRET,
     baseURL: parsedEnv.BETTER_AUTH_URL,
-    database: drizzleAdapter(db, { provider: "pg", usePlural: true }),
+    database: drizzleAdapter(getDb(), { provider: "pg", usePlural: true }),
     emailAndPassword: { enabled: true, minPasswordLength: 8 },
     plugins: [lastLoginMethod()],
   };
