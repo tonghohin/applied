@@ -7,7 +7,7 @@ import {
 import { buildSearchCronPattern, isValidTimeZone } from "@repo/shared";
 import { z } from "zod";
 import type { Context } from "../context";
-import { searchQueue } from "../queues/index";
+import { getSearchQueue } from "../queues/index";
 
 type Db = Context["db"];
 
@@ -39,13 +39,13 @@ export async function syncSearchScheduler(db: Db, userId: string) {
   ]);
 
   if (schedule?.enabled && criteria && linkedinAccount) {
-    await searchQueue.upsertJobScheduler(
+    await getSearchQueue().upsertJobScheduler(
       searchSchedulerId(userId),
       { pattern: buildSearchCronPattern(schedule), tz: schedule.timezone },
       { name: "scheduled-search", data: { userId } }
     );
   } else {
-    await searchQueue.removeJobScheduler(searchSchedulerId(userId));
+    await getSearchQueue().removeJobScheduler(searchSchedulerId(userId));
   }
 }
 

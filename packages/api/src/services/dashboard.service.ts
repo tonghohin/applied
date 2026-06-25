@@ -1,7 +1,7 @@
 import { type Job, type SearchRun, getSearchScheduleForUser, jobs, listSearchRuns } from "@repo/db";
 import { desc, eq } from "drizzle-orm";
 import type { Context } from "../context";
-import { searchQueue } from "../queues/index";
+import { getSearchQueue } from "../queues/index";
 import { searchSchedulerId } from "./search-schedule.service";
 
 type Db = Context["db"];
@@ -26,7 +26,7 @@ async function getSearchScheduleStatus(db: Db, userId: string): Promise<Dashboar
   const schedule = await getSearchScheduleForUser(db, userId);
   if (!schedule?.enabled) return { enabled: false, nextRunAt: null };
 
-  const scheduler = await searchQueue.getJobScheduler(searchSchedulerId(userId));
+  const scheduler = await getSearchQueue().getJobScheduler(searchSchedulerId(userId));
   return { enabled: true, nextRunAt: scheduler?.next ? new Date(scheduler.next) : null };
 }
 

@@ -1,8 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 
-vi.mock("../env", () => ({
-  env: { LINKEDIN_ENCRYPTION_KEY: "a".repeat(64) },
-}));
+process.env.LINKEDIN_ENCRYPTION_KEY = "a".repeat(64);
 
 const {
   mockGetLinkedInAccount,
@@ -23,10 +21,10 @@ const {
 }));
 
 vi.mock("../queues/index", () => ({
-  searchQueue: {
+  getSearchQueue: () => ({
     upsertJobScheduler: mockUpsertJobScheduler,
     removeJobScheduler: mockRemoveJobScheduler,
-  },
+  }),
 }));
 
 const mockInsertChain = {

@@ -1,9 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
 
-vi.mock("../env", () => ({
-  env: { LINKEDIN_ENCRYPTION_KEY: "a".repeat(64), REDIS_URL: "redis://localhost:6379" },
-}));
-
 const {
   mockSearchAdd,
   mockApplyAdd,
@@ -27,8 +23,8 @@ const {
 }));
 
 vi.mock("../queues/index", () => ({
-  searchQueue: { add: mockSearchAdd },
-  applyQueue: { add: mockApplyAdd },
+  getSearchQueue: () => ({ add: mockSearchAdd }),
+  getApplyQueue: () => ({ add: mockApplyAdd }),
 }));
 
 const updateChain = { set: vi.fn().mockReturnThis(), where: vi.fn().mockResolvedValue([]) };

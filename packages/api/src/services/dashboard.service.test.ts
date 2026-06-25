@@ -18,12 +18,8 @@ const { mockGetJobScheduler, mockGetSearchScheduleForUser } = vi.hoisted(() => (
   mockGetSearchScheduleForUser: vi.fn().mockResolvedValue(null),
 }));
 
-vi.mock("../env", () => ({
-  env: { LINKEDIN_ENCRYPTION_KEY: "a".repeat(64), REDIS_URL: "redis://localhost:6379" },
-}));
-
 vi.mock("../queues/index", () => ({
-  searchQueue: { getJobScheduler: mockGetJobScheduler },
+  getSearchQueue: () => ({ getJobScheduler: mockGetJobScheduler }),
 }));
 
 vi.mock("@repo/db", () => ({

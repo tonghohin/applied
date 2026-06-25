@@ -1,9 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
 
-vi.mock("../env", () => ({
-  env: { LINKEDIN_ENCRYPTION_KEY: "a".repeat(64), REDIS_URL: "redis://localhost:6379" },
-}));
-
 const {
   mockUpsertJobScheduler,
   mockRemoveJobScheduler,
@@ -21,10 +17,10 @@ const {
 }));
 
 vi.mock("../queues/index", () => ({
-  searchQueue: {
+  getSearchQueue: () => ({
     upsertJobScheduler: mockUpsertJobScheduler,
     removeJobScheduler: mockRemoveJobScheduler,
-  },
+  }),
 }));
 
 vi.mock("@repo/db", () => ({

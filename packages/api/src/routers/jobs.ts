@@ -9,7 +9,7 @@ import {
 import { getMissingSearchFields } from "@repo/shared";
 import { TRPCError } from "@trpc/server";
 import { z } from "zod";
-import { applyQueue, searchQueue } from "../queues/index";
+import { getApplyQueue, getSearchQueue } from "../queues/index";
 import {
   excludeCompany,
   excludeCompanySchema,
@@ -48,7 +48,7 @@ export const jobsRouter = router({
         code: "INTERNAL_SERVER_ERROR",
         message: "Failed to create search run",
       });
-    await searchQueue.add("search", { userId, runId: run.id });
+    await getSearchQueue().add("search", { userId, runId: run.id });
     return { queued: true };
   }),
 
@@ -85,7 +85,7 @@ export const jobsRouter = router({
               message: "Failed to create apply run",
             });
           await updateJobApplying(ctx.db, j.id);
-          await applyQueue.add("apply", { jobId: j.id, userId, runId: run.id });
+          await getApplyQueue().add("apply", { jobId: j.id, userId, runId: run.id });
         })
       );
       return { queued: true };

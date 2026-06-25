@@ -9,7 +9,6 @@ import { NOTICE_PERIODS, WORK_TYPES, encrypt } from "@repo/shared";
 import { eq } from "drizzle-orm";
 import { z } from "zod";
 import type { Context } from "../context";
-import { env } from "../env";
 
 type Db = Context["db"];
 
@@ -129,7 +128,7 @@ export async function upsertLinkedIn(db: Db, userId: string, input: UpsertLinked
   const { linkedinEmail, linkedinPassword } = input;
   await upsertLinkedInAccount(db, userId, {
     email: linkedinEmail,
-    passwordEncrypted: encrypt(linkedinPassword, env.LINKEDIN_ENCRYPTION_KEY),
+    passwordEncrypted: encrypt(linkedinPassword, process.env.LINKEDIN_ENCRYPTION_KEY ?? ""),
   });
 }
 
