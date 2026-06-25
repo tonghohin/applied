@@ -1,10 +1,10 @@
-FROM node:20-slim AS pruner
+FROM node:slim AS pruner
 WORKDIR /app
 RUN npm install -g turbo@^2
 COPY . .
 RUN turbo prune @repo/worker --docker
 
-FROM node:20-slim AS runner
+FROM node:slim AS runner
 WORKDIR /app
 ENV NODE_ENV=production
 ENV PLAYWRIGHT_BROWSERS_PATH=/ms-playwright
