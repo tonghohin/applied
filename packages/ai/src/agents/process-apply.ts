@@ -15,6 +15,7 @@ export async function processApplyJob(
   db: Db,
   jobId: string,
   userId: string,
+  apiKey: string,
   linkedinSessionJson?: string,
   log: (msg: string) => void = () => {}
 ) {
@@ -39,7 +40,8 @@ export async function processApplyJob(
       resumePdfPath,
       criteriaRow.minSalary,
       linkedinSessionJson,
-      log
+      log,
+      apiKey
     );
     if (result.success) {
       log("Application submitted successfully");

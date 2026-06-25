@@ -27,6 +27,7 @@ export async function getProfileWithEmailForUser(db: Db, userId: string) {
       coverLetterInstructions: profiles.coverLetterInstructions,
       requiresSponsorship: profiles.requiresSponsorship,
       noticePeriod: profiles.noticePeriod,
+      aiGatewayKeyEncrypted: profiles.aiGatewayKeyEncrypted,
       createdAt: profiles.createdAt,
       updatedAt: profiles.updatedAt,
       email: users.email,

@@ -60,7 +60,7 @@ cd applied
 echo "AI_GATEWAY_API_KEY=your-key" > .env
 ```
 
-> **Before exposing to the internet:** also set `BETTER_AUTH_SECRET` (`openssl rand -base64 32`) and `LINKEDIN_ENCRYPTION_KEY` (`openssl rand -hex 32`) in `.env`.
+> **Before exposing to the internet:** also set `BETTER_AUTH_SECRET` (`openssl rand -base64 32`) and `ENCRYPTION_KEY` (`openssl rand -hex 32`) in `.env`.
 
 ### 3. Start
 

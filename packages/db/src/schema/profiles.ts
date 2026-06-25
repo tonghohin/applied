@@ -17,6 +17,7 @@ export const profiles = pgTable("profiles", {
   websiteUrl: text("website_url"),
   resume: text("resume").notNull(),
   coverLetterInstructions: text("cover_letter_instructions"),
+  aiGatewayKeyEncrypted: text("ai_gateway_key_encrypted"),
   requiresSponsorship: boolean("requires_sponsorship").notNull().default(false),
   noticePeriod: noticePeriodEnum("notice_period").notNull().default("2_weeks"),
   createdAt: timestamp("created_at").notNull().defaultNow(),

@@ -25,9 +25,9 @@ async function processSearch(userId: string, runId: string) {
     const account = await getLinkedInAccount(getDb(), userId);
     if (!account) throw new Error("LinkedIn credentials not configured");
 
-    const password = decrypt(account.passwordEncrypted, env.LINKEDIN_ENCRYPTION_KEY);
+    const password = decrypt(account.passwordEncrypted, env.ENCRYPTION_KEY);
     const existingSessionJson = account.sessionEncrypted
-      ? decrypt(account.sessionEncrypted, env.LINKEDIN_ENCRYPTION_KEY)
+      ? decrypt(account.sessionEncrypted, env.ENCRYPTION_KEY)
       : undefined;
 
     const { jobCount, newSessionJson } = await runSearch(
@@ -39,7 +39,7 @@ async function processSearch(userId: string, runId: string) {
       existingSessionJson
     );
     if (newSessionJson) {
-      await saveLinkedInSession(getDb(), userId, encrypt(newSessionJson, env.LINKEDIN_ENCRYPTION_KEY));
+      await saveLinkedInSession(getDb(), userId, encrypt(newSessionJson, env.ENCRYPTION_KEY));
     }
     const completedRun = await updateSearchRun(getDb(), runId, {
       status: "completed",

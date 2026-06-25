@@ -82,8 +82,8 @@ The apply agent is instrumented with [Langfuse](https://langfuse.com) for LLM ob
 ### Environment variables
 
 Each package/app validates only the env vars it uses via its own `src/env.ts` (Zod parse at startup). Loading is handled by the entry point:
-- `apps/web`: Next.js auto-loads `.env.local` — holds all server-side vars (`DATABASE_URL`, `BETTER_AUTH_*`, `GOOGLE_*`, `LINKEDIN_ENCRYPTION_KEY`, `REDIS_URL`) plus `NEXT_PUBLIC_BASE_URL`
-- `apps/worker`: `tsx --env-file .env src/index.ts` — holds `DATABASE_URL`, `REDIS_URL`, `AI_GATEWAY_API_KEY`, `LINKEDIN_ENCRYPTION_KEY`, `LANGFUSE_PUBLIC_KEY`, `LANGFUSE_SECRET_KEY`, `LANGFUSE_BASE_URL`
+- `apps/web`: Next.js auto-loads `.env.local` — holds all server-side vars (`DATABASE_URL`, `BETTER_AUTH_*`, `GOOGLE_*`, `ENCRYPTION_KEY`, `REDIS_URL`) plus `NEXT_PUBLIC_BASE_URL`
+- `apps/worker`: `tsx --env-file .env src/index.ts` — holds `DATABASE_URL`, `REDIS_URL`, `AI_GATEWAY_API_KEY`, `ENCRYPTION_KEY`, `LANGFUSE_PUBLIC_KEY`, `LANGFUSE_SECRET_KEY`, `LANGFUSE_BASE_URL`
 - `packages/db`: drizzle-kit auto-loads `packages/db/.env`
 
 ### tRPC patterns

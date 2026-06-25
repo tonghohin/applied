@@ -1,6 +1,6 @@
 import type { Job, Profile } from "@repo/db";
 import { toTitleCase } from "@repo/shared";
-import { type ModelMessage, Output, generateText, stepCountIs, tool } from "ai";
+import { type ModelMessage, Output, createGateway, generateText, stepCountIs, tool } from "ai";
 import { z } from "zod";
 import { createPlaywrightMCPClient } from "../mcp";
 import { generateCoverLetter } from "./generate-cover-letter";
@@ -228,7 +228,8 @@ export async function applyToJob(
   resumePdfPath: string,
   minSalary: number,
   linkedinSessionJson?: string,
-  log: (msg: string) => void = () => {}
+  log: (msg: string) => void = () => {},
+  apiKey = ""
 ): Promise<ApplyResult> {
   log("Initializing Playwright session");
   const client = await createPlaywrightMCPClient(linkedinSessionJson);
@@ -266,7 +267,7 @@ export async function applyToJob(
         description:
           'Generate a personalized cover letter for this job application. Call this ONLY when the form has an explicit field labelled "Cover Letter" or "Cover letter". Do NOT call this for generic open-ended questions, experience descriptions, or motivation fields.',
         inputSchema: z.object({}),
-        execute: async () => generateCoverLetter(job, profile),
+        execute: async () => generateCoverLetter(job, profile, apiKey),
       }),
     };
 
@@ -298,8 +299,9 @@ export async function applyToJob(
     const platform = detectPlatform(job.url);
     log(`Platform detected: ${platform}`);
 
+    const gatewayProvider = createGateway({ apiKey });
     const { output, steps } = await generateText({
-      model: "google/gemini-2.5-flash",
+      model: gatewayProvider("google/gemini-2.5-flash"),
       // Pin gateway routing to Vertex. Output.object adds a JSON responseFormat to every
       // step, and the gateway's fallback route (Google AI Studio) rejects requests that
       // combine function calling with a JSON response mime type — Vertex accepts it.

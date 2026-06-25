@@ -5,6 +5,8 @@ import {
 } from "../services/search-schedule.service";
 import {
   getProfile,
+  upsertAiKey,
+  upsertAiKeySchema,
   upsertCoverLetter,
   upsertCoverLetterSchema,
   upsertCriteria,
@@ -51,4 +53,8 @@ export const profileRouter = router({
   upsertSchedule: protectedProcedure
     .input(upsertScheduleSchema)
     .mutation(({ ctx, input }) => upsertSchedule(ctx.db, ctx.session.user.id, input)),
+
+  upsertAiKey: protectedProcedure
+    .input(upsertAiKeySchema)
+    .mutation(({ ctx, input }) => upsertAiKey(ctx.db, ctx.session.user.id, input)),
 });

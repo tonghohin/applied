@@ -30,6 +30,7 @@ vi.mock("ai", () => ({
   stepCountIs: vi.fn().mockReturnValue({}),
   tool: vi.fn().mockReturnValue({}),
   Output: { object: vi.fn().mockReturnValue({}) },
+  createGateway: vi.fn().mockReturnValue((modelId: string) => modelId),
 }));
 
 vi.mock("./generate-cover-letter", () => ({
@@ -74,6 +75,7 @@ const mockProfile = {
   coverLetterInstructions: null,
   requiresSponsorship: false,
   noticePeriod: "2_weeks",
+  aiGatewayKeyEncrypted: null,
   createdAt: new Date(),
   updatedAt: new Date(),
 } satisfies ProfileWithEmail;

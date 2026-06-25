@@ -1,14 +1,15 @@
 import type { Job } from "@repo/db";
-import { generateText } from "ai";
+import { createGateway, generateText } from "ai";
 import type { ProfileWithEmail } from "./apply-agent";
 
-export async function generateCoverLetter(job: Job, profile: ProfileWithEmail) {
+export async function generateCoverLetter(job: Job, profile: ProfileWithEmail, apiKey: string) {
+  const gatewayProvider = createGateway({ apiKey });
   const instructionsSection = profile.coverLetterInstructions
     ? `\n\nCover letter instructions (follow these for tone, length, and emphasis):\n${profile.coverLetterInstructions}`
     : "";
 
   const { text } = await generateText({
-    model: "google/gemini-2.5-flash-lite",
+    model: gatewayProvider("google/gemini-2.5-flash-lite"),
     system:
       "You are a professional cover letter writer. Write a concise, personalized cover letter " +
       "for the given job and applicant. Return only the cover letter body — no subject line, " +

@@ -3,7 +3,7 @@ export { appRouter } from "./router";
 export type { AppRouter } from "./router";
 export { createContext } from "./context";
 export type { RouterOutputs } from "./types";
-export { getProfile } from "./services/profile.service";
+export { getProfile, getAiGatewayKey } from "./services/profile.service";
 export { listJobs } from "./services/jobs.service";
 export { getDashboardStats } from "./services/dashboard.service";
 export type { DashboardStats, DashboardJob } from "./services/dashboard.service";

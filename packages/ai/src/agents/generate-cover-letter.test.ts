@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("ai", () => ({
   generateText: vi.fn(),
+  createGateway: vi.fn().mockReturnValue((modelId: string) => modelId),
 }));
 
 import type { Job } from "@repo/db";
@@ -43,6 +44,7 @@ const mockProfile = {
   coverLetterInstructions: null,
   requiresSponsorship: false,
   noticePeriod: "2_weeks",
+  aiGatewayKeyEncrypted: null,
   createdAt: new Date(),
   updatedAt: new Date(),
 } satisfies ProfileWithEmail;
@@ -57,7 +59,7 @@ describe("generateCoverLetter", () => {
       text: "Dear Hiring Manager,\nI am excited.",
     } as never);
 
-    await generateCoverLetter(mockJob, mockProfile);
+    await generateCoverLetter(mockJob, mockProfile, "test-api-key");
 
     const callArg = vi.mocked(generateText).mock.calls[0]?.[0];
     expect(callArg).toBeDefined();
@@ -68,7 +70,7 @@ describe("generateCoverLetter", () => {
   it("uses google/gemini-2.5-flash model", async () => {
     vi.mocked(generateText).mockResolvedValueOnce({ text: "Dear Hiring Manager," } as never);
 
-    await generateCoverLetter(mockJob, mockProfile);
+    await generateCoverLetter(mockJob, mockProfile, "test-api-key");
 
     const callArg = vi.mocked(generateText).mock.calls[0]?.[0];
     expect(callArg).toMatchObject({ model: "google/gemini-2.5-flash-lite" });
@@ -77,7 +79,7 @@ describe("generateCoverLetter", () => {
   it("enables telemetry", async () => {
     vi.mocked(generateText).mockResolvedValueOnce({ text: "Dear Hiring Manager," } as never);
 
-    await generateCoverLetter(mockJob, mockProfile);
+    await generateCoverLetter(mockJob, mockProfile, "test-api-key");
 
     const callArg = vi.mocked(generateText).mock.calls[0]?.[0];
     expect(callArg).toMatchObject({ experimental_telemetry: { isEnabled: true } });
@@ -86,7 +88,7 @@ describe("generateCoverLetter", () => {
   it("returns trimmed text", async () => {
     vi.mocked(generateText).mockResolvedValueOnce({ text: "  Dear Hiring Manager,\n  " } as never);
 
-    const result = await generateCoverLetter(mockJob, mockProfile);
+    const result = await generateCoverLetter(mockJob, mockProfile, "test-api-key");
 
     expect(result).toBe("Dear Hiring Manager,");
   });
@@ -98,7 +100,7 @@ describe("generateCoverLetter", () => {
       coverLetterInstructions: "Keep it under 200 words.",
     };
 
-    await generateCoverLetter(mockJob, profileWithInstructions);
+    await generateCoverLetter(mockJob, profileWithInstructions, "test-api-key");
 
     const callArg = vi.mocked(generateText).mock.calls[0]?.[0];
     expect((callArg as { prompt: string }).prompt).toContain("Keep it under 200 words.");

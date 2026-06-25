@@ -1,0 +1,1 @@
+ALTER TABLE "profiles" ADD COLUMN "ai_gateway_key_encrypted" text;

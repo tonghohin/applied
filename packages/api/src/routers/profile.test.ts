@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 
-process.env.LINKEDIN_ENCRYPTION_KEY = "a".repeat(64);
+process.env.ENCRYPTION_KEY = "a".repeat(64);
 
 const {
   mockGetLinkedInAccount,

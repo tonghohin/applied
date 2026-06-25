@@ -5,7 +5,7 @@ import {
   profiles,
   upsertLinkedInAccount,
 } from "@repo/db";
-import { NOTICE_PERIODS, WORK_TYPES, encrypt } from "@repo/shared";
+import { NOTICE_PERIODS, WORK_TYPES, decrypt, encrypt } from "@repo/shared";
 import { eq } from "drizzle-orm";
 import { z } from "zod";
 import type { Context } from "../context";
@@ -53,11 +53,16 @@ export const upsertCriteriaSchema = z.object({
   skipDuplicateIdentity: z.boolean().default(true),
 });
 
+export const upsertAiKeySchema = z.object({
+  aiGatewayKey: z.string().min(1),
+});
+
 export type UpsertPersonalInput = z.infer<typeof upsertPersonalSchema>;
 export type UpsertResumeInput = z.infer<typeof upsertResumeSchema>;
 export type UpsertCoverLetterInput = z.infer<typeof upsertCoverLetterSchema>;
 export type UpsertLinkedInInput = z.infer<typeof upsertLinkedInSchema>;
 export type UpsertCriteriaInput = z.infer<typeof upsertCriteriaSchema>;
+export type UpsertAiKeyInput = z.infer<typeof upsertAiKeySchema>;
 
 export async function getProfile(db: Db, userId: string) {
   const [profile, criteria, linkedinAccount, schedule] = await Promise.all([
@@ -128,7 +133,7 @@ export async function upsertLinkedIn(db: Db, userId: string, input: UpsertLinked
   const { linkedinEmail, linkedinPassword } = input;
   await upsertLinkedInAccount(db, userId, {
     email: linkedinEmail,
-    passwordEncrypted: encrypt(linkedinPassword, process.env.LINKEDIN_ENCRYPTION_KEY ?? ""),
+    passwordEncrypted: encrypt(linkedinPassword, process.env.ENCRYPTION_KEY ?? ""),
   });
 }
 
@@ -140,4 +145,37 @@ export async function upsertCriteria(db: Db, userId: string, input: UpsertCriter
     .onConflictDoUpdate({ target: jobCriteria.userId, set: input })
     .returning();
   return row;
+}
+
+export async function upsertAiKey(db: Db, userId: string, input: UpsertAiKeyInput) {
+  const aiGatewayKeyEncrypted = encrypt(
+    input.aiGatewayKey,
+    process.env.ENCRYPTION_KEY ?? "",
+  );
+  const set = { aiGatewayKeyEncrypted, updatedAt: new Date() };
+  const [row] = await db
+    .insert(profiles)
+    .values({
+      ...set,
+      userId,
+      firstName: "",
+      lastName: "",
+      phone: "",
+      address: "",
+      resume: "",
+      createdAt: new Date(),
+    })
+    .onConflictDoUpdate({ target: profiles.userId, set })
+    .returning();
+  return row;
+}
+
+export async function getAiGatewayKey(db: Db, userId: string): Promise<string | null> {
+  const row = await db
+    .select({ aiGatewayKeyEncrypted: profiles.aiGatewayKeyEncrypted })
+    .from(profiles)
+    .where(eq(profiles.userId, userId))
+    .then((rows) => rows[0] ?? null);
+  if (!row?.aiGatewayKeyEncrypted) return null;
+  return decrypt(row.aiGatewayKeyEncrypted, process.env.ENCRYPTION_KEY ?? "");
 }

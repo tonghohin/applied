@@ -38,6 +38,7 @@ const SETTINGS_LINKS = [
   { href: "/settings/documents", label: "Documents" },
   { href: "/settings/job-search", label: "Job search" },
   { href: "/settings/linkedin", label: "LinkedIn account" },
+  { href: "/settings/ai", label: "AI provider" },
 ];
 
 export function AppSidebar() {

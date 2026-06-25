@@ -3,6 +3,7 @@ import { describe, expect, it, vi } from "vitest";
 const {
   mockWorkerCtor,
   mockGetLinkedInAccount,
+  mockGetAiGatewayKey,
   mockUpdateApplyRun,
   mockUpdateJobFailed,
   mockProcessApplyJob,
@@ -11,6 +12,7 @@ const {
 } = vi.hoisted(() => ({
   mockWorkerCtor: vi.fn(),
   mockGetLinkedInAccount: vi.fn().mockResolvedValue(null),
+  mockGetAiGatewayKey: vi.fn().mockResolvedValue("test-api-key"),
   mockUpdateApplyRun: vi.fn().mockResolvedValue(undefined),
   mockUpdateJobFailed: vi.fn().mockResolvedValue(undefined),
   mockProcessApplyJob: vi.fn(),
@@ -38,6 +40,10 @@ vi.mock("@repo/ai", () => ({
   processApplyJob: mockProcessApplyJob,
 }));
 
+vi.mock("@repo/api", () => ({
+  getAiGatewayKey: mockGetAiGatewayKey,
+}));
+
 vi.mock("@repo/shared", () => ({
   decrypt: vi.fn().mockReturnValue("{}"),
 }));
@@ -47,7 +53,7 @@ vi.mock("@langfuse/tracing", () => ({
 }));
 
 vi.mock("../env", () => ({
-  env: { REDIS_URL: "redis://localhost:6379", LINKEDIN_ENCRYPTION_KEY: "test-key" },
+  env: { REDIS_URL: "redis://localhost:6379", ENCRYPTION_KEY: "test-key" },
 }));
 
 vi.mock("../otel", () => ({

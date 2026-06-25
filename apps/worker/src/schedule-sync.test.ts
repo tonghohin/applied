@@ -21,7 +21,7 @@ vi.mock("@repo/db", () => ({
 }));
 
 vi.mock("./env", () => ({
-  env: { REDIS_URL: "redis://localhost:6379", LINKEDIN_ENCRYPTION_KEY: "test-key" },
+  env: { REDIS_URL: "redis://localhost:6379", ENCRYPTION_KEY: "test-key" },
 }));
 
 import { syncAllSearchSchedulers } from "./schedule-sync";

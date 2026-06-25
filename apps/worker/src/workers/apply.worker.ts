@@ -1,5 +1,6 @@
 import { propagateAttributes } from "@langfuse/tracing";
 import { processApplyJob } from "@repo/ai";
+import { getAiGatewayKey } from "@repo/api";
 import { getDb, getLinkedInAccount, updateApplyRun, updateJobFailed } from "@repo/db";
 import type { ApplyRunLog } from "@repo/db";
 import { decrypt } from "@repo/shared";
@@ -15,8 +16,11 @@ export const applyWorker = new Worker<ApplyJobData>(
   async (job) => {
     const { jobId, userId, runId } = job.data;
     const account = await getLinkedInAccount(getDb(), userId);
+    const aiGatewayKey = await getAiGatewayKey(getDb(), userId);
+    if (!aiGatewayKey)
+      throw new Error("AI Gateway API key not configured — add it in Settings → AI");
     const linkedinSessionJson = account?.sessionEncrypted
-      ? decrypt(account.sessionEncrypted, env.LINKEDIN_ENCRYPTION_KEY)
+      ? decrypt(account.sessionEncrypted, env.ENCRYPTION_KEY)
       : undefined;
 
     const logs: ApplyRunLog[] = [];
@@ -39,7 +43,7 @@ export const applyWorker = new Worker<ApplyJobData>(
           tags: ["apply"],
         },
         async () => {
-          applyResult = await processApplyJob(getDb(), jobId, userId, linkedinSessionJson, log);
+          applyResult = await processApplyJob(getDb(), jobId, userId, aiGatewayKey, linkedinSessionJson, log);
         }
       );
       const completedAt = new Date();
