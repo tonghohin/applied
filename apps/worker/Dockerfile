@@ -1,14 +1,15 @@
-FROM node:slim AS pruner
+FROM node:slim AS base
 WORKDIR /app
+
+FROM base AS pruner
 RUN npm install -g turbo@^2
 COPY . .
 RUN turbo prune @repo/worker --docker
 
-FROM node:slim AS runner
-WORKDIR /app
+FROM base AS runner
 ENV NODE_ENV=production
 ENV PLAYWRIGHT_BROWSERS_PATH=/ms-playwright
-RUN corepack enable
+RUN npm install -g pnpm
 COPY --from=pruner /app/out/json/ .
 COPY --from=pruner /app/out/pnpm-lock.yaml ./pnpm-lock.yaml
 RUN pnpm install --frozen-lockfile

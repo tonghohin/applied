@@ -1,27 +1,27 @@
-FROM node:alpine AS pruner
+FROM node:alpine AS base
+RUN apk update && apk add --no-cache libc6-compat
 WORKDIR /app
+
+FROM base AS pruner
 RUN npm install -g turbo@^2
 COPY . .
 RUN turbo prune web --docker
 
-FROM node:alpine AS installer
-WORKDIR /app
-RUN corepack enable
+FROM base AS installer
+RUN npm install -g pnpm
 COPY --from=pruner /app/out/json/ .
 COPY --from=pruner /app/out/pnpm-lock.yaml ./pnpm-lock.yaml
 RUN pnpm install --frozen-lockfile
 
-FROM node:alpine AS builder
-WORKDIR /app
-RUN corepack enable
+FROM base AS builder
+RUN npm install -g pnpm
 COPY --from=installer /app .
 COPY --from=pruner /app/out/full/ .
 ARG NEXT_PUBLIC_BASE_URL=http://localhost:3000
 ENV NEXT_PUBLIC_BASE_URL=$NEXT_PUBLIC_BASE_URL
 RUN pnpm turbo build --filter=web
 
-FROM node:alpine AS runner
-WORKDIR /app
+FROM base AS runner
 ENV NODE_ENV=production
 RUN addgroup --system nodejs && adduser --system --ingroup nodejs nextjs
 COPY --from=builder --chown=nextjs:nodejs /app/apps/web/.next/standalone ./
