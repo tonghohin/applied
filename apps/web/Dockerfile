@@ -20,6 +20,13 @@ COPY --from=pruner /app/out/full/ .
 COPY --from=pruner /app/tsconfig.json ./tsconfig.json
 ARG NEXT_PUBLIC_BASE_URL=http://localhost:3000
 ENV NEXT_PUBLIC_BASE_URL=$NEXT_PUBLIC_BASE_URL
+# Placeholder values so next build doesn't throw during page rendering.
+# Real values must be injected at container start via Docker/Compose env.
+ENV BETTER_AUTH_SECRET=build-time-placeholder-secret-do-not-use-in-production
+ENV BETTER_AUTH_URL=http://localhost:3000
+ENV DATABASE_URL=postgresql://user:pass@localhost:5432/db
+ENV REDIS_URL=redis://localhost:6379
+ENV LINKEDIN_ENCRYPTION_KEY=0000000000000000000000000000000000000000000000000000000000000000
 RUN pnpm turbo build --filter=web
 
 FROM base AS runner
