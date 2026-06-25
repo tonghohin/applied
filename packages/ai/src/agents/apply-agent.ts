@@ -1,6 +1,6 @@
 import type { Job, Profile } from "@repo/db";
 import { toTitleCase } from "@repo/shared";
-import { type ModelMessage, Output, createGateway, generateText, stepCountIs, tool } from "ai";
+import { type ModelMessage, Output, createGateway, generateText, isStepCount, tool } from "ai";
 import { z } from "zod";
 import { createPlaywrightMCPClient } from "../mcp";
 import { generateCoverLetter } from "./generate-cover-letter";
@@ -308,11 +308,11 @@ export async function applyToJob(
       providerOptions: { gateway: { only: ["vertex"] } },
       maxRetries: 6,
       tools,
-      stopWhen: stepCountIs(150),
+      stopWhen: isStepCount(150),
       output: Output.object({ schema: applyResultSchema }),
-      system: PROMPTS[platform],
+      instructions: PROMPTS[platform],
       prompt: `Apply to this job:\nURL: ${job.url}\nTitle: ${job.title} at ${job.company}\n\nApplicant profile:\n${profileSummary}${resumePdfPath ? `\n\nResume PDF path: ${resumePdfPath}` : ""}`,
-      experimental_telemetry: { isEnabled: true },
+      telemetry: { isEnabled: true },
       prepareStep: ({ messages }) => {
         // Keep only the most recent browser_snapshot result; replace older ones with a
         // short placeholder to avoid re-sending large DOM snapshots every step.
@@ -352,7 +352,7 @@ export async function applyToJob(
           }),
         };
       },
-      onStepFinish: (step) => {
+      onStepEnd: (step) => {
         for (const toolCall of step.toolCalls) {
           logToolCall(step.stepNumber, toolCall.toolName, toolCall.input, log);
         }

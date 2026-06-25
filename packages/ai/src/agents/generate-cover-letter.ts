@@ -10,12 +10,12 @@ export async function generateCoverLetter(job: Job, profile: ProfileWithEmail, a
 
   const { text } = await generateText({
     model: gatewayProvider("google/gemini-2.5-flash-lite"),
-    system:
+    instructions:
       "You are a professional cover letter writer. Write a concise, personalized cover letter " +
       "for the given job and applicant. Return only the cover letter body — no subject line, " +
       "no JSON wrapper. Start with 'Dear Hiring Manager,'.",
     prompt: `Job title: ${job.title}\nCompany: ${job.company}\n${job.description ? `\nJob description:\n${job.description}\n` : ""}\nApplicant resume:\n${profile.resume}${instructionsSection}`,
-    experimental_telemetry: { isEnabled: true },
+    telemetry: { isEnabled: true },
   });
 
   return text.trim();

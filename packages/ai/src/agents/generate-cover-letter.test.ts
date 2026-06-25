@@ -82,7 +82,7 @@ describe("generateCoverLetter", () => {
     await generateCoverLetter(mockJob, mockProfile, "test-api-key");
 
     const callArg = vi.mocked(generateText).mock.calls[0]?.[0];
-    expect(callArg).toMatchObject({ experimental_telemetry: { isEnabled: true } });
+    expect(callArg).toMatchObject({ telemetry: { isEnabled: true } });
   });
 
   it("returns trimmed text", async () => {

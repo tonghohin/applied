@@ -17,13 +17,13 @@
     "vitest": "^4.1.7"
   },
   "dependencies": {
-    "@ai-sdk/mcp": "^1.0.43",
+    "@ai-sdk/mcp": "^2.0.0",
     "@modelcontextprotocol/sdk": "^1.29.0",
     "@playwright/mcp": "^0.0.75",
     "@repo/automation": "workspace:*",
     "@repo/db": "workspace:*",
     "@repo/shared": "workspace:*",
-    "ai": "^6.0.190",
+    "ai": "^7.0.0",
     "marked": "^18.0.5",
     "playwright": "^1.60.0",
     "playwright-extra": "^4.3.6",
