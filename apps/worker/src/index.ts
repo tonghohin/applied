@@ -1,4 +1,4 @@
-import "./otel"; // must be first — registers LangfuseSpanProcessor before other imports
+import "./instrumentation"; // must be first — registers LangfuseSpanProcessor before other imports
 
 import { browserManager } from "@repo/automation";
 import { closeRedisPublisher } from "./redis";

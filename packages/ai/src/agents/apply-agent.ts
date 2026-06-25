@@ -312,7 +312,6 @@ export async function applyToJob(
       output: Output.object({ schema: applyResultSchema }),
       instructions: PROMPTS[platform],
       prompt: `Apply to this job:\nURL: ${job.url}\nTitle: ${job.title} at ${job.company}\n\nApplicant profile:\n${profileSummary}${resumePdfPath ? `\n\nResume PDF path: ${resumePdfPath}` : ""}`,
-      telemetry: { isEnabled: true },
       prepareStep: ({ messages }) => {
         // Keep only the most recent browser_snapshot result; replace older ones with a
         // short placeholder to avoid re-sending large DOM snapshots every step.

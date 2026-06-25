@@ -6,7 +6,7 @@ import type { ApplyRunLog } from "@repo/db";
 import { decrypt } from "@repo/shared";
 import { Worker } from "bullmq";
 import { env } from "../env";
-import { langfuseSpanProcessor } from "../otel";
+import { langfuseSpanProcessor } from "../instrumentation";
 import { publishEvent } from "../redis";
 
 type ApplyJobData = { jobId: string; userId: string; runId: string };
