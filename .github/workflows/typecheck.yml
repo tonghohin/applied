@@ -3,8 +3,14 @@ name: Typecheck
 on:
   push:
     branches: [main]
+    paths-ignore:
+      - "**.md"
+      - ".github/ISSUE_TEMPLATE/**"
   pull_request:
     branches: [main]
+    paths-ignore:
+      - "**.md"
+      - ".github/ISSUE_TEMPLATE/**"
 
 jobs:
   typecheck:
