@@ -69,6 +69,13 @@ export function SearchCriteria({
             }
           />
           <CriteriaRow
+            label="Excluded"
+            values={[
+              `${criteria?.excludeKeywords?.length ?? 0} keywords`,
+              `${criteria?.excludeCompanies?.length ?? 0} companies`,
+            ]}
+          />
+          <CriteriaRow
             label="LinkedIn"
             values={[linkedInConnected ? "Connected" : "Not connected"]}
           />

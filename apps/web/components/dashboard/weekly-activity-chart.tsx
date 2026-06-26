@@ -10,17 +10,18 @@ import {
   ChartTooltipContent,
 } from "@/components/ui/chart";
 import type { DashboardJob } from "@repo/api";
-import { addDays, eachDayOfInterval, format, isSameDay, startOfISOWeek } from "date-fns";
+import { addDays, eachDayOfInterval, format, isSameDay, startOfWeek } from "date-fns";
 import { Bar, BarChart, XAxis } from "recharts";
 
 const chartConfig = {
   applied: { label: "Applied", color: "var(--primary)" },
   failed: { label: "Failed", color: "var(--destructive)" },
+  rejected: { label: "Rejected", color: "var(--chart-4)" },
   remaining: { label: "Found", color: "var(--accent)" },
 } satisfies ChartConfig;
 
 export function WeeklyActivityChart({ jobs }: { jobs: DashboardJob[] }) {
-  const weekStart = startOfISOWeek(new Date());
+  const weekStart = startOfWeek(new Date(), { weekStartsOn: 0 });
   const weekDays = eachDayOfInterval({ start: weekStart, end: addDays(weekStart, 6) });
 
   const chartData = weekDays.map((day) => {
@@ -29,20 +30,24 @@ export function WeeklyActivityChart({ jobs }: { jobs: DashboardJob[] }) {
     const failed = jobs.filter(
       (job) => job.status === "failed" && isSameDay(job.updatedAt, day)
     ).length;
+    const rejected = jobs.filter(
+      (job) => job.status === "rejected" && isSameDay(job.updatedAt, day)
+    ).length;
     return {
       day: format(day, "E"),
       applied,
       failed,
-      remaining: Math.max(0, found - applied - failed),
+      rejected,
+      remaining: Math.max(0, found - applied - failed - rejected),
     };
   });
 
   const totalApplied = chartData.reduce((acc, entry) => acc + entry.applied, 0);
   const totalFailed = chartData.reduce((acc, entry) => acc + entry.failed, 0);
-  const totalFound = chartData.reduce(
-    (acc, entry) => acc + entry.applied + entry.failed + entry.remaining,
-    0
-  );
+  const totalRejected = chartData.reduce((acc, entry) => acc + entry.rejected, 0);
+  const totalFound = jobs.filter((job) =>
+    weekDays.some((day) => isSameDay(job.createdAt, day))
+  ).length;
 
   return (
     <Card>
@@ -50,16 +55,18 @@ export function WeeklyActivityChart({ jobs }: { jobs: DashboardJob[] }) {
         <CardTitle>Weekly activity</CardTitle>
         <CardAction>
           <span className="font-mono text-muted-foreground text-xs">
-            {totalApplied} applied · {totalFailed} failed · {totalFound} found
+            {totalApplied} applied · {totalFailed} failed · {totalRejected} rejected · {totalFound}{" "}
+            found
           </span>
         </CardAction>
       </CardHeader>
       <CardContent>
-        <ChartContainer config={chartConfig} className="h-30 w-full">
+        <ChartContainer config={chartConfig} className="h-36 w-full">
           <BarChart data={chartData} barCategoryGap="20%">
             <XAxis dataKey="day" tickLine={false} axisLine={false} />
             <Bar dataKey="applied" stackId="a" fill={chartConfig.applied.color} radius={2} />
             <Bar dataKey="failed" stackId="a" fill={chartConfig.failed.color} radius={2} />
+            <Bar dataKey="rejected" stackId="a" fill={chartConfig.rejected.color} radius={2} />
             <Bar dataKey="remaining" stackId="a" fill={chartConfig.remaining.color} radius={2} />
             <ChartTooltip content={<ChartTooltipContent />} />
             <ChartLegend content={<ChartLegendContent />} />

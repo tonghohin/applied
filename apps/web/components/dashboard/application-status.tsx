@@ -48,9 +48,9 @@ export function ApplicationStatus({ jobs }: { jobs: DashboardJob[] }) {
         </CardAction>
       </CardHeader>
       <CardContent>
-        <ChartContainer config={chartConfig} className="h-36 w-full">
+        <ChartContainer config={chartConfig} className="h-40 w-full">
           <BarChart data={chartData} layout="vertical" barCategoryGap="25%">
-            <YAxis dataKey="status" type="category" tickLine={false} axisLine={false} width={56} />
+            <YAxis dataKey="status" type="category" tickLine={false} axisLine={false} />
             <XAxis type="number" hide />
             <Bar dataKey="count" radius={2} minPointSize={2}>
               <LabelList
