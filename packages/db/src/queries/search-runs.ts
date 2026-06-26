@@ -38,3 +38,13 @@ export async function listSearchRuns(db: Db, userId: string) {
     .where(eq(searchRuns.userId, userId))
     .orderBy(desc(searchRuns.startedAt));
 }
+
+export async function getLatestSearchRun(db: Db, userId: string) {
+  const rows = await db
+    .select()
+    .from(searchRuns)
+    .where(eq(searchRuns.userId, userId))
+    .orderBy(desc(searchRuns.startedAt))
+    .limit(1);
+  return rows[0] ?? null;
+}

@@ -1,6 +1,6 @@
-import { listSearchRuns } from "@repo/db";
+import { getLatestSearchRun } from "@repo/db";
 import { protectedProcedure, router } from "../trpc";
 
 export const runsRouter = router({
-  list: protectedProcedure.query(({ ctx }) => listSearchRuns(ctx.db, ctx.session.user.id)),
+  latest: protectedProcedure.query(({ ctx }) => getLatestSearchRun(ctx.db, ctx.session.user.id)),
 });

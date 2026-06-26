@@ -11,8 +11,6 @@ export type Job = RouterOutputs["jobs"]["list"][number];
 export type JobStatus = Job["status"];
 export type FitTier = Job["fitTier"];
 
-export type Run = RouterOutputs["runs"]["list"][number];
-export type RunStatus = Run["status"];
 
 export const trpc = createTRPCReact<AppRouter>();
 

@@ -1,11 +1,11 @@
 import { describe, expect, it, vi } from "vitest";
 
-const { mockListSearchRuns } = vi.hoisted(() => ({
-  mockListSearchRuns: vi.fn(),
+const { mockGetLatestSearchRun } = vi.hoisted(() => ({
+  mockGetLatestSearchRun: vi.fn(),
 }));
 
 vi.mock("@repo/db", () => ({
-  listSearchRuns: mockListSearchRuns,
+  getLatestSearchRun: mockGetLatestSearchRun,
 }));
 
 import type { Context } from "../context";
@@ -50,28 +50,28 @@ const mockRun = {
   searchCriteria: null,
 };
 
-describe("runs.list", () => {
-  it("returns the list of runs for the authenticated user", async () => {
-    mockListSearchRuns.mockResolvedValueOnce([mockRun]);
+describe("runs.latest", () => {
+  it("returns the latest run for the authenticated user", async () => {
+    mockGetLatestSearchRun.mockResolvedValueOnce(mockRun);
 
     const caller = runsRouter.createCaller(makeCtx());
-    const result = await caller.list();
+    const result = await caller.latest();
 
-    expect(result).toEqual([mockRun]);
-    expect(mockListSearchRuns).toHaveBeenCalledWith({}, "user_1");
+    expect(result).toEqual(mockRun);
+    expect(mockGetLatestSearchRun).toHaveBeenCalledWith({}, "user_1");
   });
 
-  it("returns an empty array when no runs exist", async () => {
-    mockListSearchRuns.mockResolvedValueOnce([]);
+  it("returns null when no runs exist", async () => {
+    mockGetLatestSearchRun.mockResolvedValueOnce(null);
 
     const caller = runsRouter.createCaller(makeCtx());
-    const result = await caller.list();
+    const result = await caller.latest();
 
-    expect(result).toEqual([]);
+    expect(result).toBeNull();
   });
 
   it("throws UNAUTHORIZED when session is null", async () => {
     const caller = runsRouter.createCaller({ db: {} as never, session: null } as never);
-    await expect(caller.list()).rejects.toMatchObject({ code: "UNAUTHORIZED" });
+    await expect(caller.latest()).rejects.toMatchObject({ code: "UNAUTHORIZED" });
   });
 });

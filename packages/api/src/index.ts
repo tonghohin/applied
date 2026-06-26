@@ -7,5 +7,5 @@ export { getProfile, getAiGatewayKey } from "./services/profile.service";
 export { listJobs } from "./services/jobs.service";
 export { getDashboardStats } from "./services/dashboard.service";
 export type { DashboardStats, DashboardJob } from "./services/dashboard.service";
-export { getLinkedInAccount, listSearchRuns } from "@repo/db";
+export { getLinkedInAccount } from "@repo/db";
 export type { SseEvent } from "./sse";

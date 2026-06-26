@@ -1,6 +1,7 @@
 "use client";
 
 import { AppliedIcon } from "@/components/applied-logo";
+import { SearchRunStatusIndicator } from "@/components/nav/search-run-status-indicator";
 import { ThemeToggle } from "@/components/theme/theme-toggle";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import {
@@ -20,7 +21,6 @@ import {
   RiArrowRightSLine,
   RiBriefcaseLine,
   RiDashboardLine,
-  RiHistoryLine,
   RiLogoutBoxLine,
   RiSettings3Line,
 } from "@remixicon/react";
@@ -29,8 +29,13 @@ import { usePathname, useRouter } from "next/navigation";
 
 const NAV_LINKS = [
   { href: "/dashboard", label: "Dashboard", icon: RiDashboardLine, exact: true },
-  { href: "/jobs", label: "Jobs", icon: RiBriefcaseLine, exact: false },
-  { href: "/runs", label: "Runs", icon: RiHistoryLine, exact: false },
+  {
+    href: "/jobs",
+    label: "Jobs",
+    icon: RiBriefcaseLine,
+    exact: false,
+    badge: <SearchRunStatusIndicator />,
+  },
 ];
 
 const SETTINGS_LINKS = [
@@ -60,7 +65,7 @@ export function AppSidebar() {
       </SidebarHeader>
       <SidebarContent className="p-2 pt-0">
         <SidebarMenu>
-          {NAV_LINKS.map(({ href, label, icon: Icon, exact }) => (
+          {NAV_LINKS.map(({ href, label, icon: Icon, exact, badge }) => (
             <SidebarMenuItem key={href}>
               <SidebarMenuButton
                 render={<Link href={href} />}
@@ -70,6 +75,7 @@ export function AppSidebar() {
                 <Icon />
                 {label}
               </SidebarMenuButton>
+              {badge}
             </SidebarMenuItem>
           ))}
           <Collapsible defaultOpen render={<SidebarMenuItem />}>

@@ -6,7 +6,6 @@ import type { RouterOutputs } from "@repo/api";
 import { useRef } from "react";
 
 type JobList = RouterOutputs["jobs"]["list"];
-type RunList = RouterOutputs["runs"]["list"];
 type Stats = RouterOutputs["dashboard"]["getStats"];
 
 export function applyJobStatusEvent(
@@ -64,18 +63,6 @@ export function applyApplyRunLogEvent(
   });
 }
 
-export function applySearchRunUpdateEvent(
-  runs: RunList,
-  event: Extract<SseEvent, { type: "search-run:update" }>
-): RunList {
-  // Scheduled runs are created by the worker, so the run may not be in the
-  // list yet — prepend it (runs are ordered by startedAt desc).
-  if (!runs.some((run) => run.id === event.run.id)) {
-    return [event.run, ...runs];
-  }
-  return runs.map((run) => (run.id === event.run.id ? event.run : run));
-}
-
 export function applyDashboardSearchRunUpdateEvent(
   stats: Stats,
   event: Extract<SseEvent, { type: "search-run:update" }>
@@ -97,7 +84,7 @@ export function SseProvider({ children }: { children: React.ReactNode }) {
     onStarted() {
       if (hasStartedRef.current) {
         utils.jobs.list.invalidate();
-        utils.runs.list.invalidate();
+        utils.runs.latest.invalidate();
         utils.dashboard.getStats.invalidate();
       }
       hasStartedRef.current = true;
@@ -126,9 +113,7 @@ export function SseProvider({ children }: { children: React.ReactNode }) {
           break;
         }
         case "search-run:update": {
-          utils.runs.list.setData(undefined, (runs) =>
-            runs ? applySearchRunUpdateEvent(runs, event) : runs
-          );
+          utils.runs.latest.setData(undefined, () => event.run);
           utils.dashboard.getStats.setData(undefined, (stats) =>
             stats ? applyDashboardSearchRunUpdateEvent(stats, event) : stats
           );

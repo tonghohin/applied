@@ -16,11 +16,9 @@ import {
   applyDashboardJobStatusEvent,
   applyDashboardSearchRunUpdateEvent,
   applyJobStatusEvent,
-  applySearchRunUpdateEvent,
 } from "./sse-provider";
 
 type JobList = RouterOutputs["jobs"]["list"];
-type RunList = RouterOutputs["runs"]["list"];
 type Stats = RouterOutputs["dashboard"]["getStats"];
 
 const baseJob = {
@@ -177,33 +175,6 @@ describe("applyApplyRunLogEvent", () => {
     };
     const result = applyApplyRunLogEvent(jobs, event);
     expect(result[0]).toBe(baseJob);
-  });
-});
-
-describe("applySearchRunUpdateEvent", () => {
-  it("replaces the matching run in the list", () => {
-    const runs: RunList = [baseRun, { ...baseRun, id: "run-2" }];
-    const updatedRun = { ...baseRun, status: "completed" as const, jobCount: 10 };
-    const event: Extract<SseEvent, { type: "search-run:update" }> = {
-      type: "search-run:update",
-      run: updatedRun,
-    };
-    const result = applySearchRunUpdateEvent(runs, event);
-    expect(result[0]).toBe(updatedRun);
-    expect(result[1]).toBe(runs[1]);
-  });
-
-  it("prepends a run that is not in the list yet", () => {
-    const runs: RunList = [baseRun];
-    const newRun = { ...baseRun, id: "run-new", status: "pending" as const };
-    const event: Extract<SseEvent, { type: "search-run:update" }> = {
-      type: "search-run:update",
-      run: newRun,
-    };
-    const result = applySearchRunUpdateEvent(runs, event);
-    expect(result).toHaveLength(2);
-    expect(result[0]).toBe(newRun);
-    expect(result[1]).toBe(baseRun);
   });
 });
 
