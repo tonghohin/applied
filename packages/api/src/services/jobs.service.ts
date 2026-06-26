@@ -37,7 +37,7 @@ export async function listJobs(db: Db, userId: string) {
   const appliedCountByCompany = new Map<string, number>();
   const appliedTitlesByCompany = new Map<string, string[]>();
   for (const job of jobRows) {
-    if (job.status === "applied") {
+    if (job.status === "applied" || job.status === "rejected") {
       const key = job.company.toLowerCase();
       appliedCountByCompany.set(key, (appliedCountByCompany.get(key) ?? 0) + 1);
       const titles = appliedTitlesByCompany.get(key) ?? [];
