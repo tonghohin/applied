@@ -145,7 +145,7 @@ export async function runSearch(
         url: job.url,
         platform: job.platform,
         workplaceType: job.workplaceType,
-        fitTier: scoreJob(job, { jobTitle: criteriaRow.jobTitle, skills: criteriaRow.skills }),
+        fitTier: scoreJob(job, criteriaRow.skills),
         createdAt: new Date(),
         updatedAt: new Date(),
       }))

@@ -19,45 +19,51 @@ function makeJob(title: string, description: string): ScrapedJob {
   };
 }
 
-const criteria = {
-  jobTitle: "Software Engineer",
-  skills: ["TypeScript", "React", "Node.js", "GraphQL", "PostgreSQL", "Docker"],
-};
+const skills = ["TypeScript", "React", "Node.js", "GraphQL", "PostgreSQL", "Docker"];
 
 describe("scoreJob", () => {
-  it("returns strong when title + 5 skills match (score ≥7)", () => {
-    // title match = 2pts, 5 skill matches = 5pts → score 7
+  it("returns strong when 5 of 6 skills match (meets proportional threshold)", () => {
     const job = makeJob(
-      "Senior Software Engineer",
+      "Frontend Developer",
       "We use TypeScript, React, Node.js, GraphQL, and PostgreSQL every day."
     );
-    expect(scoreJob(job, criteria)).toBe("strong");
+    expect(scoreJob(job, skills)).toBe("strong");
   });
 
-  it("returns potential when title + 1 skill match (score 3)", () => {
-    // title match = 2pts, 1 skill = 1pt → score 3
-    const job = makeJob("Software Engineer", "Looking for someone with TypeScript experience.");
-    expect(scoreJob(job, criteria)).toBe("potential");
+  it("returns potential when 2 skills match", () => {
+    const job = makeJob("Software Developer", "Looking for TypeScript and React experience.");
+    expect(scoreJob(job, skills)).toBe("potential");
   });
 
-  it("returns weak when no title or skill match (score 0)", () => {
+  it("returns weak when no skills match", () => {
     const job = makeJob(
       "Marketing Manager",
       "Drive brand awareness and lead generation campaigns."
     );
-    expect(scoreJob(job, criteria)).toBe("weak");
+    expect(scoreJob(job, skills)).toBe("weak");
   });
 
-  it("returns weak when criteria is empty", () => {
+  it("returns weak when skills list is empty", () => {
     const job = makeJob("Software Engineer", "TypeScript React Node.js");
-    expect(scoreJob(job, { jobTitle: "", skills: [] })).toBe("weak");
+    expect(scoreJob(job, [])).toBe("weak");
   });
 
   it("caps score at strong tier regardless of many skill matches", () => {
     const job = makeJob(
-      "Software Engineer",
+      "Engineer",
       "TypeScript React Node.js GraphQL PostgreSQL Docker TypeScript React"
     );
-    expect(scoreJob(job, criteria)).toBe("strong");
+    expect(scoreJob(job, skills)).toBe("strong");
+  });
+
+  it("does not match skill substrings without word boundary", () => {
+    const job = makeJob("Reactive Systems Engineer", "We build reactive pipelines with nodejs.");
+    expect(scoreJob(job, ["React", "Node.js"])).toBe("weak");
+  });
+
+  it("strong threshold scales down with fewer skills", () => {
+    // 3 skills saved → strongThreshold = max(2, min(3,6)-1) = 2
+    const job = makeJob("Developer", "We use TypeScript and React.");
+    expect(scoreJob(job, ["TypeScript", "React", "Node.js"])).toBe("strong");
   });
 });
