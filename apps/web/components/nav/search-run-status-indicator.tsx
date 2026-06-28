@@ -7,12 +7,7 @@ import { trpc } from "@/lib/trpc";
 import { RiErrorWarningLine } from "@remixicon/react";
 
 export function SearchRunStatusIndicator() {
-  const { data: run } = trpc.runs.latest.useQuery(undefined, {
-    refetchInterval: (query) => {
-      const status = query.state.data?.status;
-      return status === "pending" || status === "running" ? 3000 : false;
-    },
-  });
+  const { data: run } = trpc.runs.latest.useQuery(undefined);
 
   if (!run || run.status === "completed") return null;
 
