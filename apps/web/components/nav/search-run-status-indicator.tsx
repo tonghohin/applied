@@ -18,9 +18,16 @@ export function SearchRunStatusIndicator() {
 
   if (run.status === "pending" || run.status === "running") {
     return (
-      <SidebarMenuBadge>
-        <Spinner />
-      </SidebarMenuBadge>
+      <TooltipProvider>
+        <Tooltip>
+          <TooltipTrigger render={<SidebarMenuBadge className="pointer-events-auto" />}>
+            <Spinner />
+          </TooltipTrigger>
+          <TooltipContent side="right">
+            {run.status === "pending" ? "Search queued…" : "Search in progress…"}
+          </TooltipContent>
+        </Tooltip>
+      </TooltipProvider>
     );
   }
 
