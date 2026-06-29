@@ -10,7 +10,7 @@ import type { Browser, BrowserContext, BrowserContextOptions, Page } from "playw
 import { browserManager } from "./browser";
 import { loginToLinkedIn } from "./linkedin/login";
 import { identityKey, scrapeLinkedInJobs } from "./linkedin/scraper";
-import { scoreJob } from "./scorer";
+import type { ScrapedJob } from "./types";
 import { launchStealthBrowser, stealthContextOptions, stealthPatch } from "./stealth";
 
 type StorageState = NonNullable<BrowserContextOptions["storageState"]>;
@@ -66,6 +66,7 @@ export async function runSearch(
   email: string,
   password: string,
   runId: string,
+  scoreJob: (job: ScrapedJob) => Promise<number>,
   existingSessionJson?: string,
   options?: { maxPages?: number }
 ): Promise<{ jobCount: number; newSessionJson: string | null }> {
@@ -133,9 +134,11 @@ export async function runSearch(
 
     if (scraped.length === 0) return { jobCount: 0, newSessionJson };
 
+    const scores = await Promise.all(scraped.map((job) => scoreJob(job)));
+
     const jobCount = await insertJobs(
       db,
-      scraped.map((job) => ({
+      scraped.map((job, index) => ({
         userId,
         runId,
         title: job.title,
@@ -145,7 +148,7 @@ export async function runSearch(
         url: job.url,
         platform: job.platform,
         workplaceType: job.workplaceType,
-        fitTier: scoreJob(job, criteriaRow.skills),
+        score: scores[index],
         createdAt: new Date(),
         updatedAt: new Date(),
       }))

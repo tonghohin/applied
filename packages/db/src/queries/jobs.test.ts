@@ -34,7 +34,7 @@ const baseJob: NewJob = {
   location: "Toronto, ON",
   url: "https://www.linkedin.com/jobs/view/1/",
   platform: "linkedin",
-  fitTier: "strong",
+  score: 75,
   status: "pending_review",
   createdAt: new Date(),
   updatedAt: new Date(),

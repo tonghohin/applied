@@ -21,7 +21,7 @@ const mockJob = {
   url: "https://example.com/jobs/1",
   platform: "linkedin" as const,
   workplaceType: "remote" as const,
-  fitTier: "strong" as const,
+  score: 80,
   status: "pending_review" as const,
   appliedAt: null,
   failureReason: null,

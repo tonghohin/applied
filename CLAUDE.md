@@ -42,8 +42,8 @@ apps/web        Next.js 16 App Router — frontend UI + API routes (/api/auth/*,
 apps/worker     BullMQ worker — consumes search and apply queues, runs Playwright + Gemini
 packages/api    tRPC routers, services, Better Auth config, BullMQ queue definitions
 packages/db     Drizzle schema, migrations, db connection, and repository query functions
-packages/automation  Playwright LinkedIn scraper + keyword-based job scorer
-packages/ai     Gemini 2.5 Flash agent that fills and submits job applications using Playwright MCP
+packages/automation  Playwright LinkedIn scraper (no scorer — scoring is handled by packages/ai)
+packages/ai     Gemini 2.5 Flash agent that fills and submits job applications using Playwright MCP; also exports scoreJob (Gemini Flash Lite) used during search
 ```
 
 ### Request flow
@@ -60,7 +60,7 @@ Better Auth with Google OAuth, configured in `packages/api/src/auth.ts`. The Dri
 
 ### Job search pipeline
 
-`jobs.search` inserts a `search_runs` row (`pending`) and enqueues to `searchQueue`. Worker updates the run to `running`, fetches the user's `linkedin_accounts` row, decrypts `passwordEncrypted` (AES-256-GCM), and reuses `sessionEncrypted` (Playwright storage state) if present to skip re-login. Calls `runSearch` from `packages/automation` which scrapes LinkedIn via Playwright. Before fetching job details, each scraped card is checked against already-stored jobs: (1) skip if the URL is already in the DB, (2) skip if a job with the same company + title + location already exists (normalized, case-insensitive), (3) skip if the title or company matches `excludeKeywords`/`excludeCompanies`. Surviving jobs have their details fetched, are scored (title 2pts + skills up to 6pts; ≥7 strong, ≥3 potential, else weak), and inserted into the `jobs` table. On success the fresh session is saved back and run status is set to `completed`; on captcha error the stale session is cleared so the next run forces a fresh login.
+`jobs.search` inserts a `search_runs` row (`pending`) and enqueues to `searchQueue`. Worker updates the run to `running`, fetches the user's `linkedin_accounts` row, decrypts `passwordEncrypted` (AES-256-GCM), and reuses `sessionEncrypted` (Playwright storage state) if present to skip re-login. Calls `runSearch` from `packages/automation` which scrapes LinkedIn via Playwright. Before fetching job details, each scraped card is checked against already-stored jobs: (1) skip if the URL is already in the DB, (2) skip if a job with the same company + title + location already exists (normalized, case-insensitive), (3) skip if the title or company matches `excludeKeywords`/`excludeCompanies`. Surviving jobs have their details fetched, then scored in parallel via `scoreJob` from `packages/ai` (Gemini Flash Lite, `Output.object`, 0–100 integer) using the user's resume — all LLM calls run concurrently via `Promise.all`. The scorer is passed as a callback from the worker into `runSearch` so `packages/automation` has no dependency on `packages/ai`. Jobs are inserted into the `jobs` table with the `score` column (≥70 is treated as a strong match in the UI). On success the fresh session is saved back and run status is set to `completed`; on captcha error the stale session is cleared so the next run forces a fresh login.
 
 ### AI apply agent
 
@@ -143,6 +143,6 @@ export function JobCard({ title, company }: JobCardProps) {}
 
 **Type safety**
 - No `any`, no type casts (`as Foo`, `as unknown as Foo`)
-- Prefer enum values (Drizzle `pgEnum`, `z.enum`, or `as const` objects) over plain `string` for fields with a fixed set of values — e.g. `fitTier`, `jobStatus`, `platform`
+- Prefer enum values (Drizzle `pgEnum`, `z.enum`, or `as const` objects) over plain `string` for fields with a fixed set of values — e.g. `jobStatus`, `platform`, `workplaceType`
 - Reuse existing types and constants exported from workspace packages rather than redefining them inline
 - Use `date-fns` for all date/time formatting and manipulation — never `toLocaleDateString`, `toLocaleTimeString`, or manual date arithmetic

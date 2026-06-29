@@ -2,7 +2,6 @@ import { NOTICE_PERIODS, WORK_TYPES } from "@repo/shared";
 import { pgEnum } from "drizzle-orm/pg-core";
 
 export const platformEnum = pgEnum("platform", ["linkedin"]);
-export const fitTierEnum = pgEnum("fit_tier", ["strong", "potential", "weak"]);
 export const jobStatusEnum = pgEnum("job_status", [
   "pending_review",
   "applying",

@@ -6,6 +6,8 @@ const {
   mockGetLinkedInAccount,
   mockGetProfileForUser,
   mockGetJobCriteriaForUser,
+  mockGetAiGatewayKey,
+  mockScoreJob,
   mockHasActiveSearchRun,
   mockInsertSearchRun,
   mockUpdateSearchRun,
@@ -17,8 +19,10 @@ const {
   mockWorkerCtor: vi.fn(),
   mockRunSearch: vi.fn().mockResolvedValue({ jobCount: 3, newSessionJson: undefined }),
   mockGetLinkedInAccount: vi.fn(),
-  mockGetProfileForUser: vi.fn().mockResolvedValue({ id: "p1" }),
+  mockGetProfileForUser: vi.fn().mockResolvedValue({ id: "p1", resume: "My resume" }),
   mockGetJobCriteriaForUser: vi.fn().mockResolvedValue({ id: "c1" }),
+  mockGetAiGatewayKey: vi.fn().mockResolvedValue("test-api-key"),
+  mockScoreJob: vi.fn().mockResolvedValue(75),
   mockHasActiveSearchRun: vi.fn().mockResolvedValue(false),
   mockInsertSearchRun: vi.fn(),
   mockUpdateSearchRun: vi
@@ -43,6 +47,14 @@ vi.mock("bullmq", () => ({
 
 vi.mock("@repo/automation", () => ({
   runSearch: mockRunSearch,
+}));
+
+vi.mock("@repo/api", () => ({
+  getAiGatewayKey: mockGetAiGatewayKey,
+}));
+
+vi.mock("@repo/ai", () => ({
+  scoreJob: mockScoreJob,
 }));
 
 vi.mock("@repo/db", () => ({

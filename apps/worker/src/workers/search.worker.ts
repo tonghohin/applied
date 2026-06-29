@@ -1,4 +1,7 @@
+import { getAiGatewayKey } from "@repo/api";
 import { runSearch } from "@repo/automation";
+import type { ScrapedJob } from "@repo/automation";
+import { scoreJob as scoreJobWithLLM } from "@repo/ai";
 import {
   clearLinkedInSession,
   getDb,
@@ -22,8 +25,19 @@ async function processSearch(userId: string, runId: string) {
   if (runningRun) publishEvent(userId, { type: "search-run:update", run: runningRun });
 
   try {
-    const account = await getLinkedInAccount(getDb(), userId);
+    const [account, profile, aiGatewayKey, criteria] = await Promise.all([
+      getLinkedInAccount(getDb(), userId),
+      getProfileForUser(getDb(), userId),
+      getAiGatewayKey(getDb(), userId),
+      getJobCriteriaForUser(getDb(), userId),
+    ]);
+
     if (!account) throw new Error("LinkedIn credentials not configured");
+    if (!profile?.resume) throw new Error("Resume is required to score jobs — add your resume in Profile settings.");
+    if (!aiGatewayKey) throw new Error("AI Gateway API key not configured");
+
+    const scorer = (job: ScrapedJob) =>
+      scoreJobWithLLM(job, profile.resume, aiGatewayKey, criteria?.minSalary);
 
     const password = decrypt(account.passwordEncrypted, env.ENCRYPTION_KEY);
     const existingSessionJson = account.sessionEncrypted
@@ -36,6 +50,7 @@ async function processSearch(userId: string, runId: string) {
       account.email,
       password,
       runId,
+      scorer,
       existingSessionJson
     );
     if (newSessionJson) {

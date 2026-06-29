@@ -11,7 +11,7 @@ export function JobsDataTable({ jobs }: { jobs: Job[] }) {
       data={jobs}
       columns={columns}
       getRowId={(row) => row.id}
-      initialSorting={[{ id: "createdAt", desc: true }]}
+      initialSorting={[{ id: "createdAt", desc: true }, { id: "score", desc: true }]}
       initialColumnFilters={[{ id: "status", value: DEFAULT_VISIBLE_STATUSES }]}
       enableRowSelection={(row) =>
         row.original.status === "pending_review" ||

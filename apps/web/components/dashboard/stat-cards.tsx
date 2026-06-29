@@ -23,7 +23,7 @@ const STATS = [
     label: "Strong matches",
     description: "Best alignment with your profile",
     icon: <IconBadge icon={RiFocus3Line} variant="secondary" />,
-    count: (jobs: DashboardJob[]) => jobs.filter((job) => job.fitTier === "strong").length,
+    count: (jobs: DashboardJob[]) => jobs.filter((job) => job.score >= 70).length,
   },
 ];
 

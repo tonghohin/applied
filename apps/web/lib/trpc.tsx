@@ -9,7 +9,6 @@ import superjson from "superjson";
 
 export type Job = RouterOutputs["jobs"]["list"][number];
 export type JobStatus = Job["status"];
-export type FitTier = Job["fitTier"];
 
 
 export const trpc = createTRPCReact<AppRouter>();

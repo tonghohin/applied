@@ -1,9 +1,9 @@
-import { pgTable, text, timestamp, uniqueIndex, uuid } from "drizzle-orm/pg-core";
+import { integer, pgTable, text, timestamp, uniqueIndex, uuid } from "drizzle-orm/pg-core";
 import { users } from "./auth";
-import { fitTierEnum, jobStatusEnum, platformEnum, workplaceTypeEnum } from "./enums";
+import { jobStatusEnum, platformEnum, workplaceTypeEnum } from "./enums";
 import { searchRuns } from "./search-runs";
 
-export { fitTierEnum, jobStatusEnum, platformEnum, workplaceTypeEnum };
+export { jobStatusEnum, platformEnum, workplaceTypeEnum };
 
 export const jobs = pgTable(
   "jobs",
@@ -19,7 +19,7 @@ export const jobs = pgTable(
     url: text("url").notNull(),
     platform: platformEnum("platform").notNull(),
     workplaceType: workplaceTypeEnum("workplace_type").notNull().default("on-site"),
-    fitTier: fitTierEnum("fit_tier").notNull(),
+    score: integer("score").notNull().default(0),
     status: jobStatusEnum("status").notNull().default("pending_review"),
     runId: uuid("run_id")
       .notNull()

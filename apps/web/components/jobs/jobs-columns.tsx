@@ -1,14 +1,13 @@
-import { ApplyButton } from "./apply-button";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { DataTableColumnHeader } from "@/components/ui/data-table-column-header";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import type { FitTier, Job } from "@/lib/trpc";
+import type { Job } from "@/lib/trpc";
 import { RiInformationLine } from "@remixicon/react";
 import { capitalize, toTitleCase } from "@repo/shared";
 import type { ColumnDef } from "@tanstack/react-table";
 import { formatDistanceToNow } from "date-fns";
-import { FitTierBadge } from "./fit-tier-badge";
+import { ApplyButton } from "./apply-button";
 import { JobStatusSelect } from "./job-status-select";
 import { JobTitleCell } from "./job-title-cell";
 
@@ -75,10 +74,9 @@ export const columns: ColumnDef<Job>[] = [
     enableGlobalFilter: false,
   },
   {
-    accessorKey: "fitTier",
-    header: ({ column }) => <DataTableColumnHeader column={column} title="Fit" />,
-    cell: ({ getValue }) => <FitTierBadge tier={getValue<FitTier>()} />,
-    filterFn: "arrIncludesSome",
+    accessorKey: "score",
+    header: ({ column }) => <DataTableColumnHeader column={column} title="Score" />,
+    enableColumnFilter: false,
     enableGlobalFilter: false,
   },
   {

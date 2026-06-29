@@ -13,7 +13,7 @@
 
 1. Fill in your profile — target job titles, skills, resume, and location preferences
 2. Click **Search Jobs** — the scraper finds matching LinkedIn postings and scores each one
-3. Review results in the dashboard, grouped by **Strong / Potential / Weak** fit
+3. Review results in the dashboard — each job is scored 0–100 against your resume by an LLM
 4. Select jobs and click **Apply to Selected** — an AI agent fills out and submits each application, generating a personalized cover letter and PDF resume on the fly
 5. Optionally configure a schedule to run searches automatically on a daily or weekly cron
 
@@ -38,8 +38,8 @@ apps/
 packages/
   api/        tRPC routers, services, BullMQ queue definitions
   db/         Drizzle schema + migrations + repository query functions
-  automation/ LinkedIn scraper + job scorer
-  ai/         AI apply agent + resume PDF generator
+  automation/ LinkedIn scraper
+  ai/         AI apply agent + resume PDF generator + LLM job scorer
   shared/     Shared utilities and constants (used by api + worker)
 ```
 

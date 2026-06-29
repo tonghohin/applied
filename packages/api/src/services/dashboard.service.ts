@@ -8,7 +8,7 @@ type Db = Context["db"];
 
 export type DashboardJob = Pick<
   Job,
-  "id" | "title" | "company" | "status" | "fitTier" | "createdAt" | "appliedAt" | "updatedAt"
+  "id" | "title" | "company" | "status" | "score" | "createdAt" | "appliedAt" | "updatedAt"
 >;
 
 export type DashboardSearchSchedule = {
@@ -38,7 +38,7 @@ export async function getDashboardStats(db: Db, userId: string): Promise<Dashboa
         title: jobs.title,
         company: jobs.company,
         status: jobs.status,
-        fitTier: jobs.fitTier,
+        score: jobs.score,
         createdAt: jobs.createdAt,
         appliedAt: jobs.appliedAt,
         updatedAt: jobs.updatedAt,
