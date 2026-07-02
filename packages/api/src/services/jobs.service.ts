@@ -35,6 +35,7 @@ export async function listJobs(db: Db, userId: string) {
   const applyRunByJobId = new Map(applyRuns.map((r) => [r.jobId, r]));
 
   const appliedCountByCompany = new Map<string, number>();
+  const rejectedCountByCompany = new Map<string, number>();
   const appliedTitlesByCompany = new Map<string, string[]>();
   for (const job of jobRows) {
     if (job.status === "applied" || job.status === "rejected") {
@@ -43,6 +44,9 @@ export async function listJobs(db: Db, userId: string) {
       const titles = appliedTitlesByCompany.get(key) ?? [];
       titles.push(job.title);
       appliedTitlesByCompany.set(key, titles);
+      if (job.status === "rejected") {
+        rejectedCountByCompany.set(key, (rejectedCountByCompany.get(key) ?? 0) + 1);
+      }
     }
   }
 
@@ -50,6 +54,7 @@ export async function listJobs(db: Db, userId: string) {
     ...job,
     latestApplyRun: applyRunByJobId.get(job.id) ?? null,
     appliedCountAtCompany: appliedCountByCompany.get(job.company.toLowerCase()) ?? 0,
+    rejectedCountAtCompany: rejectedCountByCompany.get(job.company.toLowerCase()) ?? 0,
     appliedTitlesAtCompany: appliedTitlesByCompany.get(job.company.toLowerCase()) ?? [],
   }));
 }

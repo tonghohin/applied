@@ -116,8 +116,25 @@ export function JobTitleCell({ job, table }: { job: Job; table: Table<Job> }) {
                 <span className="text-warning"> ({job.appliedCountAtCompany}×)</span>
               </TooltipTrigger>
               <TooltipContent>
-                Applied to {job.company} {job.appliedCountAtCompany} time
-                {job.appliedCountAtCompany > 1 ? "s" : ""} before
+                {job.rejectedCountAtCompany === 0 ? (
+                  <>
+                    Applied to {job.company} {job.appliedCountAtCompany} time
+                    {job.appliedCountAtCompany > 1 ? "s" : ""} before
+                  </>
+                ) : job.rejectedCountAtCompany === job.appliedCountAtCompany ? (
+                  <>
+                    Applied to {job.company} {job.appliedCountAtCompany} time
+                    {job.appliedCountAtCompany > 1 ? "s" : ""} before — all rejected
+                  </>
+                ) : (
+                  <>
+                    Applied to {job.company}{" "}
+                    {job.appliedCountAtCompany - job.rejectedCountAtCompany} time
+                    {job.appliedCountAtCompany - job.rejectedCountAtCompany > 1 ? "s" : ""},
+                    rejected {job.rejectedCountAtCompany} time
+                    {job.rejectedCountAtCompany > 1 ? "s" : ""} before
+                  </>
+                )}
               </TooltipContent>
             </Tooltip>
           )}

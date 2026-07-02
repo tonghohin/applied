@@ -40,6 +40,7 @@ const baseJob = {
   updatedAt: new Date("2026-01-01"),
   latestApplyRun: null,
   appliedCountAtCompany: 0,
+  rejectedCountAtCompany: 0,
   appliedTitlesAtCompany: [],
 };
 

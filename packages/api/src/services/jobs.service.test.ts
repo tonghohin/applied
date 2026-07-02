@@ -122,6 +122,11 @@ describe("listJobs", () => {
     expect(result.find((j) => j.id === "job-2")?.appliedCountAtCompany).toBe(3);
     expect(result.find((j) => j.id === "job-3")?.appliedCountAtCompany).toBe(3);
     expect(result.find((j) => j.id === "job-4")?.appliedCountAtCompany).toBe(1);
+
+    expect(result.find((j) => j.id === "job-1")?.rejectedCountAtCompany).toBe(1);
+    expect(result.find((j) => j.id === "job-2")?.rejectedCountAtCompany).toBe(1);
+    expect(result.find((j) => j.id === "job-3")?.rejectedCountAtCompany).toBe(1);
+    expect(result.find((j) => j.id === "job-4")?.rejectedCountAtCompany).toBe(0);
   });
 });
 
