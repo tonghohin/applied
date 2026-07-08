@@ -141,6 +141,24 @@ describe("scrapeLinkedInJobs", () => {
     expect(visitedUrls).not.toContain("https://www.linkedin.com/jobs/view/2/");
   });
 
+  it("skips jobs with a matching identity scraped earlier in the same run, even under a different URL", async () => {
+    // job "1" and job "2" share company/title/location but have distinct URLs —
+    // LinkedIn sometimes lists the same posting twice with different tracking params
+    const page = makePage([
+      [makeJob("1"), { ...makeJob("2"), title: "Job 1" }],
+      [],
+      [], // page 0: both cards, then 2 stable
+      details("description 1"), // fetchJobDetails for job1 only (job2 is a same-run identity dupe)
+    ]);
+
+    const results = await scrapeLinkedInJobs(page, criteria, noKnownUrls, noKnownIdentities);
+
+    expect(results).toHaveLength(1);
+    expect(results[0]?.url).toBe("https://www.linkedin.com/jobs/view/1/");
+    const visitedUrls = vi.mocked(page.goto).mock.calls.map(([url]) => url);
+    expect(visitedUrls).not.toContain("https://www.linkedin.com/jobs/view/2/");
+  });
+
   it("retries fetchJobDetails once and uses the second attempt's result", async () => {
     const page = makePage([
       [makeJob("1")],

@@ -157,6 +157,7 @@ export async function scrapeLinkedInJobs(
 ): Promise<ScrapedJob[]> {
   const results: ScrapedJob[] = [];
   const seen = new Set<string>();
+  const seenIdentities = new Set(knownIdentities);
 
   let searchIdx = 0;
   for (const locationEntry of criteria.locations) {
@@ -183,7 +184,9 @@ export async function scrapeLinkedInJobs(
           // Card captions occasionally omit the location — fall back to the
           // criteria location this search was run under
           const resolvedLocation = job.location || locationEntry.location;
-          if (criteria.skipDuplicateIdentity && knownIdentities.has(identityKey(job.company, job.title, resolvedLocation))) continue;
+          const jobIdentityKey = identityKey(job.company, job.title, resolvedLocation);
+          if (criteria.skipDuplicateIdentity && seenIdentities.has(jobIdentityKey)) continue;
+          if (criteria.skipDuplicateIdentity) seenIdentities.add(jobIdentityKey);
 
           if (isExcluded(job.title, criteria.excludeKeywords)) continue;
           if (isExcluded(job.company, criteria.excludeCompanies)) continue;
