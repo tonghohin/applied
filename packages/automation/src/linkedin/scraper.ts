@@ -127,18 +127,101 @@ async function fetchJobDetails(page: Page, url: string): Promise<{ description: 
       const text = el.textContent?.trim() ?? "";
       return text.startsWith("About the job") && text.length > 100 && text.length < 8000;
     });
-    const description = aboutJobEl
-      ? (aboutJobEl.textContent?.trim() ?? "")
-      : (() => {
-          // Fallback: biggest bounded section (excludes nav/footer)
-          const sections = Array.from(document.querySelectorAll("section"));
-          return (
-            sections
-              .map((section) => section.textContent?.trim() ?? "")
-              .filter((text) => text.length > 200 && text.length < 10000)
-              .sort((a, b) => b.length - a.length)[0] ?? ""
-          );
-        })();
+    const descriptionRoot =
+      aboutJobEl ??
+      (() => {
+        // Fallback: biggest bounded section (excludes nav/footer)
+        const sections = Array.from(document.querySelectorAll("section"));
+        return sections
+          .map((section) => ({ section, text: section.textContent?.trim() ?? "" }))
+          .filter(({ text }) => text.length > 200 && text.length < 10000)
+          .sort((a, b) => b.text.length - a.text.length)[0]?.section;
+      })();
+
+    if (!descriptionRoot) return { description: "" };
+
+    // Converts block-level DOM structure (paragraphs, line breaks, list items) into
+    // newlines/bullets so the stored text isn't one run-on line — textContent alone
+    // collapses everything flat. Written as an explicit stack instead of recursion through
+    // a nested named helper: Playwright serializes this callback via
+    // Function.prototype.toString() to run it in the page, and tsx compiles with esbuild's
+    // `keepNames`, which wraps nested named functions in a `__name()` call that doesn't
+    // exist in that isolated page context, throwing at runtime.
+    const blockTags = new Set([
+      "P",
+      "DIV",
+      "SECTION",
+      "ARTICLE",
+      "UL",
+      "OL",
+      "H1",
+      "H2",
+      "H3",
+      "H4",
+      "H5",
+      "H6",
+    ]);
+    const frames: Array<{ node: Element; children: ChildNode[]; index: number; acc: string }> = [
+      {
+        node: descriptionRoot,
+        children: Array.from(descriptionRoot.childNodes),
+        index: 0,
+        acc: "",
+      },
+    ];
+    let description = "";
+    while (frames.length > 0) {
+      const frame = frames[frames.length - 1];
+      if (!frame) break;
+      if (frame.index < frame.children.length) {
+        const child = frame.children[frame.index];
+        frame.index += 1;
+        if (!child) continue;
+        if (child.nodeType === Node.TEXT_NODE) {
+          const text = child.textContent ?? "";
+          // Whitespace-only text nodes containing a newline are pretty-printing artifacts
+          // between tags, not intentional line breaks — drop them so they don't inject
+          // blank lines. Whitespace-only text without a newline (e.g. a space between
+          // inline elements) is a real separator, so normalize it to a single space.
+          frame.acc += text.trim() === "" ? (text.includes("\n") ? "" : " ") : text;
+        } else if (child instanceof Element) {
+          if (child.tagName === "BR") {
+            frame.acc += "\n";
+          } else if (child.tagName === "BUTTON" || child.getAttribute("aria-hidden") === "true") {
+            // Skip UI controls like LinkedIn's "…more" truncation toggle — the full text is
+            // already present as a sibling/ancestor in the DOM, so the toggle's own label
+            // would otherwise get appended to the end of the description.
+          } else {
+            frames.push({ node: child, children: Array.from(child.childNodes), index: 0, acc: "" });
+          }
+        }
+        continue;
+      }
+      frames.pop();
+      let value = frame.acc;
+      if (frame.node.tagName === "LI") {
+        value = `• ${value.trim()}\n`;
+      } else if (blockTags.has(frame.node.tagName)) {
+        // Leading and trailing separators (not just trailing) so a block element that
+        // directly follows inline text/another block doesn't get glued to it — the excess
+        // newlines this creates between adjacent blocks are collapsed below.
+        value = `\n\n${value.trim()}\n\n`;
+      }
+      const parentFrame = frames[frames.length - 1];
+      if (parentFrame) {
+        parentFrame.acc += value;
+      } else {
+        description = value;
+      }
+    }
+
+    description = description
+      .replace(/[ \t]+/g, " ")
+      .split("\n")
+      .map((line) => line.trim())
+      .join("\n")
+      .replace(/\n{3,}/g, "\n\n")
+      .trim();
 
     return { description };
   });

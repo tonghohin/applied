@@ -14,11 +14,12 @@ import { useTextSelection } from "@/hooks/use-text-selection";
 import type { Job } from "@/lib/trpc";
 import { trpc } from "@/lib/trpc";
 import { RiExternalLinkLine } from "@remixicon/react";
-import type { Table } from "@tanstack/react-table";
 import Link from "next/link";
 import { useRef, useState } from "react";
 import { toast } from "sonner";
-export function JobTitleCell({ job, table }: { job: Job; table: Table<Job> }) {
+import { JobDescriptionSheet } from "./job-description-sheet";
+
+export function JobTitleCell({ job }: { job: Job }) {
   const cellRef = useRef<HTMLSpanElement>(null);
   const { selection, clearSelection } = useTextSelection(cellRef, {
     minLength: 2,
@@ -78,6 +79,7 @@ export function JobTitleCell({ job, table }: { job: Job; table: Table<Job> }) {
           >
             <RiExternalLinkLine className="size-3.5" />
           </Link>
+          <JobDescriptionSheet job={job} />
         </span>
 
         <span

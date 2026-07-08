@@ -56,7 +56,7 @@ export const columns: ColumnDef<Job>[] = [
         </Tooltip>
       </span>
     ),
-    cell: ({ row, table }) => <JobTitleCell job={row.original} table={table} />,
+    cell: ({ row }) => <JobTitleCell job={row.original} />,
     enableColumnFilter: false,
   },
   {
