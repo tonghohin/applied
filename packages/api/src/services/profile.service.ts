@@ -17,6 +17,7 @@ export const upsertPersonalSchema = z.object({
   lastName: z.string().min(1),
   phone: z.string().min(1),
   address: z.string().min(1),
+  postalCode: z.string().optional(),
   linkedinUrl: z.url().optional().or(z.literal("")),
   githubUrl: z.url().optional().or(z.literal("")),
   websiteUrl: z.url().optional().or(z.literal("")),

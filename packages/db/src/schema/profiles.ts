@@ -12,6 +12,7 @@ export const profiles = pgTable("profiles", {
   lastName: text("last_name").notNull(),
   phone: text("phone").notNull(),
   address: text("address").notNull(),
+  postalCode: text("postal_code"),
   linkedinUrl: text("linkedin_url"),
   githubUrl: text("github_url"),
   websiteUrl: text("website_url"),

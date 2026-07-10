@@ -5,6 +5,7 @@ export type InitialProfile = {
   lastName?: string;
   phone?: string;
   address?: string;
+  postalCode?: string | null;
   linkedinUrl?: string | null;
   githubUrl?: string | null;
   websiteUrl?: string | null;

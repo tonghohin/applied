@@ -30,6 +30,7 @@ const schema = z.object({
   lastName: z.string().min(1, "Required"),
   phone: z.string().min(1, "Required"),
   address: z.string().min(1, "Required"),
+  postalCode: z.string().optional(),
   linkedinUrl: z.string().optional(),
   githubUrl: z.string().optional(),
   websiteUrl: z.string().optional(),
@@ -60,6 +61,7 @@ export function PersonalForm({ initial }: { initial?: InitialProfile }) {
       lastName: initial?.lastName ?? "",
       phone: initial?.phone ?? "",
       address: initial?.address ?? "",
+      postalCode: initial?.postalCode ?? "",
       linkedinUrl: initial?.linkedinUrl ?? "",
       githubUrl: initial?.githubUrl ?? "",
       websiteUrl: initial?.websiteUrl ?? "",
@@ -110,6 +112,11 @@ export function PersonalForm({ initial }: { initial?: InitialProfile }) {
         </FieldLabel>
         <Input id="address" {...register("address")} aria-invalid={!!errors.address} />
         <FieldError errors={[errors.address]} />
+      </Field>
+      <Field data-invalid={!!errors.postalCode}>
+        <FieldLabel htmlFor="postalCode">Postal code</FieldLabel>
+        <Input id="postalCode" {...register("postalCode")} aria-invalid={!!errors.postalCode} />
+        <FieldError errors={[errors.postalCode]} />
       </Field>
       <Field>
         <FieldLabel htmlFor="linkedinUrl">LinkedIn URL</FieldLabel>

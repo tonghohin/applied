@@ -1,0 +1,1 @@
+ALTER TABLE "profiles" ADD COLUMN "postal_code" text;

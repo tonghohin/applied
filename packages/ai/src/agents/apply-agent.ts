@@ -282,6 +282,7 @@ export async function applyToJob(
       `Email: ${profile.email}`,
       `Phone: ${profile.phone}`,
       `Address: ${profile.address}`,
+      profile.postalCode ? `Postal code: ${profile.postalCode}` : null,
       `Requires visa sponsorship: ${profile.requiresSponsorship ? "Yes" : "No"}`,
       `Notice period: ${toTitleCase(profile.noticePeriod)}`,
       `Expected salary: ${minSalary}`,

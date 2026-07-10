@@ -20,6 +20,7 @@ export async function getProfileWithEmailForUser(db: Db, userId: string) {
       lastName: profiles.lastName,
       phone: profiles.phone,
       address: profiles.address,
+      postalCode: profiles.postalCode,
       linkedinUrl: profiles.linkedinUrl,
       githubUrl: profiles.githubUrl,
       websiteUrl: profiles.websiteUrl,

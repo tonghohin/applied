@@ -69,6 +69,7 @@ const mockProfile = {
   email: "jane@example.com",
   phone: "555-1234",
   address: "123 Main St",
+  postalCode: null,
   linkedinUrl: null,
   githubUrl: null,
   websiteUrl: null,
