@@ -28,7 +28,7 @@
         "./*"
       ]
     },
-    "strict": false,
+    "strict": true,
     "module": "esnext"
   },
   "include": [
