@@ -40,6 +40,7 @@ const NAV_LINKS = [
 
 const SETTINGS_LINKS = [
   { href: "/settings/personal", label: "Personal info" },
+  { href: "/settings/security", label: "Security" },
   { href: "/settings/documents", label: "Documents" },
   { href: "/settings/job-search", label: "Job search" },
   { href: "/settings/linkedin", label: "LinkedIn account" },
