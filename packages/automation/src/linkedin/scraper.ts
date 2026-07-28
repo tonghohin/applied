@@ -122,21 +122,44 @@ async function fetchJobDetails(page: Page, url: string): Promise<{ description: 
   const remainingDwellMs = minDwellMs - (Date.now() - navigatedAt);
   if (remainingDwellMs > 0) await page.waitForTimeout(remainingDwellMs);
   return page.evaluate(() => {
+    // LinkedIn's own upsell widgets (e.g. the "Reactivate Premium" card) can outsize the
+    // real description while it's still loading, or sit in a plain <section> that would
+    // otherwise win the fallback below — this copy is specific enough to LinkedIn's own
+    // marketing that it should never appear in an employer's job description. Kept as a
+    // plain regex (not a named helper function): Playwright serializes this callback via
+    // Function.prototype.toString() to run it in the page, and tsx compiles with esbuild's
+    // `keepNames`, which wraps named function bindings in a `__name()` call that doesn't
+    // exist in that isolated page context, throwing at runtime.
+    const promoPattern =
+      /reactivate premium|job search smarter with premium|cancel anytime\. no hidden fees\.|other members use premium/i;
+
     // Primary: LinkedIn usually wraps the description with an "About the job" header
     const aboutJobEl = Array.from(document.querySelectorAll("div, section, article")).find((el) => {
       const text = el.textContent?.trim() ?? "";
-      return text.startsWith("About the job") && text.length > 100 && text.length < 8000;
+      return (
+        text.startsWith("About the job") &&
+        text.length > 100 &&
+        text.length < 8000 &&
+        !promoPattern.test(text)
+      );
     });
+
+    // Fallback: biggest bounded <section> (excludes nav/footer). If no section qualifies
+    // (e.g. the layout wraps the description in a plain <div> instead), widen the search
+    // as a second pass rather than unioning the tag list upfront, so a large wrapping
+    // <div>/<article> can't outrank the right <section> by including more surrounding
+    // chrome while still sneaking under the length cap. Duplicated inline (rather than
+    // factored into a shared named helper) for the same __name/keepNames reason as above.
     const descriptionRoot =
       aboutJobEl ??
-      (() => {
-        // Fallback: biggest bounded section (excludes nav/footer)
-        const sections = Array.from(document.querySelectorAll("section"));
-        return sections
-          .map((section) => ({ section, text: section.textContent?.trim() ?? "" }))
-          .filter(({ text }) => text.length > 200 && text.length < 10000)
-          .sort((a, b) => b.text.length - a.text.length)[0]?.section;
-      })();
+      Array.from(document.querySelectorAll("section"))
+        .map((element) => ({ element, text: element.textContent?.trim() ?? "" }))
+        .filter(({ text }) => text.length > 200 && text.length < 10000 && !promoPattern.test(text))
+        .sort((a, b) => b.text.length - a.text.length)[0]?.element ??
+      Array.from(document.querySelectorAll("div, article"))
+        .map((element) => ({ element, text: element.textContent?.trim() ?? "" }))
+        .filter(({ text }) => text.length > 200 && text.length < 10000 && !promoPattern.test(text))
+        .sort((a, b) => b.text.length - a.text.length)[0]?.element;
 
     if (!descriptionRoot) return { description: "" };
 
