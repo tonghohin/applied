@@ -91,6 +91,9 @@ Return { success: false, reason: "..." } in these cases:
 - Inline validation errors remain → reason: the specific validation error message
 - Never infer success from completing the form or clicking submit alone — you must see the confirmation.
 
+## Recovering from intercepted clicks
+If a browser_click fails with an error mentioning "intercepting pointer events" or a similar pointer-interception message, do not retry the same ref. Take a fresh browser_snapshot — the target is almost always background page content now hidden behind an open dialog or modal. Locate the equivalent action inside the currently open dialog and click that instead.
+
 ## Spam detection recovery
 If the ATS shows a "flagged as spam" or "possible spam" error with a suggestion to try again (common on Ashby): use browser_wait_for with time:8000 to wait 8 seconds, then click the submit button one more time (this is the ATS's own retry flow, and it needs time to clear the rate limit). If it is flagged a second time, return { success: false, reason: "flagged as spam by ATS" }.
 
@@ -109,6 +112,7 @@ const LINKEDIN_PROMPT = `You are an automated job application agent. Submit a Li
 1. The browser is already loaded on the job URL. Take a browser_snapshot to see the current page state.
 2. If an "Easy Apply" button is present:
    - Click it to open the Easy Apply modal.
+   - Once the modal is open, only interact with elements nested inside the dialog (the snapshot shows them under a "dialog" node labelled "Apply to ..."). Do NOT click the page's original "Easy Apply" link/button again — it is now hidden behind the modal, and clicking it will fail with a pointer-events-intercepted error and waste a step.
    - The modal is a multi-step wizard. Take a snapshot after each action to see the current step.
    - Fill each required field on the current step before clicking "Next" or "Review".
    - LinkedIn pre-fills many fields from the account and from previous applications (email, phone, address, work authorization answers, years of experience, etc.). Before filling any field, check its current value in the snapshot — if it already contains the correct value, skip it entirely.

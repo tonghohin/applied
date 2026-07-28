@@ -12,52 +12,69 @@ import {
 import type { Job, JobStatus } from "@/lib/trpc";
 import { trpc } from "@/lib/trpc";
 import { toTitleCase } from "@repo/shared";
-import type { Row, Table } from "@tanstack/react-table";
-import { JobStatusBadge, STATUS_ICON } from "./job-status-badge";
+import type { ReactElement } from "react";
+import { toast } from "sonner";
+import { StatusIcon } from "./job-status-icon";
 
-const SELECTABLE_STATUSES: JobStatus[] = ["pending_review", "applied", "rejected", "skipped"];
+export const SELECTABLE_STATUSES: JobStatus[] = [
+  "pending_review",
+  "applied",
+  "rejected",
+  "skipped",
+];
 
 export function JobStatusSelect({
   job,
-  row,
-  table,
+  selectedJobIds,
+  trigger,
 }: {
   job: Job;
-  row: Row<Job>;
-  table: Table<Job>;
+  selectedJobIds?: string[];
+  trigger: ReactElement;
 }) {
   const utils = trpc.useUtils();
-  const updateMutation = trpc.jobs.updateStatus.useMutation();
+  const updateMutation = trpc.jobs.updateStatus.useMutation({
+    onMutate: async ({ jobId, status }) => {
+      await utils.jobs.list.cancel();
+      const previousJobs = utils.jobs.list.getData();
+      utils.jobs.list.setData(undefined, (jobs) =>
+        jobs?.map((existing) => (existing.id === jobId ? { ...existing, status } : existing))
+      );
+      return { previousJobs };
+    },
+    onError: (error, _variables, context) => {
+      if (context?.previousJobs) {
+        utils.jobs.list.setData(undefined, context.previousJobs);
+      }
+      toast.error(error instanceof Error ? error.message : "Failed to update status");
+    },
+    onSettled: () => {
+      utils.jobs.list.invalidate();
+    },
+  });
 
   if (job.status === "applying") {
-    return <JobStatusBadge status={job.status} />;
+    return trigger;
   }
 
-  async function handleValueChange(status: JobStatus) {
+  function handleValueChange(status: JobStatus) {
     if (status === job.status) return;
 
     const newStatus = status;
-    const selectedRows = table.getSelectedRowModel().rows;
-    const isCurrentRowSelected = row.getIsSelected();
 
-    if (isCurrentRowSelected && selectedRows.length > 1) {
-      await Promise.all(
-        selectedRows.map((selectedRow) =>
-          updateMutation.mutateAsync({ jobId: selectedRow.original.id, status: newStatus })
-        )
-      );
+    if (selectedJobIds?.includes(job.id) && selectedJobIds.length > 1) {
+      for (const jobId of selectedJobIds) {
+        updateMutation.mutate({ jobId, status: newStatus });
+      }
     } else {
-      await updateMutation.mutateAsync({ jobId: job.id, status: newStatus });
+      updateMutation.mutate({ jobId: job.id, status: newStatus });
     }
-
-    utils.jobs.list.invalidate();
   }
 
   return (
     <DropdownMenu>
       <DropdownMenuTrigger
-        render={<JobStatusBadge status={job.status} className="cursor-pointer" />}
-        nativeButton={false}
+        render={trigger}
         disabled={updateMutation.isPending}
         aria-label="Change status"
       />
@@ -65,15 +82,12 @@ export function JobStatusSelect({
         <DropdownMenuGroup>
           <DropdownMenuLabel>Status</DropdownMenuLabel>
           <DropdownMenuRadioGroup value={job.status} onValueChange={handleValueChange}>
-            {SELECTABLE_STATUSES.map((status) => {
-              const Icon = STATUS_ICON[status];
-              return (
-                <DropdownMenuRadioItem key={status} value={status}>
-                  <Icon />
-                  {toTitleCase(status)}
-                </DropdownMenuRadioItem>
-              );
-            })}
+            {SELECTABLE_STATUSES.map((status) => (
+              <DropdownMenuRadioItem key={status} value={status}>
+                <StatusIcon status={status} />
+                {toTitleCase(status)}
+              </DropdownMenuRadioItem>
+            ))}
           </DropdownMenuRadioGroup>
         </DropdownMenuGroup>
       </DropdownMenuContent>
