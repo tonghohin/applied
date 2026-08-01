@@ -50,8 +50,9 @@ const FORM_FILLING_RULES = `## Form filling rules
 - Text field procedure — follow these steps in EXACT order, every time, no exceptions:
   1. Read the field's current value from the snapshot.
   2. If the field already shows the correct value → STOP. Do not hover, click, or type. Skip to the next field.
-  3. hover the field → click it to focus → call browser_type with the correct value and NO slowly parameter.
-     Omitting slowly makes browser_type use Playwright's fill(), which atomically clears any existing content and sets the new value in one operation — no race condition from async pre-fill or React re-renders.
+  3. hover the field → click it to focus → press "Control+a" with browser_press_key to select any existing content → call browser_press_sequentially with the correct value and delay:80.
+     browser_press_sequentially dispatches real per-character keyboard events (unlike browser_type/fill(), which sets the value atomically with no keystroke events) — this is required to avoid bot/spam detection on ATS forms. Selecting all first means the typed text replaces any existing content instead of appending to it.
+     Per-tool-call timeout is 30 seconds, so at delay:80 a field's value must stay under ~300 characters — keep open-ended answers and cover letter text within the length guidance above so typing never risks timing out.
 - After filling each text field, add a browser_wait_for with time:600 before moving to the next field.
 - For location/address/city autocomplete fields: after typing the value, use browser_wait_for with time:2 to allow the dropdown to load asynchronously, then press "ArrowDown" with browser_press_key to highlight the first suggestion, then press "Enter" to confirm the selection. Always press ArrowDown + Enter even if the dropdown is not visible in your last snapshot — the suggestions load asynchronously after typing. After pressing Enter, take a snapshot to verify the field contains the expected value; if it is still empty, type the value again and repeat.
 - When targeting elements from a snapshot, use the bare ref value as the target (e.g. if the snapshot shows [ref=e123], use target: "e123"). Never use "ref=e123" or "[ref=e123]" as a selector — those are invalid.
@@ -119,13 +120,12 @@ const LINKEDIN_PROMPT = `You are an automated job application agent. Submit a Li
    - On the final review step, the modal is scrollable and "Submit application" is often below the fold. After arriving at the review step, take a snapshot. If "Submit application" is not visible, press "End" with browser_press_key to scroll to the bottom of the modal, then take a fresh snapshot.
    - Before clicking "Submit application", look for a "Follow [company name]" checkbox in the modal. If it is checked, uncheck it before submitting.
    - Click "Submit application" using its ref from the snapshot, or getByRole("button", { name: "Submit application" }) if no ref is available.
-   - IMPORTANT — Easy Apply text field override: LinkedIn's own domain has bot detection, so use browser_press_sequentially with delay:80 instead of browser_type for text fields inside the Easy Apply modal. Procedure: hover → click → press "Control+a" with browser_press_key → browser_press_sequentially with delay:80.
 3. If only an "Apply" button (not "Easy Apply") is present:
    - Click it — it will open an external application page in a new tab.
    - Use browser_tabs to switch to the new tab, then take a snapshot to identify the ATS.
    - Apply the matching rules below:
      - Greenhouse (greenhouse.io): fill name, email, phone, resume upload, LinkedIn URL, cover letter textarea, custom questions; click the submit button at the bottom.
-     - Lever (lever.co): dismiss any LinkedIn pre-fill prompt ("Dismiss" button), then wait 3 seconds and take a fresh snapshot before filling fields — the form auto-fills name/email/phone asynchronously. Fill name, email, phone, current company, resume upload, LinkedIn URL, social links, cover letter textarea, custom questions. For text fields use browser_type WITHOUT slowly (uses fill(), atomic clear+set, no doubling). Before submitting, verify no field has a doubled value. Click Apply.
+     - Lever (lever.co): dismiss any LinkedIn pre-fill prompt ("Dismiss" button), then wait 3 seconds and take a fresh snapshot before filling fields — the form auto-fills name/email/phone asynchronously. Fill name, email, phone, current company, resume upload, LinkedIn URL, social links, cover letter textarea, custom questions. Before submitting, verify no field has a doubled value. Click Apply.
      - Ashby (ashbyhq.com): fill personal info, resume upload, custom questions; click submit.
      - Breezy HR (breezy.hr): multi-step form — fill each page's required fields, click Next/Continue until the final step, then click Submit. After submitting, confirm the URL changed to a thank-you page.
      - BambooHR (bamboohr.com): single-page form — fill name, email, phone, address, resume upload, LinkedIn URL, cover letter textarea, custom questions; click the Submit Application button.
@@ -140,6 +140,7 @@ const GREENHOUSE_PROMPT = `You are an automated job application agent. Submit a 
 
 ## Instructions
 1. The browser is already loaded on the job URL. Take a browser_snapshot to understand the form layout.
+   - Then use browser_wait_for with time:3 and take a FRESH snapshot before filling any fields. Greenhouse forms can asynchronously pre-fill fields (e.g. from a LinkedIn integration or saved autofill) after the page loads — the fresh snapshot will show these values so you can skip already-correct fields.
 2. No login is required — fill the form directly.
 3. Typical field order: name, email, phone, resume upload, LinkedIn URL, website, cover letter textarea, custom questions at the bottom.
 4. Fill required fields only — skip optional fields.
@@ -170,6 +171,7 @@ const ASHBY_PROMPT = `You are an automated job application agent. Submit an Ashb
 
 ## Instructions
 1. The browser is already loaded on the job URL. Take a browser_snapshot to understand the form layout.
+   - Then use browser_wait_for with time:3 and take a FRESH snapshot before filling any fields. Ashby forms can asynchronously pre-fill fields (e.g. from a LinkedIn integration or saved autofill) after the page loads — the fresh snapshot will show these values so you can skip already-correct fields.
 2. No login is required — fill the form directly.
 3. Typical fields: personal info (name, email, phone), resume upload, custom questions.
 4. Fill required fields only — skip optional fields.
@@ -181,6 +183,7 @@ const BAMBOOHR_PROMPT = `You are an automated job application agent. Submit a Ba
 
 ## Instructions
 1. The browser is already loaded on the job URL. Take a browser_snapshot to understand the form layout.
+   - Then use browser_wait_for with time:3 and take a FRESH snapshot before filling any fields. BambooHR forms can asynchronously pre-fill fields (e.g. from a LinkedIn integration or saved autofill) after the page loads — the fresh snapshot will show these values so you can skip already-correct fields.
 2. No login is required — fill the form directly.
 3. Typical fields: full name, email, phone, address, resume upload, LinkedIn URL, cover letter textarea, custom questions.
 4. Fill required fields only — skip optional fields.
@@ -197,8 +200,9 @@ const GENERIC_PROMPT = `You are an automated job application agent. Submit a job
 
 ## Instructions
 1. The browser is already loaded on the job URL. Take a browser_snapshot to assess the form.
+   - Then use browser_wait_for with time:3 and take a FRESH snapshot before filling any fields. Forms can asynchronously pre-fill fields (e.g. from a LinkedIn integration or saved autofill) after the page loads — the fresh snapshot will show these values so you can skip already-correct fields.
 2. Fill required fields only — skip optional fields.
-3. For multi-step forms, complete each step in sequence.
+3. For multi-step forms, complete each step in sequence. After clicking Next/Continue to advance to a new step, repeat the same wait-then-fresh-snapshot pattern before filling that step's fields — each step can asynchronously pre-fill or re-render just like the initial page load.
 4. If you reach a page that requires information you cannot supply (e.g. a work permit number, background check consent gate, or government ID), respond with FAILURE:<specific blocker>.
 
 ${FORM_FILLING_RULES}`;
