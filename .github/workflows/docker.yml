@@ -17,6 +17,12 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Free disk space
+        uses: jlumbroso/free-disk-space@v1.3.1
+        with:
+          tool-cache: false
+          docker-images: false
+
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
 
@@ -57,7 +63,7 @@ jobs:
           tags: ${{ steps.web-meta.outputs.tags }}
           platforms: linux/amd64,linux/arm64
           cache-from: type=gha
-          cache-to: type=gha,mode=max
+          cache-to: type=gha,mode=min
 
       - name: Build and push worker image
         uses: docker/build-push-action@v6
@@ -68,4 +74,4 @@ jobs:
           tags: ${{ steps.worker-meta.outputs.tags }}
           platforms: linux/amd64,linux/arm64
           cache-from: type=gha
-          cache-to: type=gha,mode=max
+          cache-to: type=gha,mode=min
