@@ -56,6 +56,8 @@ cd applied
 
 ### 2. Configure
 
+Get an API key from [v0.dev/gateway](https://v0.dev/gateway) (requires a Vercel account):
+
 ```bash
 echo "AI_GATEWAY_API_KEY=your-key" > .env
 ```
