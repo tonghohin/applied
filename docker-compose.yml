@@ -24,7 +24,7 @@ services:
       retries: 5
 
   migrate:
-    image: ${WORKER_IMAGE:-ghcr.io/your-github-username/applied-worker:latest}
+    image: ${WORKER_IMAGE:-ghcr.io/tonghohin/applied-worker:latest}
     working_dir: /app/packages/db
     command: ["node", "--import", "tsx/esm", "node_modules/.bin/drizzle-kit", "migrate"]
     depends_on:
@@ -35,7 +35,7 @@ services:
     restart: "no"
 
   web:
-    image: ${WEB_IMAGE:-ghcr.io/your-github-username/applied-web:latest}
+    image: ${WEB_IMAGE:-ghcr.io/tonghohin/applied-web:latest}
     restart: unless-stopped
     depends_on:
       migrate:
@@ -50,9 +50,11 @@ services:
       BETTER_AUTH_URL: http://localhost:3000
       # Change before exposing to the internet: openssl rand -base64 32
       BETTER_AUTH_SECRET: ${BETTER_AUTH_SECRET:-this-is-a-default-secret-change-before-going-public}
+      # Must match worker's ENCRYPTION_KEY — used to encrypt LinkedIn credentials on save
+      ENCRYPTION_KEY: ${ENCRYPTION_KEY:-0000000000000000000000000000000000000000000000000000000000000000}
 
   worker:
-    image: ${WORKER_IMAGE:-ghcr.io/your-github-username/applied-worker:latest}
+    image: ${WORKER_IMAGE:-ghcr.io/tonghohin/applied-worker:latest}
     restart: unless-stopped
     depends_on:
       migrate:
