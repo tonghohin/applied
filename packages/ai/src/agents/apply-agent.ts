@@ -44,16 +44,19 @@ const FORM_FILLING_RULES = `## Form filling rules
 - For notice period / availability / start date questions: answer with the applicant's notice period from the profile, or the nearest equivalent option.
 - For demographic / EEO / self-identification questions (gender, race, ethnicity, veteran status, disability, sexual orientation): select "Prefer not to answer", "Decline to self-identify", or the closest equivalent option. Only if the field is required and no decline option exists, leave it at the default or pick the most neutral option. Never guess demographic information about the applicant.
 - If a required field still cannot be answered from any of the above, use a reasonable placeholder.
-- If a file upload field for a resume appears and a Resume PDF path is provided in the prompt, use browser_file_upload to upload that file. For any other file upload fields, skip them.
+- If a file upload field for a resume appears and a Resume PDF path is provided in the prompt, upload it BEFORE filling any other text field on that step — do this first, ahead of name/email/phone/etc, even if the resume field appears lower down visually or later in a typical field-order list. Many ATS platforms (Lever, Greenhouse, and others) parse the uploaded resume and asynchronously auto-populate fields like name, email, and phone a few seconds after upload; filling those fields first means the parser's autofill lands on top of what you just typed and produces a doubled value (e.g. "Hin TongHin Tong"). After uploading, use browser_wait_for with time:3, then take a fresh snapshot before filling any other field — treat whatever the parser filled in as the field's current value for the "skip if already correct" check below, and only type over it if it's missing or wrong. For any other (non-resume) file upload fields, skip them.
 - Fill text fields one at a time. Do not use browser_fill_form.
 - Before interacting with any field or button, ALWAYS first use browser_hover to move the mouse over the element, then click it. This simulates natural mouse movement and is required to avoid spam detection.
 - Text field procedure — follow these steps in EXACT order, every time, no exceptions:
   1. Read the field's current value from the snapshot.
   2. If the field already shows the correct value → STOP. Do not hover, click, or type. Skip to the next field.
-  3. hover the field → click it to focus → press "Control+a" with browser_press_key to select any existing content → call browser_press_sequentially with the correct value and delay:80.
+  3. hover the field → click it to focus → browser_wait_for with time:1 (focusing a field can trigger asynchronous autofill — e.g. an ATS's "Apply with LinkedIn" integration repopulating name, email, or phone — so give it a moment to land before you select) → press "Control+a" with browser_press_key to select ALL current content, including anything autofill just inserted → call browser_press_sequentially with the correct value and delay:80.
      browser_press_sequentially dispatches real per-character keyboard events (unlike browser_type/fill(), which sets the value atomically with no keystroke events) — this is required to avoid bot/spam detection on ATS forms. Selecting all first means the typed text replaces any existing content instead of appending to it.
      Per-tool-call timeout is 30 seconds, so at delay:80 a field's value must stay under ~300 characters — keep open-ended answers and cover letter text within the length guidance above so typing never risks timing out.
 - After filling each text field, add a browser_wait_for with time:600 before moving to the next field.
+
+## Contact info fields (name, email, phone) — preventing doubled values
+These are the fields ATS "Apply with LinkedIn" integrations most commonly autofill asynchronously, sometimes firing right as you focus the field rather than on page load — this is the #1 cause of a field ending up with the value repeated back-to-back with no separator (e.g. "Hin TongHin Tong" instead of "Hin Tong"). After filling any name, email, or phone field, take a snapshot and confirm the value is EXACTLY correct — not the intended value doubled, appended after leftover autofill text, or truncated. If it's wrong in any way, repeat the text field procedure (hover → click → wait → Control+a → retype) until the value matches exactly before moving on.
 - For location/address/city autocomplete fields: after typing the value, use browser_wait_for with time:2 to allow the dropdown to load asynchronously, then press "ArrowDown" with browser_press_key to highlight the first suggestion, then press "Enter" to confirm the selection. Always press ArrowDown + Enter even if the dropdown is not visible in your last snapshot — the suggestions load asynchronously after typing. After pressing Enter, take a snapshot to verify the field contains the expected value; if it is still empty, type the value again and repeat.
 - When targeting elements from a snapshot, use the bare ref value as the target (e.g. if the snapshot shows [ref=e123], use target: "e123"). Never use "ref=e123" or "[ref=e123]" as a selector — those are invalid.
 - Prefer targeting by accessible role and name when refs fail: use getByRole("button", { name: "Submit" }) or getByRole("textbox", { name: "Email" }) syntax as the target value.
@@ -142,7 +145,7 @@ const GREENHOUSE_PROMPT = `You are an automated job application agent. Submit a 
 1. The browser is already loaded on the job URL. Take a browser_snapshot to understand the form layout.
    - Then use browser_wait_for with time:3 and take a FRESH snapshot before filling any fields. Greenhouse forms can asynchronously pre-fill fields (e.g. from a LinkedIn integration or saved autofill) after the page loads — the fresh snapshot will show these values so you can skip already-correct fields.
 2. No login is required — fill the form directly.
-3. Typical field order: name, email, phone, resume upload, LinkedIn URL, website, cover letter textarea, custom questions at the bottom.
+3. Typical field order: resume upload, name, email, phone, LinkedIn URL, website, cover letter textarea, custom questions at the bottom. Upload the resume first — see the resume upload rule below for why.
 4. Fill required fields only — skip optional fields.
 5. Before submitting, take a snapshot to confirm all required fields are filled, then click the submit button at the bottom.
 
@@ -161,7 +164,7 @@ const LEVER_PROMPT = `You are an automated job application agent. Submit a Lever
    - If you see a "Dismiss" button or any LinkedIn pre-fill / "Apply with LinkedIn" prompt, click it to dismiss.
    - Then use browser_wait_for with time:3 and take a FRESH snapshot before filling any fields. Lever's LinkedIn integration asynchronously pre-fills name, email, and phone after the page loads — the fresh snapshot will show these values so you can skip already-correct fields.
 2. No login is required — fill the form directly.
-3. Typical fields: full name, email, phone, current company, resume upload, LinkedIn URL, social links, cover letter textarea, custom questions.
+3. Typical fields: resume upload, full name, email, phone, current company, LinkedIn URL, social links, cover letter textarea, custom questions. Upload the resume first — Lever parses it and auto-populates name/email/phone a few seconds later, so filling those fields before the upload causes doubled values (see the resume upload rule below).
 4. Fill required fields only — skip optional fields.
 5. Before submitting, take a snapshot to verify every required field shows the correct value. If any field has a wrong or doubled value, fix it before submitting. Then click the Apply button.
 
@@ -173,7 +176,7 @@ const ASHBY_PROMPT = `You are an automated job application agent. Submit an Ashb
 1. The browser is already loaded on the job URL. Take a browser_snapshot to understand the form layout.
    - Then use browser_wait_for with time:3 and take a FRESH snapshot before filling any fields. Ashby forms can asynchronously pre-fill fields (e.g. from a LinkedIn integration or saved autofill) after the page loads — the fresh snapshot will show these values so you can skip already-correct fields.
 2. No login is required — fill the form directly.
-3. Typical fields: personal info (name, email, phone), resume upload, custom questions.
+3. Typical fields: resume upload, personal info (name, email, phone), custom questions. Upload the resume first — see the resume upload rule below.
 4. Fill required fields only — skip optional fields.
 5. Before submitting, take a snapshot to confirm required fields are filled, then click the submit button.
 
@@ -185,7 +188,7 @@ const BAMBOOHR_PROMPT = `You are an automated job application agent. Submit a Ba
 1. The browser is already loaded on the job URL. Take a browser_snapshot to understand the form layout.
    - Then use browser_wait_for with time:3 and take a FRESH snapshot before filling any fields. BambooHR forms can asynchronously pre-fill fields (e.g. from a LinkedIn integration or saved autofill) after the page loads — the fresh snapshot will show these values so you can skip already-correct fields.
 2. No login is required — fill the form directly.
-3. Typical fields: full name, email, phone, address, resume upload, LinkedIn URL, cover letter textarea, custom questions.
+3. Typical fields: resume upload, full name, email, phone, address, LinkedIn URL, cover letter textarea, custom questions. Upload the resume first — see the resume upload rule below.
 4. Fill required fields only — skip optional fields.
 5. Before submitting, take a snapshot to confirm required fields are filled, then click the "Submit Application" button.
 
@@ -318,7 +321,10 @@ export async function applyToJob(
       maxRetries: 6,
       tools,
       stopWhen: [isLoopFinished(), isStepCount(150)],
-      timeout: { toolMs: 30_000, stepMs: 120_000 },
+      // maxRetries: 6 with the SDK's default exponential backoff (2s, 4s, 8s, 16s, 32s, 64s)
+      // sums to 126s of retry delay alone — stepMs must clear that plus request time, or a
+      // step that hits several retryable gateway errors gets killed mid-backoff.
+      timeout: { toolMs: 30_000, stepMs: 240_000 },
       output: Output.object({ schema: applyResultSchema }),
       telemetry: { functionId: "apply-job" },
       instructions: PROMPTS[platform],
