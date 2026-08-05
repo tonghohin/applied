@@ -17,6 +17,17 @@
 4. Select jobs and click **Apply to Selected** — an AI agent fills out and submits each application, generating a personalized cover letter and PDF resume on the fly
 5. Optionally configure a schedule to run searches automatically on a daily or weekly cron
 
+## Job tracking
+
+Every job found by a search is saved and stays in your dashboard whether or not you ever apply to it — so the app works as a standalone job board even if you skip Easy Apply entirely.
+
+- **Status pipeline** — each job starts at `pending_review` and can be moved to `applied`, `rejected`, or `skipped` manually from the dashboard (`applying`/`failed` are set automatically when the AI agent runs)
+- **Search + filter + sort** — filter by status or workplace type (on-site/remote/hybrid), search by title/company/location, sort by score or recency
+- **Score at a glance** — every job carries its 0–100 LLM match score, so you can triage without re-reading each posting
+- **Company history** — the detail view shows how many times you've applied to or been rejected by that company before, and which titles
+- **One-click back to source** — every job links back to the original LinkedIn posting
+- **Smart deduplication** — skips jobs already in your dashboard by URL, and (if enabled) by matching company + title + location, so re-running a search doesn't flood you with the same postings; exclude keywords and companies you never want to see
+
 ## Stack
 
 | Layer          | Tech                              |
