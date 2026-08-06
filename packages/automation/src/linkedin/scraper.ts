@@ -133,6 +133,16 @@ async function fetchJobDetails(page: Page, url: string): Promise<{ description: 
     const promoPattern =
       /reactivate premium|job search smarter with premium|cancel anytime\. no hidden fees\.|other members use premium/i;
 
+    // The "More jobs for you" / "Similar jobs" rail lists several other postings and can
+    // easily outsize the real description while it's still lazy-loading, especially right
+    // after `domcontentloaded` when the rail (simpler markup) has rendered but the JD panel
+    // hasn't. Each listing repeats a "Posted X ago" caption, so two or more occurrences (or
+    // the rail's own heading) is a reliable signal this block is a job list, not a job
+    // description — a real JD would never contain that phrase more than once, if at all.
+    // Inlined as a regex test (not a named helper) for the same __name/keepNames reason as
+    // above — no assignable binding here, just a plain regex literal.
+    const jobListPostedPattern = /posted\s+\d+\s+(?:hour|day|week|month)s?\s+ago/gi;
+
     // Primary: LinkedIn usually wraps the description with an "About the job" header
     const aboutJobEl = Array.from(document.querySelectorAll("div, section, article")).find((el) => {
       const text = el.textContent?.trim() ?? "";
@@ -140,7 +150,9 @@ async function fetchJobDetails(page: Page, url: string): Promise<{ description: 
         text.startsWith("About the job") &&
         text.length > 100 &&
         text.length < 8000 &&
-        !promoPattern.test(text)
+        !promoPattern.test(text) &&
+        !/^more jobs\b/i.test(text) &&
+        (text.match(jobListPostedPattern)?.length ?? 0) < 2
       );
     });
 
@@ -154,11 +166,25 @@ async function fetchJobDetails(page: Page, url: string): Promise<{ description: 
       aboutJobEl ??
       Array.from(document.querySelectorAll("section"))
         .map((element) => ({ element, text: element.textContent?.trim() ?? "" }))
-        .filter(({ text }) => text.length > 200 && text.length < 10000 && !promoPattern.test(text))
+        .filter(
+          ({ text }) =>
+            text.length > 200 &&
+            text.length < 10000 &&
+            !promoPattern.test(text) &&
+            !/^more jobs\b/i.test(text) &&
+            (text.match(jobListPostedPattern)?.length ?? 0) < 2
+        )
         .sort((a, b) => b.text.length - a.text.length)[0]?.element ??
       Array.from(document.querySelectorAll("div, article"))
         .map((element) => ({ element, text: element.textContent?.trim() ?? "" }))
-        .filter(({ text }) => text.length > 200 && text.length < 10000 && !promoPattern.test(text))
+        .filter(
+          ({ text }) =>
+            text.length > 200 &&
+            text.length < 10000 &&
+            !promoPattern.test(text) &&
+            !/^more jobs\b/i.test(text) &&
+            (text.match(jobListPostedPattern)?.length ?? 0) < 2
+        )
         .sort((a, b) => b.text.length - a.text.length)[0]?.element;
 
     if (!descriptionRoot) return { description: "" };
