@@ -133,15 +133,20 @@ async function fetchJobDetails(page: Page, url: string): Promise<{ description: 
     const promoPattern =
       /reactivate premium|job search smarter with premium|cancel anytime\. no hidden fees\.|other members use premium/i;
 
-    // The "More jobs for you" / "Similar jobs" rail lists several other postings and can
-    // easily outsize the real description while it's still lazy-loading, especially right
-    // after `domcontentloaded` when the rail (simpler markup) has rendered but the JD panel
-    // hasn't. Each listing repeats a "Posted X ago" caption, so two or more occurrences (or
-    // the rail's own heading) is a reliable signal this block is a job list, not a job
-    // description — a real JD would never contain that phrase more than once, if at all.
-    // Inlined as a regex test (not a named helper) for the same __name/keepNames reason as
-    // above — no assignable binding here, just a plain regex literal.
+    // Sidebar/rail modules ("More jobs for you", "People also viewed", the company's
+    // "Employees at X" feed of recent posts, etc.) can outsize the real description while
+    // it's still lazy-loading, especially right after `domcontentloaded` when the rail
+    // (simpler markup) has rendered but the JD panel hasn't. Rather than enumerate every
+    // widget by name (there will always be another one), key off two widget-agnostic tells
+    // shared by all of them: each listing repeats a "Posted X ago" caption, and — since these
+    // are rails of repeated card units (byline, connection degree, timestamp, reactions) —
+    // they're strung together with standalone "•"/"·" divider characters. A real job
+    // description is prose and essentially never contains an isolated divider character
+    // (surrounded by whitespace) more than once or twice, nor "Posted X ago" more than once.
+    // Inlined as regex tests (not named helpers) for the same __name/keepNames reason as
+    // above — no assignable binding here, just plain regex literals.
     const jobListPostedPattern = /posted\s+\d+\s+(?:hour|day|week|month)s?\s+ago/gi;
+    const standaloneDividerPattern = /(?:^|\s)[•·](?:\s|$)/g;
 
     // Primary: LinkedIn usually wraps the description with an "About the job" header
     const aboutJobEl = Array.from(document.querySelectorAll("div, section, article")).find((el) => {
@@ -152,7 +157,8 @@ async function fetchJobDetails(page: Page, url: string): Promise<{ description: 
         text.length < 8000 &&
         !promoPattern.test(text) &&
         !/^more jobs\b/i.test(text) &&
-        (text.match(jobListPostedPattern)?.length ?? 0) < 2
+        (text.match(jobListPostedPattern)?.length ?? 0) < 2 &&
+        (text.match(standaloneDividerPattern)?.length ?? 0) < 3
       );
     });
 
@@ -172,7 +178,8 @@ async function fetchJobDetails(page: Page, url: string): Promise<{ description: 
             text.length < 10000 &&
             !promoPattern.test(text) &&
             !/^more jobs\b/i.test(text) &&
-            (text.match(jobListPostedPattern)?.length ?? 0) < 2
+            (text.match(jobListPostedPattern)?.length ?? 0) < 2 &&
+            (text.match(standaloneDividerPattern)?.length ?? 0) < 3
         )
         .sort((a, b) => b.text.length - a.text.length)[0]?.element ??
       Array.from(document.querySelectorAll("div, article"))
@@ -183,7 +190,8 @@ async function fetchJobDetails(page: Page, url: string): Promise<{ description: 
             text.length < 10000 &&
             !promoPattern.test(text) &&
             !/^more jobs\b/i.test(text) &&
-            (text.match(jobListPostedPattern)?.length ?? 0) < 2
+            (text.match(jobListPostedPattern)?.length ?? 0) < 2 &&
+            (text.match(standaloneDividerPattern)?.length ?? 0) < 3
         )
         .sort((a, b) => b.text.length - a.text.length)[0]?.element;
 
