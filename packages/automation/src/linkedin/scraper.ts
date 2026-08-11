@@ -148,6 +148,15 @@ async function fetchJobDetails(page: Page, url: string): Promise<{ description: 
     const jobListPostedPattern = /posted\s+\d+\s+(?:hour|day|week|month)s?\s+ago/gi;
     const standaloneDividerPattern = /(?:^|\s)[•·](?:\s|$)/g;
 
+    // Global page chrome (the site header/nav and the footer's link list + copyright +
+    // giant concatenated language-picker string) lives outside the job content entirely and
+    // is present in the initial HTML rather than lazy-loaded, so it's a prime candidate to
+    // win the "biggest text block" fallback while the real JD is still rendering. `<header>`,
+    // `<nav>`, and `<footer>` are semantic landmarks LinkedIn keeps for accessibility even as
+    // component class names churn, so excluding their descendants outright (via `.closest`,
+    // inlined rather than a named helper for the same __name/keepNames reason as above) is
+    // more durable than pattern-matching this chrome's text.
+
     // Primary: LinkedIn usually wraps the description with an "About the job" header
     const aboutJobEl = Array.from(document.querySelectorAll("div, section, article")).find((el) => {
       const text = el.textContent?.trim() ?? "";
@@ -158,7 +167,8 @@ async function fetchJobDetails(page: Page, url: string): Promise<{ description: 
         !promoPattern.test(text) &&
         !/^more jobs\b/i.test(text) &&
         (text.match(jobListPostedPattern)?.length ?? 0) < 2 &&
-        (text.match(standaloneDividerPattern)?.length ?? 0) < 3
+        (text.match(standaloneDividerPattern)?.length ?? 0) < 3 &&
+        el.closest("header, nav, footer") === null
       );
     });
 
@@ -173,25 +183,27 @@ async function fetchJobDetails(page: Page, url: string): Promise<{ description: 
       Array.from(document.querySelectorAll("section"))
         .map((element) => ({ element, text: element.textContent?.trim() ?? "" }))
         .filter(
-          ({ text }) =>
+          ({ element, text }) =>
             text.length > 200 &&
             text.length < 10000 &&
             !promoPattern.test(text) &&
             !/^more jobs\b/i.test(text) &&
             (text.match(jobListPostedPattern)?.length ?? 0) < 2 &&
-            (text.match(standaloneDividerPattern)?.length ?? 0) < 3
+            (text.match(standaloneDividerPattern)?.length ?? 0) < 3 &&
+            element.closest("header, nav, footer") === null
         )
         .sort((a, b) => b.text.length - a.text.length)[0]?.element ??
       Array.from(document.querySelectorAll("div, article"))
         .map((element) => ({ element, text: element.textContent?.trim() ?? "" }))
         .filter(
-          ({ text }) =>
+          ({ element, text }) =>
             text.length > 200 &&
             text.length < 10000 &&
             !promoPattern.test(text) &&
             !/^more jobs\b/i.test(text) &&
             (text.match(jobListPostedPattern)?.length ?? 0) < 2 &&
-            (text.match(standaloneDividerPattern)?.length ?? 0) < 3
+            (text.match(standaloneDividerPattern)?.length ?? 0) < 3 &&
+            element.closest("header, nav, footer") === null
         )
         .sort((a, b) => b.text.length - a.text.length)[0]?.element;
 
