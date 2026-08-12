@@ -6,8 +6,8 @@ import {
 } from "./search-schedule";
 
 describe("buildSearchCronPattern", () => {
-  it("builds the default pattern (every 2h, 9-17, Mon-Fri)", () => {
-    expect(buildSearchCronPattern(SEARCH_SCHEDULE_DEFAULTS)).toBe("0 9-17/2 * * 1,2,3,4,5");
+  it("builds the default pattern (every 4h, 9-17, every day)", () => {
+    expect(buildSearchCronPattern(SEARCH_SCHEDULE_DEFAULTS)).toBe("0 9-17/4 * * 0,1,2,3,4,5,6");
   });
 
   it("emits a single hour when start and end are equal", () => {

@@ -169,6 +169,27 @@
       "when": 1783700223306,
       "tag": "0023_profile-postal-code",
       "breakpoints": true
+    },
+    {
+      "idx": 24,
+      "version": "7",
+      "when": 1786464791229,
+      "tag": "0024_update-search-schedule-defaults",
+      "breakpoints": true
+    },
+    {
+      "idx": 25,
+      "version": "7",
+      "when": 1786465073411,
+      "tag": "0025_search-schedule-disabled-default",
+      "breakpoints": true
+    },
+    {
+      "idx": 26,
+      "version": "7",
+      "when": 1786465200200,
+      "tag": "0026_search-schedule-4h-window",
+      "breakpoints": true
     }
   ]
 }

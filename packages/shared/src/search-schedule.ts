@@ -10,10 +10,10 @@ export interface SearchScheduleConfig {
 // No timezone here — it is always browser-detected or user-chosen, never hardcoded.
 export const SEARCH_SCHEDULE_DEFAULTS = {
   enabled: false,
-  intervalHours: 2,
+  intervalHours: 4,
   startHour: 9,
   endHour: 17,
-  days: [1, 2, 3, 4, 5],
+  days: [0, 1, 2, 3, 4, 5, 6],
 } as const;
 
 export function buildSearchCronPattern(config: {

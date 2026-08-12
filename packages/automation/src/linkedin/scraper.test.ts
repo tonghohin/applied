@@ -61,20 +61,21 @@ describe("scrapeLinkedInJobs", () => {
     await scrapeLinkedInJobs(page, criteria, noKnownUrls, noKnownIdentities);
 
     expect(vi.mocked(page.hover)).toHaveBeenCalledWith(
-      "[data-occludable-job-id]",
+      '[componentkey^="job-card-component-ref-"], [data-occludable-job-id]',
       expect.objectContaining({ timeout: 5000 })
     );
   });
 
-  it("includes the past-week f_TPR and single work-type f_WT filters in the search URL", async () => {
+  it("includes the past-24h f_TPR filter and folds location/work-type into keywords", async () => {
     // Empty first page: 2 stable extractCards rounds, then pagination stops
     const page = makePage([[], []]);
 
     await scrapeLinkedInJobs(page, criteria, noKnownUrls, noKnownIdentities);
 
     const [firstUrl] = vi.mocked(page.goto).mock.calls[0] ?? [];
-    expect(firstUrl).toContain("f_TPR=r604800");
-    expect(firstUrl).toContain("f_WT=1");
+    expect(firstUrl).toContain("f_TPR=r86400");
+    expect(firstUrl).toContain("Remote");
+    expect(firstUrl).toContain("on-site");
   });
 
   it("runs one search per work type and stamps jobs with the searched type", async () => {
@@ -98,8 +99,8 @@ describe("scrapeLinkedInJobs", () => {
     const results = await scrapeLinkedInJobs(page, multiType, noKnownUrls, noKnownIdentities);
 
     const visitedUrls = vi.mocked(page.goto).mock.calls.map(([url]) => String(url));
-    expect(visitedUrls.some((url) => url.includes("f_WT=2"))).toBe(true);
-    expect(visitedUrls.some((url) => url.includes("f_WT=3"))).toBe(true);
+    expect(visitedUrls.some((url) => url.includes("remote"))).toBe(true);
+    expect(visitedUrls.some((url) => url.includes("hybrid"))).toBe(true);
     expect(results).toHaveLength(2);
     expect(results[0]?.workplaceType).toBe("remote");
     expect(results[1]?.workplaceType).toBe("hybrid");

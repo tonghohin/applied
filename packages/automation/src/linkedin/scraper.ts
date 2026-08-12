@@ -1,6 +1,6 @@
 /// <reference lib="dom" />
 import { type WorkType, isExcluded } from "@repo/shared";
-import { secondsInWeek } from "date-fns/constants";
+import { secondsInDay } from "date-fns/constants";
 import type { Page } from "playwright";
 import type { ScrapedJob, SearchCriteria } from "../types";
 
@@ -8,46 +8,75 @@ const DEFAULT_MAX_PAGES = 5;
 const randomDelay = (minMs = 1500, maxMs = 3500) =>
   minMs + Math.floor(Math.random() * (maxMs - minMs));
 
-const WT_MAP: Record<WorkType, string> = {
-  "on-site": "1",
-  remote: "2",
-  hybrid: "3",
-};
-
 function buildSearchUrl(jobTitle: string, location: string, workType: WorkType): string {
+  // LinkedIn's "AI-powered job search" no longer reliably honors the structured f_WT and
+  // location params — it silently drops location and loosens f_WT past the first page. Its
+  // own search box instead resolves natural-language keywords (confirmed live: it rewrites
+  // a structured query into a plain-English one and searches on that), so location and work
+  // type are folded into keywords, which is what LinkedIn's AI search actually reads now.
   const params = new URLSearchParams({
-    keywords: jobTitle,
-    location,
-    sortBy: "DD",
-    // LinkedIn's "Date posted: past week" filter
-    f_TPR: `r${secondsInWeek}`,
-    // Searching one work type at a time makes the filter the source of truth for
-    // workplaceType — the job pages themselves don't expose it reliably
-    f_WT: WT_MAP[workType],
+    keywords: `${jobTitle} ${location} ${workType}`,
+    // LinkedIn's "Date posted: past 24 hours" filter — still applied reliably as a real
+    // param. Paired with a daily search schedule, this gives full non-overlapping coverage.
+    f_TPR: `r${secondsInDay}`,
   });
   return `https://www.linkedin.com/jobs/search/?${params.toString()}`;
 }
 
 function extractCards() {
-  const cards = Array.from(document.querySelectorAll("[data-occludable-job-id]"));
+  // LinkedIn's "AI-powered job search" redesign (rolled out to at least some accounts,
+  // Aug 2026) replaced the old card DOM (data-occludable-job-id + artdeco-entity-lockup
+  // classes) with a server-driven-UI layout using opaque hashed classes that carry no
+  // semantic meaning and churn across deploys. The one stable hook left is `componentkey`
+  // (e.g. "job-card-component-ref-4441193443"), where the trailing digits are the job id;
+  // title/company/location survive only as positional <p> children (1st/2nd/3rd) — the
+  // clean title text lives in that <p>'s first aria-hidden span (the non-hidden sibling is
+  // a screen-reader label like "Selected, {title} (Verified job)"). Falling back to the
+  // legacy selectors keeps this working for any account not yet migrated to the redesign.
+  const newLayoutCards = Array.from(
+    document.querySelectorAll('[componentkey^="job-card-component-ref-"]')
+  );
+  const cards =
+    newLayoutCards.length > 0
+      ? newLayoutCards.map((card) => {
+          const [titleEl, companyEl, locationEl] = card.querySelectorAll("p");
+          const jobId = card.getAttribute("componentkey")?.match(/(\d+)$/)?.[1] ?? "";
+          const title =
+            titleEl?.querySelector('span[aria-hidden="true"]')?.textContent?.trim() ||
+            (titleEl?.textContent ?? "")
+              .replace(/^selected,\s*/i, "")
+              .replace(/\s*\(verified job\)\s*$/i, "")
+              .trim();
+          return {
+            title,
+            company: (companyEl?.textContent?.trim() ?? "").replace(/\.+$/, ""),
+            location: locationEl?.textContent?.trim() ?? "",
+            url: jobId ? `https://www.linkedin.com/jobs/view/${jobId}/` : "",
+          };
+        })
+      : Array.from(document.querySelectorAll("[data-occludable-job-id]")).map((card) => {
+          const linkEl = card.querySelector("a.job-card-container__link");
+          const companyEl = card.querySelector(".artdeco-entity-lockup__subtitle");
+          const locationEl = card.querySelector(".artdeco-entity-lockup__caption");
+          const jobId = card.getAttribute("data-occludable-job-id");
+          return {
+            title: linkEl?.getAttribute("aria-label") ?? linkEl?.textContent?.trim() ?? "",
+            company: (companyEl?.textContent?.trim() ?? "").replace(/\.+$/, ""),
+            location: locationEl?.textContent?.trim() ?? "",
+            url: jobId ? `https://www.linkedin.com/jobs/view/${jobId}/` : "",
+          };
+        });
+
   return cards
-    .map((card) => {
-      const linkEl = card.querySelector("a.job-card-container__link");
-      const companyEl = card.querySelector(".artdeco-entity-lockup__subtitle");
-      const locationEl = card.querySelector(".artdeco-entity-lockup__caption");
-      const jobId = card.getAttribute("data-occludable-job-id");
-      return {
-        title: linkEl?.getAttribute("aria-label") ?? linkEl?.textContent?.trim() ?? "",
-        company: (companyEl?.textContent?.trim() ?? "").replace(/\.+$/, ""),
-        location: (locationEl?.textContent?.trim() ?? "")
-          .replace(/\s*[·•]\s*(remote|hybrid|on-site|onsite)\s*$/i, "")
-          .replace(/\s*\((remote|hybrid|on-site|onsite)\)\s*$/i, "")
-          .trim(),
-        url: jobId ? `https://www.linkedin.com/jobs/view/${jobId}/` : "",
-        description: "",
-        platform: "linkedin" as const,
-      };
-    })
+    .map((job) => ({
+      ...job,
+      location: job.location
+        .replace(/\s*[·•]\s*(remote|hybrid|on-site|onsite)\s*$/i, "")
+        .replace(/\s*\((remote|hybrid|on-site|onsite)\)\s*$/i, "")
+        .trim(),
+      description: "",
+      platform: "linkedin" as const,
+    }))
     .filter((j) => j.title && j.url);
 }
 
@@ -57,7 +86,9 @@ async function scrapeJobsPage(page: Page): Promise<Omit<ScrapedJob, "workplaceTy
   // Wheel events fire at the mouse position (0,0 by default), which misses LinkedIn's
   // independently scrollable job-list panel — hover a card first so the list scrolls.
   try {
-    await page.hover("[data-occludable-job-id]", { timeout: 5000 });
+    await page.hover('[componentkey^="job-card-component-ref-"], [data-occludable-job-id]', {
+      timeout: 5000,
+    });
   } catch {
     // no job cards rendered; the loop below exits after 2 stable rounds
   }
@@ -122,16 +153,19 @@ async function fetchJobDetails(page: Page, url: string): Promise<{ description: 
   const remainingDwellMs = minDwellMs - (Date.now() - navigatedAt);
   if (remainingDwellMs > 0) await page.waitForTimeout(remainingDwellMs);
   return page.evaluate(() => {
-    // LinkedIn's own upsell widgets (e.g. the "Reactivate Premium" card) can outsize the
-    // real description while it's still loading, or sit in a plain <section> that would
+    // LinkedIn's own upsell/rail widgets (e.g. the "Reactivate Premium" card, or the
+    // "Insights about the company" Bing-powered panel — company focus areas, hiring
+    // trends, competitors — that can run to 2000+ chars on its own) can outsize the real
+    // description while it's still loading, or sit in a plain <section> that would
     // otherwise win the fallback below — this copy is specific enough to LinkedIn's own
-    // marketing that it should never appear in an employer's job description. Kept as a
-    // plain regex (not a named helper function): Playwright serializes this callback via
-    // Function.prototype.toString() to run it in the page, and tsx compiles with esbuild's
-    // `keepNames`, which wraps named function bindings in a `__name()` call that doesn't
-    // exist in that isolated page context, throwing at runtime.
+    // marketing/insights features that it should never appear in an employer's job
+    // description. Kept as a plain regex (not a named helper function): Playwright
+    // serializes this callback via Function.prototype.toString() to run it in the page,
+    // and tsx compiles with esbuild's `keepNames`, which wraps named function bindings in
+    // a `__name()` call that doesn't exist in that isolated page context, throwing at
+    // runtime.
     const promoPattern =
-      /reactivate premium|job search smarter with premium|cancel anytime\. no hidden fees\.|other members use premium/i;
+      /reactivate premium|job search smarter with premium|cancel anytime\. no hidden fees\.|other members use premium|insights about the company|exclusive job seeker insights|show premium insights/i;
 
     // Sidebar/rail modules ("More jobs for you", "People also viewed", the company's
     // "Employees at X" feed of recent posts, etc.) can outsize the real description while
@@ -163,7 +197,7 @@ async function fetchJobDetails(page: Page, url: string): Promise<{ description: 
       return (
         text.startsWith("About the job") &&
         text.length > 100 &&
-        text.length < 8000 &&
+        text.length < 20000 &&
         !promoPattern.test(text) &&
         !/^more jobs\b/i.test(text) &&
         (text.match(jobListPostedPattern)?.length ?? 0) < 2 &&
@@ -185,7 +219,7 @@ async function fetchJobDetails(page: Page, url: string): Promise<{ description: 
         .filter(
           ({ element, text }) =>
             text.length > 200 &&
-            text.length < 10000 &&
+            text.length < 20000 &&
             !promoPattern.test(text) &&
             !/^more jobs\b/i.test(text) &&
             (text.match(jobListPostedPattern)?.length ?? 0) < 2 &&
@@ -198,7 +232,7 @@ async function fetchJobDetails(page: Page, url: string): Promise<{ description: 
         .filter(
           ({ element, text }) =>
             text.length > 200 &&
-            text.length < 10000 &&
+            text.length < 20000 &&
             !promoPattern.test(text) &&
             !/^more jobs\b/i.test(text) &&
             (text.match(jobListPostedPattern)?.length ?? 0) < 2 &&
@@ -313,8 +347,8 @@ export async function scrapeLinkedInJobs(
 
   let searchIdx = 0;
   for (const locationEntry of criteria.locations) {
-    // One search per work type — LinkedIn's f_WT filter is the source of truth for
-    // workplaceType, so each result is stamped with the type it was searched under
+    // One search per work type — folded into the keywords text (see buildSearchUrl) since
+    // LinkedIn's AI search reads that, not the old structured f_WT/location params
     for (const workType of locationEntry.workTypes) {
       if (searchIdx++ > 0) await page.waitForTimeout(randomDelay(3000, 5000));
       const searchUrl = buildSearchUrl(criteria.jobTitle, locationEntry.location, workType);

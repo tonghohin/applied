@@ -1,0 +1,1 @@
+ALTER TABLE "search_schedules" ALTER COLUMN "enabled" SET DEFAULT false;
