@@ -9,18 +9,21 @@ const randomDelay = (minMs = 1500, maxMs = 3500) =>
   minMs + Math.floor(Math.random() * (maxMs - minMs));
 
 function buildSearchUrl(jobTitle: string, location: string, workType: WorkType): string {
-  // LinkedIn's "AI-powered job search" no longer reliably honors the structured f_WT and
-  // location params — it silently drops location and loosens f_WT past the first page. Its
-  // own search box instead resolves natural-language keywords (confirmed live: it rewrites
-  // a structured query into a plain-English one and searches on that), so location and work
-  // type are folded into keywords, which is what LinkedIn's AI search actually reads now.
+  // The old /jobs/search/ path renders LinkedIn's legacy card layout even when the account
+  // has the AI-powered search redesign — the redesign only serves on /jobs/search-results/
+  // (confirmed against a live manual search: geoId/currentJobId/origin/distance were present
+  // but incidental to that particular navigation, while keywords still carried the same
+  // plain-English "title location workType" text this function already builds — that part
+  // of the structured search params approach was already correct). f_WT/location as
+  // separate structured params are still unreliable past page 1, so work type and location
+  // stay folded into keywords.
   const params = new URLSearchParams({
     keywords: `${jobTitle} ${location} ${workType}`,
     // LinkedIn's "Date posted: past 24 hours" filter — still applied reliably as a real
     // param. Paired with a daily search schedule, this gives full non-overlapping coverage.
     f_TPR: `r${secondsInDay}`,
   });
-  return `https://www.linkedin.com/jobs/search/?${params.toString()}`;
+  return `https://www.linkedin.com/jobs/search-results/?${params.toString()}`;
 }
 
 function extractCards() {
@@ -68,19 +71,28 @@ function extractCards() {
         });
 
   return cards
-    .map((job) => ({
-      ...job,
-      location: job.location
-        .replace(/\s*[·•]\s*(remote|hybrid|on-site|onsite)\s*$/i, "")
-        .replace(/\s*\((remote|hybrid|on-site|onsite)\)\s*$/i, "")
-        .trim(),
-      description: "",
-      platform: "linkedin" as const,
-    }))
+    .map((job) => {
+      const badgeMatch = job.location.match(/[·•(]\s*(remote|hybrid|on-site|onsite)\s*\)?\s*$/i);
+      const badgeText = badgeMatch?.[1]?.toLowerCase();
+      const scrapedWorkplaceType: WorkType | undefined =
+        badgeText === "onsite" ? "on-site" : (badgeText as WorkType | undefined);
+      return {
+        ...job,
+        location: job.location
+          .replace(/\s*[·•]\s*(remote|hybrid|on-site|onsite)\s*$/i, "")
+          .replace(/\s*\((remote|hybrid|on-site|onsite)\)\s*$/i, "")
+          .trim(),
+        scrapedWorkplaceType,
+        description: "",
+        platform: "linkedin" as const,
+      };
+    })
     .filter((j) => j.title && j.url);
 }
 
-async function scrapeJobsPage(page: Page): Promise<Omit<ScrapedJob, "workplaceType">[]> {
+async function scrapeJobsPage(
+  page: Page
+): Promise<(Omit<ScrapedJob, "workplaceType"> & { scrapedWorkplaceType?: WorkType })[]> {
   const seen = new Map<string, ReturnType<typeof extractCards>[number]>();
 
   // Wheel events fire at the mouse position (0,0 by default), which misses LinkedIn's
@@ -377,6 +389,16 @@ export async function scrapeLinkedInJobs(
           if (isExcluded(job.title, criteria.excludeKeywords)) continue;
           if (isExcluded(job.company, criteria.excludeCompanies)) continue;
 
+          // The search keyword-folded workType (see buildSearchUrl) is a soft hint LinkedIn's
+          // AI search doesn't reliably honor — trust the card's own badge when present instead
+          const resolvedWorkplaceType = job.scrapedWorkplaceType ?? workType;
+          if (
+            job.scrapedWorkplaceType &&
+            !locationEntry.workTypes.includes(job.scrapedWorkplaceType)
+          ) {
+            continue;
+          }
+
           let details: { description: string } = { description: "" };
           for (let attempt = 1; attempt <= 2; attempt++) {
             try {
@@ -389,11 +411,13 @@ export async function scrapeLinkedInJobs(
             }
           }
 
+          const { scrapedWorkplaceType, ...jobFields } = job;
+
           results.push({
-            ...job,
+            ...jobFields,
             ...details,
             location: resolvedLocation,
-            workplaceType: workType,
+            workplaceType: resolvedWorkplaceType,
           });
         }
       }

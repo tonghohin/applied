@@ -106,6 +106,39 @@ describe("scrapeLinkedInJobs", () => {
     expect(results[1]?.workplaceType).toBe("hybrid");
   });
 
+  it("trusts a job card's own scraped workplace-type badge over the searched work type", async () => {
+    const multiType: SearchCriteria = {
+      ...criteria,
+      locations: [{ location: "Remote", workTypes: ["remote", "hybrid"] }],
+    };
+    const page = makePage([
+      [{ ...makeJob("1"), scrapedWorkplaceType: "hybrid" }],
+      [],
+      [], // remote search leg, but the card is actually badged "hybrid"
+      details("description 1"),
+    ]);
+
+    const results = await scrapeLinkedInJobs(page, multiType, noKnownUrls, noKnownIdentities);
+
+    expect(results).toHaveLength(1);
+    expect(results[0]?.workplaceType).toBe("hybrid");
+  });
+
+  it("skips a job whose scraped workplace-type badge doesn't match any requested work type", async () => {
+    const page = makePage([[{ ...makeJob("1"), scrapedWorkplaceType: "on-site" }], [], []]);
+
+    const results = await scrapeLinkedInJobs(
+      page,
+      { ...criteria, locations: [{ location: "Remote", workTypes: ["remote"] }] },
+      noKnownUrls,
+      noKnownIdentities,
+      1
+    );
+
+    expect(results).toHaveLength(0);
+    expect(page.evaluate).toHaveBeenCalledTimes(3);
+  });
+
   it("skips already-stored jobs without fetching their details", async () => {
     const knownUrls = new Set(["https://www.linkedin.com/jobs/view/2/"]);
     // scrapeJobsPage needs 3 extractCards calls per page (1 with data + 2 stable rounds)
