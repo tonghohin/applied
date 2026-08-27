@@ -4,9 +4,20 @@ import { join } from "node:path";
 import { marked } from "marked";
 import { chromium } from "playwright";
 
-export async function generateResumePdf(resumeText: string): Promise<string> {
+function resumeFileName(applicantName?: string): string {
+  const cleaned = (applicantName ?? "")
+    .replace(/[^\p{L}\p{N}\s-]/gu, "")
+    .replace(/\s+/g, " ")
+    .trim();
+  return cleaned ? `${cleaned} - Resume.pdf` : "resume.pdf";
+}
+
+export async function generateResumePdf(
+  resumeText: string,
+  applicantName?: string
+): Promise<string> {
   const dir = await mkdtemp(join(tmpdir(), "resume-"));
-  const pdfPath = join(dir, "resume.pdf");
+  const pdfPath = join(dir, resumeFileName(applicantName));
 
   const body = await marked.parse(resumeText);
 

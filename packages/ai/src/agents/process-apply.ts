@@ -31,7 +31,8 @@ export async function processApplyJob(
   if (!criteriaRow) throw new Error(`Criteria for user ${userId} not found`);
 
   log("Generating resume PDF");
-  const resumePdfPath = await generateResumePdf(profileRow.resume);
+  const applicantName = [profileRow.firstName, profileRow.lastName].filter(Boolean).join(" ");
+  const resumePdfPath = await generateResumePdf(profileRow.resume, applicantName);
   try {
     log("Launching AI agent");
     const result = await applyToJob(
