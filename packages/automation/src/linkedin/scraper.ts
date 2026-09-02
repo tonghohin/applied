@@ -203,14 +203,40 @@ async function fetchJobDetails(page: Page, url: string): Promise<{ description: 
     // inlined rather than a named helper for the same __name/keepNames reason as above) is
     // more durable than pattern-matching this chrome's text.
 
+    // Fast path: LinkedIn's job-details pane wraps the employer's description in a
+    // stable, purpose-built container in both the logged-in and guest layouts. When one
+    // is present it IS the description — take it directly and skip the heuristics below,
+    // which otherwise reject the entire pane whenever LinkedIn's "Insights about the
+    // company" / premium-insights widget renders as a sibling inside it (it trips
+    // promoPattern) or the post is long enough to breach the length cap.
+    const knownDescriptionSelectors = [
+      ".jobs-description__content",
+      ".jobs-description-content__text",
+      ".jobs-box__html-content",
+      "[class*='jobs-description__content']",
+      ".show-more-less-html__markup",
+    ];
+    let knownRoot: Element | null = null;
+    for (const selector of knownDescriptionSelectors) {
+      const candidate = document.querySelector(selector);
+      if (candidate && (candidate.textContent?.trim().length ?? 0) > 100) {
+        knownRoot = candidate;
+        break;
+      }
+    }
+
     // Primary: LinkedIn usually wraps the description with an "About the job" header
     const aboutJobEl = Array.from(document.querySelectorAll("div, section, article")).find((el) => {
       const text = el.textContent?.trim() ?? "";
+      // No promoPattern check here (unlike the fallbacks below): an element whose text
+      // *starts with* "About the job" is the real description container, and LinkedIn
+      // frequently nests the "Insights about the company" panel as a sibling inside it —
+      // rejecting on a promo phrase appearing anywhere in that subtree threw the whole
+      // description away.
       return (
         text.startsWith("About the job") &&
         text.length > 100 &&
-        text.length < 20000 &&
-        !promoPattern.test(text) &&
+        text.length < 30000 &&
         !/^more jobs\b/i.test(text) &&
         (text.match(jobListPostedPattern)?.length ?? 0) < 2 &&
         (text.match(standaloneDividerPattern)?.length ?? 0) < 3 &&
@@ -225,13 +251,14 @@ async function fetchJobDetails(page: Page, url: string): Promise<{ description: 
     // chrome while still sneaking under the length cap. Duplicated inline (rather than
     // factored into a shared named helper) for the same __name/keepNames reason as above.
     const descriptionRoot =
+      knownRoot ??
       aboutJobEl ??
       Array.from(document.querySelectorAll("section"))
         .map((element) => ({ element, text: element.textContent?.trim() ?? "" }))
         .filter(
           ({ element, text }) =>
             text.length > 200 &&
-            text.length < 20000 &&
+            text.length < 30000 &&
             !promoPattern.test(text) &&
             !/^more jobs\b/i.test(text) &&
             (text.match(jobListPostedPattern)?.length ?? 0) < 2 &&
@@ -244,7 +271,7 @@ async function fetchJobDetails(page: Page, url: string): Promise<{ description: 
         .filter(
           ({ element, text }) =>
             text.length > 200 &&
-            text.length < 20000 &&
+            text.length < 30000 &&
             !promoPattern.test(text) &&
             !/^more jobs\b/i.test(text) &&
             (text.match(jobListPostedPattern)?.length ?? 0) < 2 &&
@@ -409,6 +436,10 @@ export async function scrapeLinkedInJobs(
                 console.error(`Failed to fetch details for ${job.url}:`, err);
               }
             }
+          }
+
+          if (details.description === "") {
+            console.warn(`No job description extracted for ${job.url} — stored empty`);
           }
 
           const { scrapedWorkplaceType, ...jobFields } = job;
