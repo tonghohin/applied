@@ -7,6 +7,10 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import type { JobSortBy } from "@/lib/jobs-filter";
 import type { Job, JobStatus } from "@/lib/trpc";
 import type { WorkType } from "@repo/shared";
+import { useVirtualizer } from "@tanstack/react-virtual";
+import { useState } from "react";
+
+const ROW_HEIGHT = 92;
 
 export function JobsSplitView({
   jobs,
@@ -37,6 +41,25 @@ export function JobsSplitView({
   selectedIds: Set<string>;
   onSelectedIdsChange: (selectedIds: Set<string>) => void;
 }) {
+  // Callback ref backed by state so the virtualizer re-runs once the base-ui
+  // ScrollArea viewport actually mounts — a plain useRef leaves the list empty
+  // on first paint because nothing re-renders when the element attaches.
+  const [scrollElement, setScrollElement] = useState<HTMLDivElement | null>(null);
+  const selectedJobIds = Array.from(selectedIds);
+
+  const virtualizer = useVirtualizer({
+    count: jobs.length,
+    getScrollElement: () => scrollElement,
+    estimateSize: () => ROW_HEIGHT,
+    overscan: 10,
+    getItemKey: (index) => jobs[index].id,
+    // Render a screenful before the viewport is measured. Without this the
+    // virtualizer's range is null while outerSize is 0, so the list stays blank
+    // until the ScrollArea viewport's ResizeObserver fires — seconds on a slow
+    // machine. The real size takes over as soon as it's observed.
+    initialRect: { width: 384, height: 800 },
+  });
+
   function toggleSelected(jobId: string, checked: boolean) {
     const next = new Set(selectedIds);
     if (checked) {
@@ -65,22 +88,33 @@ export function JobsSplitView({
           {jobs.length} {jobs.length === 1 ? "job" : "jobs"}
         </div>
 
-        <ScrollArea className="min-h-0 flex-1">
+        <ScrollArea viewportRef={setScrollElement} className="min-h-0 flex-1">
           {jobs.length === 0 ? (
             <p className="p-4 text-muted-foreground text-sm">No jobs match your filters.</p>
           ) : (
-            <ul className="divide-y">
-              {jobs.map((job) => (
-                <JobListItem
-                  key={job.id}
-                  job={job}
-                  selected={selectedJob?.id === job.id}
-                  onSelect={() => onSelectJob(job.id)}
-                  checked={selectedIds.has(job.id)}
-                  onCheckedChange={(checked) => toggleSelected(job.id, checked)}
-                  selectedJobIds={Array.from(selectedIds)}
-                />
-              ))}
+            <ul className="relative w-full" style={{ height: virtualizer.getTotalSize() }}>
+              {virtualizer.getVirtualItems().map((virtualItem) => {
+                const job = jobs[virtualItem.index];
+                return (
+                  <li
+                    key={virtualItem.key}
+                    className="absolute inset-x-0 top-0 border-b"
+                    style={{
+                      height: virtualItem.size,
+                      transform: `translateY(${virtualItem.start}px)`,
+                    }}
+                  >
+                    <JobListItem
+                      job={job}
+                      selected={selectedJob?.id === job.id}
+                      onSelect={() => onSelectJob(job.id)}
+                      checked={selectedIds.has(job.id)}
+                      onCheckedChange={(checked) => toggleSelected(job.id, checked)}
+                      selectedJobIds={selectedJobIds}
+                    />
+                  </li>
+                );
+              })}
             </ul>
           )}
         </ScrollArea>

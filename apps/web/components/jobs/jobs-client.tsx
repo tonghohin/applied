@@ -19,9 +19,20 @@ import { RiBriefcaseLine } from "@remixicon/react";
 import type { RouterOutputs } from "@repo/api";
 import type { WorkType } from "@repo/shared";
 import { usePathname, useSearchParams } from "next/navigation";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 type InitialJobs = RouterOutputs["jobs"]["list"];
+
+function writeJobIdParam(pathname: string, jobId: string | null) {
+  const params = new URLSearchParams(window.location.search);
+  if (jobId) {
+    params.set("jobId", jobId);
+  } else {
+    params.delete("jobId");
+  }
+  const query = params.toString();
+  window.history.replaceState(null, "", query ? `${pathname}?${query}` : pathname);
+}
 
 export function JobsClient({ initialJobs }: { initialJobs: InitialJobs }) {
   const { data: jobs = [], isLoading } = trpc.jobs.list.useQuery(undefined, {
@@ -40,34 +51,37 @@ export function JobsClient({ initialJobs }: { initialJobs: InitialJobs }) {
   const [sortBy, setSortBy] = useState<JobSortBy>("score-desc");
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
 
-  const filteredSortedJobs = useMemo(
-    () =>
-      filterAndSortJobs(jobs, {
-        statuses: statusFilter,
-        workplaceTypes: workplaceFilter,
-        search,
-        sortBy,
-      }),
-    [jobs, statusFilter, workplaceFilter, search, sortBy]
-  );
+  const filteredSortedJobs = filterAndSortJobs(jobs, {
+    statuses: statusFilter,
+    workplaceTypes: workplaceFilter,
+    search,
+    sortBy,
+  });
 
-  const selectJob = useCallback(
-    (jobId: string) => {
-      setSelectedJobId(jobId);
-      const params = new URLSearchParams(window.location.search);
-      params.set("jobId", jobId);
-      window.history.replaceState(null, "", `${pathname}?${params.toString()}`);
-    },
-    [pathname]
-  );
+  function selectJob(jobId: string | null) {
+    setSelectedJobId(jobId);
+    writeJobIdParam(pathname, jobId);
+  }
 
+  // Select the first visible job whenever the user changes a filter, and on
+  // first load unless the URL already points at a real job (that one just shows
+  // in the detail pane). Job data changing under the same filter (SSE) is left
+  // alone.
+  const lastFilterKey = useRef<string | null>(null);
+  const filterKey = JSON.stringify([statusFilter, workplaceFilter, search, sortBy]);
   useEffect(() => {
-    if (filteredSortedJobs.length === 0) return;
-    if (filteredSortedJobs.some((job) => job.id === selectedJobId)) return;
-    selectJob(filteredSortedJobs[0].id);
-  }, [filteredSortedJobs, selectedJobId, selectJob]);
+    if (jobs.length === 0 || lastFilterKey.current === filterKey) return;
+    const isFirstRun = lastFilterKey.current === null;
+    lastFilterKey.current = filterKey;
+    if (isFirstRun && selectedJobId !== null && jobs.some((job) => job.id === selectedJobId)) {
+      return;
+    }
+    const nextId = filteredSortedJobs[0]?.id ?? null;
+    setSelectedJobId(nextId);
+    writeJobIdParam(pathname, nextId);
+  }, [jobs, filteredSortedJobs, selectedJobId, filterKey, pathname]);
 
-  const selectedJob = filteredSortedJobs.find((job) => job.id === selectedJobId) ?? null;
+  const selectedJob = jobs.find((job) => job.id === selectedJobId) ?? null;
 
   return (
     <PageLayout title="Jobs" action={<SearchJobsButton />}>

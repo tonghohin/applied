@@ -28,26 +28,31 @@ export function JobListItem({
   const appliedBeforeText = formatAppliedBeforeText(job.appliedCountAtCompany);
 
   return (
-    <li className={cn("flex items-start gap-2 px-4 py-3 hover:bg-muted", selected && "bg-muted")}>
+    <div
+      className={cn(
+        "flex h-full items-start gap-2 px-4 py-3 hover:bg-muted",
+        selected && "bg-muted"
+      )}
+    >
       <Checkbox
         className="mt-0.5"
         checked={checked}
         onCheckedChange={(value) => onCheckedChange(!!value)}
         aria-label={`Select ${job.title}`}
       />
-      <div className="flex flex-1 flex-col">
+      <div className="flex min-w-0 flex-1 flex-col">
         <button
           type="button"
           onClick={onSelect}
           aria-current={selected}
-          className="flex flex-col text-left"
+          className="flex min-w-0 flex-col text-left"
         >
           <span className="flex items-start justify-between gap-2">
-            <span className="font-medium text-sm">{job.title}</span>
+            <span className="min-w-0 truncate font-medium text-sm">{job.title}</span>
             <ScoreRing score={job.score} />
           </span>
-          <span className="text-xs">{job.company}</span>
-          <span className="text-muted-foreground text-xs">
+          <span className="truncate text-xs">{job.company}</span>
+          <span className="truncate text-muted-foreground text-xs">
             {job.location} · {toTitleCase(job.workplaceType)}
           </span>
         </button>
@@ -73,6 +78,6 @@ export function JobListItem({
           )}
         </span>
       </div>
-    </li>
+    </div>
   );
 }

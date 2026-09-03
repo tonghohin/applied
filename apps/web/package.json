@@ -19,6 +19,7 @@
     "@repo/db": "workspace:^",
     "@repo/shared": "workspace:^",
     "@tanstack/react-query": "^5.100.11",
+    "@tanstack/react-virtual": "^3.14.10",
     "@trpc/client": "^11.17.0",
     "@trpc/react-query": "^11.17.0",
     "@trpc/server": "^11.17.0",
@@ -45,6 +46,7 @@
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "babel-plugin-react-compiler": "^1.0.0",
     "tailwindcss": "^4",
     "typescript": "^7.0.2",
     "vitest": "^4.1.7"
