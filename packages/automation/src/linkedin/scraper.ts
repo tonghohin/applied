@@ -91,7 +91,8 @@ function extractCards() {
 }
 
 async function scrapeJobsPage(
-  page: Page
+  page: Page,
+  logLabel: string
 ): Promise<(Omit<ScrapedJob, "workplaceType"> & { scrapedWorkplaceType?: WorkType })[]> {
   const seen = new Map<string, ReturnType<typeof extractCards>[number]>();
 
@@ -106,15 +107,24 @@ async function scrapeJobsPage(
   }
 
   let stableRounds = 0;
+  let round = 0;
   while (stableRounds < 2) {
+    round++;
     const cards = await page.evaluate(extractCards);
     let newCards = 0;
     for (const card of cards) {
       if (!seen.has(card.url)) {
         seen.set(card.url, card);
         newCards++;
+        console.log(
+          `[scraper] ${logLabel} scroll-round ${round}: card #${seen.size} "${card.title}" — ${card.company} — ${card.location || "(no location)"} — ${card.url}`
+        );
       }
     }
+
+    console.log(
+      `[scraper] ${logLabel} scroll-round ${round}: ${cards.length} rendered, ${newCards} new, ${seen.size} total, stableRounds=${newCards === 0 ? stableRounds + 1 : 0}`
+    );
 
     if (newCards === 0) {
       stableRounds++;
@@ -126,6 +136,10 @@ async function scrapeJobsPage(
     await page.mouse.wheel(0, randomDelay(900, 1400));
     await page.waitForTimeout(randomDelay(250, 450));
   }
+
+  console.log(
+    `[scraper] ${logLabel} finished scrolling after ${round} rounds — ${seen.size} unique cards read`
+  );
 
   return Array.from(seen.values()).map((job) => ({
     ...job,
@@ -391,30 +405,62 @@ export async function scrapeLinkedInJobs(
     for (const workType of locationEntry.workTypes) {
       if (searchIdx++ > 0) await page.waitForTimeout(randomDelay(3000, 5000));
       const searchUrl = buildSearchUrl(criteria.jobTitle, locationEntry.location, workType);
+      const searchLabel = `[${locationEntry.location}/${workType}]`;
       for (let pageNum = 0; pageNum < maxPages; pageNum++) {
         const url = pageNum === 0 ? searchUrl : `${searchUrl}&start=${pageNum * 25}`;
+        const pageLabel = `${searchLabel} page ${pageNum + 1}`;
+        console.log(`[scraper] ${pageLabel}: loading ${url}`);
         await gotoWithRetry(page, url);
         // Short settle only — scrapeJobsPage's scroll loop already waits for cards to render
         await page.waitForTimeout(randomDelay(800, 1500));
 
-        const jobs = await scrapeJobsPage(page);
-        if (jobs.length === 0) break;
+        const jobs = await scrapeJobsPage(page, pageLabel);
+        if (jobs.length === 0) {
+          console.log(`[scraper] ${pageLabel}: no cards — stopping pagination for this search`);
+          break;
+        }
 
+        let keptOnPage = 0;
         for (const job of jobs) {
-          if (seen.has(job.url)) continue;
+          if (seen.has(job.url)) {
+            console.log(
+              `[scraper] ${pageLabel}: SKIP (already seen this run) "${job.title}" — ${job.url}`
+            );
+            continue;
+          }
           seen.add(job.url);
 
-          if (knownUrls.has(job.url)) continue;
+          if (knownUrls.has(job.url)) {
+            console.log(
+              `[scraper] ${pageLabel}: SKIP (URL already in DB) "${job.title}" — ${job.url}`
+            );
+            continue;
+          }
 
           // Card captions occasionally omit the location — fall back to the
           // criteria location this search was run under
           const resolvedLocation = job.location || locationEntry.location;
           const jobIdentityKey = identityKey(job.company, job.title, resolvedLocation);
-          if (criteria.skipDuplicateIdentity && seenIdentities.has(jobIdentityKey)) continue;
+          if (criteria.skipDuplicateIdentity && seenIdentities.has(jobIdentityKey)) {
+            console.log(
+              `[scraper] ${pageLabel}: SKIP (duplicate company+title+location) "${job.title}" — ${job.company} — ${job.url}`
+            );
+            continue;
+          }
           if (criteria.skipDuplicateIdentity) seenIdentities.add(jobIdentityKey);
 
-          if (isExcluded(job.title, criteria.excludeKeywords)) continue;
-          if (isExcluded(job.company, criteria.excludeCompanies)) continue;
+          if (isExcluded(job.title, criteria.excludeKeywords)) {
+            console.log(
+              `[scraper] ${pageLabel}: SKIP (excludeKeywords match) "${job.title}" — ${job.url}`
+            );
+            continue;
+          }
+          if (isExcluded(job.company, criteria.excludeCompanies)) {
+            console.log(
+              `[scraper] ${pageLabel}: SKIP (excludeCompanies match) "${job.company}" — ${job.url}`
+            );
+            continue;
+          }
 
           // The search keyword-folded workType (see buildSearchUrl) is a soft hint LinkedIn's
           // AI search doesn't reliably honor — trust the card's own badge when present instead
@@ -423,6 +469,9 @@ export async function scrapeLinkedInJobs(
             job.scrapedWorkplaceType &&
             !locationEntry.workTypes.includes(job.scrapedWorkplaceType)
           ) {
+            console.log(
+              `[scraper] ${pageLabel}: SKIP (workplace-type badge "${job.scrapedWorkplaceType}" not in criteria) "${job.title}" — ${job.url}`
+            );
             continue;
           }
 
@@ -450,10 +499,20 @@ export async function scrapeLinkedInJobs(
             location: resolvedLocation,
             workplaceType: resolvedWorkplaceType,
           });
+          keptOnPage++;
+          console.log(
+            `[scraper] ${pageLabel}: KEPT "${job.title}" — ${job.company} — ${resolvedLocation} — ${resolvedWorkplaceType} — desc ${details.description.length} chars — ${job.url}`
+          );
         }
+
+        console.log(
+          `[scraper] ${pageLabel}: ${jobs.length} cards read, ${keptOnPage} kept after filters (${results.length} total this run)`
+        );
       }
     }
   }
+
+  console.log(`[scraper] done — ${results.length} jobs scraped across all searches`);
 
   return results;
 }
