@@ -132,6 +132,10 @@ export function JobCard({ title, company }: JobCardProps) {}
 **Module imports**
 - Never use `.js` extensions on relative imports (e.g. `from "./auth"` not `from "./auth.js"`). The root tsconfig uses `moduleResolution: "bundler"` — Turbopack resolves imports literally and does not remap `.js` → `.ts`.
 
+**Package manager**
+- pnpm is pinned via the root `packageManager` field; pnpm 12 tracks its own version + the `@pnpm/exe.*` binaries in `pnpm-lock.yaml` (`packageManagerDependencies`). Bump both together (`pnpm self-update latest-N`), never hand-edit.
+- The `apps/*/Dockerfile`s install pnpm with `npm install -g --allow-scripts=pnpm pnpm@<version>` — the `--allow-scripts` flag is required because recent npm blocks global install scripts by default and pnpm 12's native binary is placed by one. Keep the pinned version in sync with `packageManager`.
+
 **shadcn/ui components**
 - Before writing any UI markup, check `apps/web/components/ui/` for an installed component that covers the use case. Prefer the shadcn component over raw HTML + Tailwind every time — even for one-off elements like pills, dividers, or loading states.
 - If no installed component fits, install one: `npx shadcn@latest add <name>` (run from `apps/web/`). Only fall back to raw HTML when no shadcn component exists for the pattern.

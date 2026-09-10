@@ -2,7 +2,7 @@
 
 ## Local development setup
 
-**Prerequisites:** Node.js 20+, pnpm 11+, Docker
+**Prerequisites:** Node.js 20+, pnpm 12+, Docker
 
 ### 1. Clone and install
 

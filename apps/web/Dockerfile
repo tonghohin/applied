@@ -8,13 +8,15 @@ COPY . .
 RUN turbo prune web --docker
 
 FROM base AS installer
-RUN npm install -g pnpm
+# pnpm 12 ships a native binary placed by its (lifecycle) install script; recent
+# npm blocks global install scripts by default, so opt pnpm's back in.
+RUN npm install -g --allow-scripts=pnpm pnpm@12.3.4
 COPY --from=pruner /app/out/json/ .
 COPY --from=pruner /app/out/pnpm-lock.yaml ./pnpm-lock.yaml
 RUN pnpm install --frozen-lockfile
 
 FROM base AS builder
-RUN npm install -g pnpm
+RUN npm install -g --allow-scripts=pnpm pnpm@12.3.4
 COPY --from=installer /app .
 COPY --from=pruner /app/out/full/ .
 COPY --from=pruner /app/tsconfig.json ./tsconfig.json

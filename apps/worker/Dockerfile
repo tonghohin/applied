@@ -9,7 +9,9 @@ RUN turbo prune @repo/worker --docker
 FROM base AS runner
 ENV NODE_ENV=production
 ENV PLAYWRIGHT_BROWSERS_PATH=/ms-playwright
-RUN npm install -g pnpm
+# pnpm 12 ships a native binary placed by its (lifecycle) install script; recent
+# npm blocks global install scripts by default, so opt pnpm's back in.
+RUN npm install -g --allow-scripts=pnpm pnpm@12.3.4
 COPY --from=pruner /app/out/json/ .
 COPY --from=pruner /app/out/pnpm-lock.yaml ./pnpm-lock.yaml
 RUN pnpm install --frozen-lockfile
