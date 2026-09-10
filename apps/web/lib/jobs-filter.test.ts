@@ -59,6 +59,19 @@ describe("filterAndSortJobs", () => {
     expect(result.map((job) => job.status)).toEqual(["pending_review"]);
   });
 
+  it("hides interviewing jobs by default but shows them when the status filter is empty", () => {
+    const jobs = [makeJob({ status: "pending_review" }), makeJob({ status: "interviewing" })];
+
+    const hidden = filterAndSortJobs(jobs, {
+      ...baseArgs,
+      statuses: ["pending_review", "applying", "failed"],
+    });
+    expect(hidden.map((job) => job.status)).toEqual(["pending_review"]);
+
+    const shown = filterAndSortJobs(jobs, { ...baseArgs, statuses: [] });
+    expect(shown).toHaveLength(2);
+  });
+
   it("shows every status when the status filter is empty (all)", () => {
     const jobs = [
       makeJob({ status: "pending_review" }),

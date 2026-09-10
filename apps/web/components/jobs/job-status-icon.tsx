@@ -3,6 +3,7 @@ import type { JobStatus } from "@/lib/trpc";
 import { cn } from "@/lib/utils";
 import {
   type RemixiconComponentType,
+  RiCalendarEventLine,
   RiCheckLine,
   RiErrorWarningLine,
   RiSkipForwardLine,
@@ -15,6 +16,7 @@ const STATUS_ICON: Record<JobStatus, RemixiconComponentType> = {
   pending_review: RiTimeLine,
   applying: Spinner,
   applied: RiCheckLine,
+  interviewing: RiCalendarEventLine,
   rejected: RiThumbDownLine,
   failed: RiErrorWarningLine,
   skipped: RiSkipForwardLine,
@@ -24,6 +26,7 @@ const STATUS_ICON_CLASS: Record<JobStatus, string> = {
   pending_review: "text-muted-foreground",
   applying: "text-muted-foreground",
   applied: "text-primary",
+  interviewing: "text-muted-foreground",
   rejected: "text-muted-foreground",
   failed: "text-destructive",
   skipped: "text-muted-foreground",

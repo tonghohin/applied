@@ -27,6 +27,7 @@ export const ALL_STATUSES: JobStatus[] = [
   "pending_review",
   "applying",
   "applied",
+  "interviewing",
   "rejected",
   "failed",
   "skipped",

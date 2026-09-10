@@ -1,6 +1,11 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { IconBadge } from "@/components/ui/icon-badge";
-import { RiErrorWarningLine, RiSendPlaneLine, RiSkipRightLine } from "@remixicon/react";
+import {
+  RiCalendarEventLine,
+  RiErrorWarningLine,
+  RiSendPlaneLine,
+  RiSkipRightLine,
+} from "@remixicon/react";
 import type { DashboardJob } from "@repo/api";
 import { capitalize } from "@repo/shared";
 import { formatDistanceToNow } from "date-fns";
@@ -15,7 +20,11 @@ type ActivityItem = {
 function buildActivity(jobs: DashboardJob[]): ActivityItem[] {
   return jobs
     .filter(
-      (job) => job.status === "applied" || job.status === "failed" || job.status === "skipped"
+      (job) =>
+        job.status === "applied" ||
+        job.status === "interviewing" ||
+        job.status === "failed" ||
+        job.status === "skipped"
     )
     .sort((jobA, jobB) => jobB.updatedAt.getTime() - jobA.updatedAt.getTime())
     .slice(0, 8)
@@ -30,6 +39,21 @@ function buildActivity(jobs: DashboardJob[]): ActivityItem[] {
             </span>
           ),
           createdAt: job.appliedAt ?? job.updatedAt,
+        };
+      }
+      if (job.status === "interviewing") {
+        return {
+          id: job.id,
+          icon: (
+            <IconBadge icon={RiCalendarEventLine} variant="secondary" iconClassName="size-3.5" />
+          ),
+          label: (
+            <span>
+              Moved <span className="font-medium">{job.title}</span> at {job.company} to
+              interviewing
+            </span>
+          ),
+          createdAt: job.updatedAt,
         };
       }
       if (job.status === "failed") {

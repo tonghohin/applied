@@ -128,6 +128,27 @@ describe("listJobs", () => {
     expect(result.find((j) => j.id === "job-3")?.rejectedCountAtCompany).toBe(1);
     expect(result.find((j) => j.id === "job-4")?.rejectedCountAtCompany).toBe(0);
   });
+
+  it("counts interviewing jobs toward the company applied tally but not the rejected tally", async () => {
+    const interviewing = {
+      ...mockJob("job-1"),
+      title: "Staff Engineer",
+      company: "Acme",
+      status: "interviewing" as const,
+    };
+    const applied = { ...mockJob("job-2"), company: "Acme", status: "applied" as const };
+
+    selectWhere.mockResolvedValueOnce([interviewing, applied]);
+    vi.mocked(listLatestApplyRunsByJobIds).mockResolvedValueOnce([]);
+
+    const result = await listJobs(mockDb, "user-1");
+
+    expect(result.find((j) => j.id === "job-2")?.appliedCountAtCompany).toBe(2);
+    expect(result.find((j) => j.id === "job-2")?.appliedTitlesAtCompany).toContain(
+      "Staff Engineer"
+    );
+    expect(result.find((j) => j.id === "job-2")?.rejectedCountAtCompany).toBe(0);
+  });
 });
 
 const mockCriteria = (excludeKeywords: string[], excludeCompanies: string[] = []) => ({

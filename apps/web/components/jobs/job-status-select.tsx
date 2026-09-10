@@ -19,6 +19,7 @@ import { StatusIcon } from "./job-status-icon";
 export const SELECTABLE_STATUSES: JobStatus[] = [
   "pending_review",
   "applied",
+  "interviewing",
   "rejected",
   "skipped",
 ];
