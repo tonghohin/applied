@@ -21,9 +21,7 @@ cp apps/worker/.env.example apps/worker/.env
 cp packages/db/.env.example packages/db/.env
 ```
 
-Most values are pre-filled and work out of the box. You only need to add:
 
-- `AI_GATEWAY_API_KEY` in `apps/worker/.env` — from [v0.dev/gateway](https://v0.dev/gateway)
 
 ### 3. Start infrastructure
 

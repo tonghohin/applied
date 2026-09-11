@@ -88,7 +88,7 @@ The apply agent is instrumented with [Langfuse](https://langfuse.com) for LLM ob
 
 Each package/app validates only the env vars it uses via its own `src/env.ts` (Zod parse at startup). Loading is handled by the entry point:
 - `apps/web`: Next.js auto-loads `.env.local` — holds all server-side vars (`DATABASE_URL`, `BETTER_AUTH_*`, `ENCRYPTION_KEY`, `REDIS_URL`) plus `NEXT_PUBLIC_BASE_URL`
-- `apps/worker`: `tsx --env-file .env src/index.ts` — holds `DATABASE_URL`, `REDIS_URL`, `AI_GATEWAY_API_KEY`, `ENCRYPTION_KEY`, `LANGFUSE_PUBLIC_KEY`, `LANGFUSE_SECRET_KEY`, `LANGFUSE_BASE_URL`
+- `apps/worker`: `tsx --env-file .env src/index.ts` — holds `DATABASE_URL`, `REDIS_URL`, `ENCRYPTION_KEY`, `LANGFUSE_PUBLIC_KEY`, `LANGFUSE_SECRET_KEY`, `LANGFUSE_BASE_URL`. The AI Gateway key is **not** an env var — it's stored per-user (`profiles.aiGatewayKeyEncrypted`, AES via `ENCRYPTION_KEY`), set via `profile.upsertAiKey`, and read by the workers with `getAiGatewayKey(db, userId)`.
 - `packages/db`: drizzle-kit auto-loads `packages/db/.env`
 
 ### tRPC patterns
@@ -96,7 +96,7 @@ Each package/app validates only the env vars it uses via its own `src/env.ts` (Z
 - Client in `apps/web/lib/trpc.tsx` — `createTRPCReact<AppRouter>()` with `httpBatchLink` pointing at `/api/trpc` + superjson
 - Use `trpc.x.queryOptions()` syntax (TanStack Query v5)
 - All procedures except `health` require authentication (`protectedProcedure` throws `UNAUTHORIZED` if no session)
-- Profile mutations are split by tab: `upsertPersonal`, `upsertResume`, `upsertCoverLetter`, `upsertLinkedIn`, `upsertCriteria` — each only validates and updates its own fields
+- Profile mutations are split by tab: `upsertPersonal`, `upsertResume`, `upsertCoverLetter`, `upsertLinkedIn`, `upsertCriteria`, `upsertSchedule`, `upsertAiKey` — each only validates and updates its own fields
 - `resume` is plain text (`profiles.resume`); the agent generates a PDF from it on the fly per application
 - `coverLetterInstructions` is optional free-text (tone, length, emphasis hints); the agent writes a personalised cover letter per job using the resume and job details, following the instructions if provided
 
