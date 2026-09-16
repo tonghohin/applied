@@ -69,7 +69,7 @@ Pulls the published images, starts everything (database, queue, web app, worker)
 
 ### 3. Open the app
 
-Go to [http://localhost:8420](http://localhost:8420), create an account, add your [v0.dev/gateway](https://v0.dev/gateway) AI key under **Settings → AI**, then fill in your profile and LinkedIn login.
+Go to [http://localhost:8420](http://localhost:8420), create an account, add your [v0.dev/gateway](https://v0.dev/gateway) AI key under **Settings → AI provider**, then fill in your profile and LinkedIn login.
 
 ### Updating
 
