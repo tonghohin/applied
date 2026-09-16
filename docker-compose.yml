@@ -7,7 +7,7 @@ services:
       POSTGRES_PASSWORD: ${DB_PASSWORD:-applied}
       POSTGRES_DB: applied
     volumes:
-      - pgdata:/var/lib/postgresql/data
+      - db-data:/var/lib/postgresql/data
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U applied"]
       interval: 5s
@@ -26,7 +26,7 @@ services:
   migrate:
     image: ${WORKER_IMAGE:-ghcr.io/tonghohin/applied-worker:latest}
     working_dir: /app/packages/db
-    command: ["node", "--import", "tsx/esm", "node_modules/.bin/drizzle-kit", "migrate"]
+    command: ["node_modules/.bin/drizzle-kit", "migrate"]
     depends_on:
       db:
         condition: service_healthy
@@ -43,11 +43,11 @@ services:
       cache:
         condition: service_healthy
     ports:
-      - "3000:3000"
+      - "${WEB_PORT:-8420}:3000"
     environment:
       DATABASE_URL: postgresql://applied:${DB_PASSWORD:-applied}@db:5432/applied
       REDIS_URL: redis://cache:6379
-      BETTER_AUTH_URL: http://localhost:3000
+      BETTER_AUTH_URL: ${APP_URL:-http://localhost:8420}
       # Change before exposing to the internet: openssl rand -base64 32
       BETTER_AUTH_SECRET: ${BETTER_AUTH_SECRET:-this-is-a-default-secret-change-before-going-public}
       # Must match worker's ENCRYPTION_KEY — used to encrypt LinkedIn credentials on save
@@ -61,12 +61,19 @@ services:
         condition: service_completed_successfully
       cache:
         condition: service_healthy
+    # Chrome needs more than the default 64MB of shared memory.
+    shm_size: "1gb"
+    # Lets Chrome's sandbox run as a non-root user without --no-sandbox — that
+    # flag itself is a visible signal ("unsupported command line flag") that
+    # this isn't a normal desktop browser.
+    cap_add:
+      - SYS_ADMIN
     environment:
       DATABASE_URL: postgresql://applied:${DB_PASSWORD:-applied}@db:5432/applied
       REDIS_URL: redis://cache:6379
-      AI_GATEWAY_API_KEY: ${AI_GATEWAY_API_KEY}
-      # Change before exposing to the internet: openssl rand -hex 32
+      # Must match web's ENCRYPTION_KEY — used to decrypt the per-user AI Gateway
+      # key (set in the app at Settings → AI) and the stored LinkedIn login.
       ENCRYPTION_KEY: ${ENCRYPTION_KEY:-0000000000000000000000000000000000000000000000000000000000000000}
 
 volumes:
-  pgdata:
+  db-data:

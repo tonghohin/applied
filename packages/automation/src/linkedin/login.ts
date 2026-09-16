@@ -36,7 +36,9 @@ export async function loginToLinkedIn(page: Page, email: string, password: strin
   await passwordInput.press("Enter");
 
   try {
-    await page.waitForURL("**/feed**", { timeout: 10000 });
+    // Long enough to cover a phone-app "is this you?" approval — LinkedIn holds
+    // on the checkpoint URL until you tap approve, then redirects to /feed itself.
+    await page.waitForURL("**/feed**", { timeout: 60 * 1000 });
   } catch {
     const currentUrl = page.url();
     if (

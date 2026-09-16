@@ -1,0 +1,20 @@
+# Overlay for building the web/worker images from local source instead of
+# pulling from GHCR — for testing changes to the Dockerfiles or app code in a
+# container before they're published. Merge it on top of docker-compose.yml:
+#
+#   docker compose -f docker-compose.yml -f docker-compose.build.yml up -d --build
+#
+# Everything else (ports, env, volumes) comes from docker-compose.yml as-is.
+services:
+  web:
+    build:
+      context: .
+      dockerfile: apps/web/Dockerfile
+      args:
+        # Baked into the client bundle at build time — must match how you reach the app.
+        NEXT_PUBLIC_BASE_URL: ${APP_URL:-http://localhost:8420}
+
+  worker:
+    build:
+      context: .
+      dockerfile: apps/worker/Dockerfile

@@ -7,85 +7,75 @@
   <p>Automated job application tool — find, score, and apply to LinkedIn positions hands-free.</p>
 </div>
 
----
+## Why this exists
+
+Job hunting on LinkedIn usually means running the same search every day, scrolling through every result by hand, and tracking whatever you apply to in a separate spreadsheet. This tool automates that:
+
+- **Filters the noise** — runs your search and drops postings that match your excluded keywords or companies, or that you've already seen
+- **Replaces the spreadsheet** — every job it finds is saved with a status (`pending_review`, `applied`, `interviewing`, `rejected`, `skipped`), so it's a job board and tracker in one place
+- **Applies, if you want it to** — AI filling out and submitting applications is the feature on top, not the point; you can use this purely as a scraper and tracker and apply yourself
 
 ## How it works
 
 1. Fill in your profile — target job titles, skills, resume, and location preferences
 2. Click **Search Jobs** — the scraper finds matching LinkedIn postings and scores each one
 3. Review results in the dashboard — each job is scored 0–100 against your resume by an LLM
-4. Select jobs and click **Apply to Selected** — an AI agent fills out and submits each application, generating a personalized cover letter and PDF resume on the fly
+4. Select jobs and click **Apply now** — an AI agent fills out and submits each application, generating a personalized cover letter and PDF resume on the fly
 5. Optionally configure a schedule to run searches automatically on a daily or weekly cron
 
 ## Job tracking
 
 Every job found by a search is saved and stays in your dashboard whether or not you ever apply to it — so the app works as a standalone job board even if you skip Easy Apply entirely.
 
-- **Status pipeline** — each job starts at `pending_review` and can be moved to `applied`, `rejected`, or `skipped` manually from the dashboard (`applying`/`failed` are set automatically when the AI agent runs)
+- **Status pipeline** — each job starts at `pending_review` and can be moved to `applied`, `interviewing`, `rejected`, or `skipped` manually from the dashboard (`applying`/`failed` are set automatically when the AI agent runs)
 - **Search + filter + sort** — filter by status or workplace type (on-site/remote/hybrid), search by title/company/location, sort by score or recency
 - **Score at a glance** — every job carries its 0–100 LLM match score, so you can triage without re-reading each posting
 - **Company history** — the detail view shows how many times you've applied to or been rejected by that company before, and which titles
 - **One-click back to source** — every job links back to the original LinkedIn posting
 - **Smart deduplication** — skips jobs already in your dashboard by URL, and (if enabled) by matching company + title + location, so re-running a search doesn't flood you with the same postings; exclude keywords and companies you never want to see
 
-## Stack
+## AI application filling
 
-| Layer          | Tech                              |
-| -------------- | --------------------------------- |
-| Frontend + API | Next.js 16 App Router             |
-| Auth           | Better Auth (email + password)    |
-| Job queue      | BullMQ + Redis                    |
-| Database       | PostgreSQL + Drizzle ORM          |
-| Scraper        | Playwright (LinkedIn)             |
-| AI Agent       | LLM agent + Playwright MCP        |
-| Observability  | Langfuse (self-hosted)            |
+For each job you select, an AI agent generates a tailored cover letter and a resume PDF from your profile, then drives a real browser to fill out and submit the application — LinkedIn Easy Apply, plus external redirects to other ATS platforms.
 
-## Monorepo structure
+It's still improving, with real limitations worth knowing before you rely on it:
 
-```
-apps/
-  web/        Next.js frontend + API routes (port 3000)
-  worker/     BullMQ worker — runs scraper and AI agent
-packages/
-  api/        tRPC routers, services, BullMQ queue definitions
-  db/         Drizzle schema + migrations + repository query functions
-  automation/ LinkedIn scraper
-  ai/         AI apply agent + resume PDF generator + LLM job scorer
-  shared/     Shared utilities and constants (used by api + worker)
-```
+- **Bot detection varies by platform** — some ATS platforms flag or block automated submissions more aggressively than others; a job can fail for this reason alone, independent of your profile or answers
+- **Can't handle "create an account first"** — if an application requires signing up for the employer's own portal before you can apply, the agent can't get through that step
+- **Not every form is covered** — custom or unusual application forms can trip it up; a failed application shows up as `failed` in your dashboard so you can finish it yourself
 
 ## Getting started
 
 **Prerequisites:** [Docker](https://docs.docker.com/get-docker/) with Compose v2.20+ (ships with Docker Desktop 4.22+)
 
-### 1. Clone
+### 1. Get the compose file
+
+No clone needed — just this one file:
 
 ```bash
-git clone <repo-url>
-cd applied
+mkdir applied && cd applied
+curl -O https://raw.githubusercontent.com/tonghohin/applied/main/docker-compose.yml
 ```
 
-### 2. Configure
-
-Get an API key from [v0.dev/gateway](https://v0.dev/gateway) (requires a Vercel account):
-
-```bash
-echo "AI_GATEWAY_API_KEY=your-key" > .env
-```
-
-> **Before exposing to the internet:** also set `BETTER_AUTH_SECRET` (`openssl rand -base64 32`) and `ENCRYPTION_KEY` (`openssl rand -hex 32`) in `.env`.
-
-### 3. Start
+### 2. Start it
 
 ```bash
 docker compose up -d
 ```
 
-Migrations run automatically before the app starts. Everything else is pre-configured.
+Pulls the published images, starts everything (database, queue, web app, worker), and runs migrations automatically.
 
-### 4. Open
+> **Before exposing this to the internet:** put `BETTER_AUTH_SECRET` (`openssl rand -base64 32`) and `ENCRYPTION_KEY` (`openssl rand -hex 32`) in a `.env` file next to `docker-compose.yml` — otherwise it starts with insecure defaults meant only for local use.
 
-Go to [http://localhost:3000](http://localhost:3000) and create an account.
+### 3. Open the app
+
+Go to [http://localhost:8420](http://localhost:8420), create an account, add your [v0.dev/gateway](https://v0.dev/gateway) AI key under **Settings → AI**, then fill in your profile and LinkedIn login.
+
+### Updating
+
+```bash
+docker compose pull && docker compose up -d
+```
 
 ## Contributing
 

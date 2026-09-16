@@ -10,29 +10,15 @@ import type { Browser, BrowserContext, BrowserContextOptions, Page } from "playw
 import { browserManager } from "./browser";
 import { loginToLinkedIn } from "./linkedin/login";
 import { identityKey, scrapeLinkedInJobs } from "./linkedin/scraper";
+import { stealthContextOptions, stealthPatch } from "./stealth";
 import type { ScrapedJob } from "./types";
-import { launchStealthBrowser, stealthContextOptions, stealthPatch } from "./stealth";
 
 type StorageState = NonNullable<BrowserContextOptions["storageState"]>;
 
-async function manualHeadedLogin(): Promise<string> {
-  console.log(
-    "[linkedin] CAPTCHA detected — opening browser for manual login. Complete the login and the run will continue automatically."
-  );
-  const headedBrowser = await launchStealthBrowser();
-  try {
-    const ctx = await headedBrowser.newContext(stealthContextOptions);
-    const pg = await ctx.newPage();
-    await pg.addInitScript(stealthPatch);
-    await pg.goto("https://www.linkedin.com/login", { waitUntil: "domcontentloaded" });
-    await pg.waitForURL("**/feed**", { timeout: 5 * 60 * 1000 });
-    return JSON.stringify(await ctx.storageState());
-  } finally {
-    await headedBrowser.close();
-  }
-}
-
-async function loginOrManual(
+// If LinkedIn throws a captcha/checkpoint, this just fails — the caller
+// (search.worker.ts) marks the run failed and clears the stored session so
+// the next attempt starts fresh.
+async function login(
   browser: Browser,
   email: string,
   password: string
@@ -40,24 +26,8 @@ async function loginOrManual(
   const context = await browser.newContext(stealthContextOptions);
   const page = await context.newPage();
   await page.addInitScript(stealthPatch);
-
-  try {
-    await loginToLinkedIn(page, email, password);
-    return { context, page, newSessionJson: JSON.stringify(await context.storageState()) };
-  } catch (err) {
-    if (err instanceof Error && err.message.toLowerCase().includes("captcha")) {
-      await context.close();
-      const newSessionJson = await manualHeadedLogin();
-      const restoredContext = await browser.newContext({
-        ...stealthContextOptions,
-        storageState: JSON.parse(newSessionJson) as StorageState,
-      });
-      const restoredPage = await restoredContext.newPage();
-      await restoredPage.addInitScript(stealthPatch);
-      return { context: restoredContext, page: restoredPage, newSessionJson };
-    }
-    throw err;
-  }
+  await loginToLinkedIn(page, email, password);
+  return { context, page, newSessionJson: JSON.stringify(await context.storageState()) };
 }
 
 export async function runSearch(
@@ -99,14 +69,14 @@ export async function runSearch(
 
     if (!page.url().includes("/feed")) {
       await context.close();
-      ({ context, page, newSessionJson } = await loginOrManual(browser, email, password));
+      ({ context, page, newSessionJson } = await login(browser, email, password));
     } else {
       await page.waitForTimeout(1500 + Math.random() * 1500);
       await page.mouse.wheel(0, 400);
       await page.waitForTimeout(800 + Math.random() * 600);
     }
   } else {
-    ({ context, page, newSessionJson } = await loginOrManual(browser, email, password));
+    ({ context, page, newSessionJson } = await login(browser, email, password));
   }
 
   try {

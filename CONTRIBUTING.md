@@ -21,8 +21,6 @@ cp apps/worker/.env.example apps/worker/.env
 cp packages/db/.env.example packages/db/.env
 ```
 
-
-
 ### 3. Start infrastructure
 
 ```bash
@@ -60,6 +58,14 @@ pnpm format      # auto-fix formatting
 # After schema changes in packages/db/src/schema/
 pnpm generate
 pnpm migrate
+```
+
+## Testing the Docker images
+
+To test a change to a Dockerfile or to app code inside a container, build from source with the overlay in [docker-compose.build.yml](docker-compose.build.yml):
+
+```bash
+docker compose -f docker-compose.yml -f docker-compose.build.yml up -d --build
 ```
 
 ## Architecture

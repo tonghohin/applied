@@ -6,7 +6,7 @@ chromium.use(StealthPlugin());
 
 export const stealthContextOptions: BrowserContextOptions = {
   viewport: { width: 1280, height: 800 },
-  timezoneId: "America/Toronto",
+  timezoneId: Intl.DateTimeFormat().resolvedOptions().timeZone,
   locale: "en-US",
 };
 
@@ -22,10 +22,25 @@ export const stealthPatch = () => {
   }
 };
 
+// Real Google Chrome (better stealth than bundled Chromium). Falls back to
+// Chromium automatically below if Chrome isn't installed (no Linux/arm64 build).
+const STEALTH_CHANNEL = "chrome";
+
+const STEALTH_LAUNCH_ARGS = ["--disable-blink-features=AutomationControlled"];
+
+function isMissingBrowserError(error: unknown): boolean {
+  return error instanceof Error && /distribution '.*' is not found/i.test(error.message);
+}
+
 export async function launchStealthBrowser(): Promise<Browser> {
-  return chromium.launch({
-    headless: false,
-    channel: "chrome",
-    args: ["--disable-blink-features=AutomationControlled"],
-  });
+  const args = STEALTH_LAUNCH_ARGS;
+  try {
+    return await chromium.launch({ headless: false, channel: STEALTH_CHANNEL, args });
+  } catch (error) {
+    if (!isMissingBrowserError(error)) throw error;
+    console.warn(
+      `[stealth] "${STEALTH_CHANNEL}" channel unavailable, falling back to bundled Chromium`
+    );
+    return chromium.launch({ headless: false, args });
+  }
 }
