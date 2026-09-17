@@ -1,6 +1,7 @@
 "use client";
 
 import { AppliedIcon } from "@/components/applied-logo";
+import { AppVersionIndicator } from "@/components/nav/app-version-indicator";
 import { SearchRunStatusIndicator } from "@/components/nav/search-run-status-indicator";
 import { ThemeToggle } from "@/components/theme/theme-toggle";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
@@ -62,6 +63,7 @@ export function AppSidebar() {
         <div className="flex items-center gap-2">
           <AppliedIcon className="h-6" />
           <span className="truncate font-semibold text-primary dark:text-foreground">Applied</span>
+          <AppVersionIndicator />
         </div>
       </SidebarHeader>
       <SidebarContent className="p-2 pt-0">

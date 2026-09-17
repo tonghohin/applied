@@ -22,6 +22,8 @@ COPY --from=pruner /app/out/full/ .
 COPY --from=pruner /app/tsconfig.json ./tsconfig.json
 ARG NEXT_PUBLIC_BASE_URL=http://localhost:3000
 ENV NEXT_PUBLIC_BASE_URL=$NEXT_PUBLIC_BASE_URL
+ARG NEXT_PUBLIC_APP_VERSION=dev
+ENV NEXT_PUBLIC_APP_VERSION=$NEXT_PUBLIC_APP_VERSION
 # Placeholder values so next build doesn't throw during page rendering.
 # Real values must be injected at container start via Docker/Compose env.
 ENV BETTER_AUTH_SECRET=build-time-placeholder-secret-do-not-use-in-production
