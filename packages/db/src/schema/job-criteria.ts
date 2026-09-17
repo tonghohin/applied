@@ -9,9 +9,7 @@ export const jobCriteria = pgTable("job_criteria", {
     .unique()
     .references(() => users.id, { onDelete: "cascade" }),
   jobTitle: text("job_title").notNull().default(""),
-  skills: text("skills").array().notNull().default([]),
   locations: jsonb("locations").notNull().default([]).$type<LocationEntry[]>(),
-  seniority: text("seniority").array().notNull().default([]),
   excludeKeywords: text("exclude_keywords").array().notNull().default([]),
   excludeCompanies: text("exclude_companies").array().notNull().default([]),
   minSalary: integer("min_salary").notNull(),

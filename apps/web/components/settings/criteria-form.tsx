@@ -25,9 +25,7 @@ const locationSchema = z.object({
 
 const schema = z.object({
   jobTitle: z.string().min(1, "Required"),
-  skills: z.string().min(1, "Required"),
   locations: z.array(locationSchema).min(1, "Add at least one location"),
-  seniority: z.string(),
   excludeKeywords: z.string(),
   excludeCompanies: z.string(),
   minSalary: z.string().min(1, "Required"),
@@ -41,9 +39,7 @@ export function CriteriaForm({
 }: {
   initial?: {
     jobTitle?: string;
-    skills?: string[];
     locations?: LocationEntry[] | null;
-    seniority?: string[];
     excludeKeywords?: string[] | null;
     excludeCompanies?: string[] | null;
     minSalary?: number | null;
@@ -69,9 +65,7 @@ export function CriteriaForm({
     resolver: zodResolver(schema),
     defaultValues: {
       jobTitle: initial?.jobTitle ?? "",
-      skills: initial?.skills?.join(", ") ?? "",
       locations: initial?.locations ?? [],
-      seniority: initial?.seniority?.join(", ") ?? "",
       excludeKeywords: initial?.excludeKeywords?.join(", ") ?? "",
       excludeCompanies: initial?.excludeCompanies?.join(", ") ?? "",
       minSalary: initial?.minSalary?.toString() ?? "",
@@ -98,9 +92,7 @@ export function CriteriaForm({
     try {
       await mutateAsync({
         jobTitle: values.jobTitle,
-        skills: splitCsv(values.skills),
         locations: values.locations,
-        seniority: splitCsv(values.seniority),
         excludeKeywords: splitCsv(values.excludeKeywords),
         excludeCompanies: splitCsv(values.excludeCompanies),
         minSalary: Number(values.minSalary),
@@ -127,20 +119,6 @@ export function CriteriaForm({
         />
         <FieldDescription>A single role title to search for on LinkedIn.</FieldDescription>
         <FieldError errors={[errors.jobTitle]} />
-      </Field>
-
-      <Field data-invalid={!!errors.skills}>
-        <FieldLabel htmlFor="skills">
-          Skills (comma-separated) <span className="text-destructive">*</span>
-        </FieldLabel>
-        <Input
-          id="skills"
-          placeholder="React, TypeScript, Node.js"
-          {...register("skills")}
-          aria-invalid={!!errors.skills}
-        />
-        <FieldDescription>Used to score how well a job matches your profile.</FieldDescription>
-        <FieldError errors={[errors.skills]} />
       </Field>
 
       <div className="flex flex-col gap-2">
@@ -245,11 +223,6 @@ export function CriteriaForm({
             Skip jobs where the same company, title, and location already exist in your list.
           </FieldDescription>
         </div>
-      </Field>
-
-      <Field>
-        <FieldLabel htmlFor="seniority">Seniority levels (comma-separated)</FieldLabel>
-        <Input id="seniority" placeholder="Mid, Senior" {...register("seniority")} />
       </Field>
 
       <Field data-invalid={!!errors.minSalary}>

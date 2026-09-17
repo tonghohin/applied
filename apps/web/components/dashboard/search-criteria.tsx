@@ -48,12 +48,10 @@ export function SearchCriteria({
       <CardContent>
         <div className="flex flex-col gap-3">
           <CriteriaRow label="Role" values={criteria?.jobTitle ? [criteria.jobTitle] : []} />
-          <CriteriaRow label="Skills" values={criteria?.skills ?? []} />
           <CriteriaRow
             label="Locations"
             values={criteria?.locations.map((loc) => loc.location) ?? []}
           />
-          <CriteriaRow label="Seniority" values={criteria?.seniority ?? []} />
           <CriteriaRow
             label="Min salary"
             values={

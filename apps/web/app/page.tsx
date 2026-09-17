@@ -22,7 +22,7 @@ const STEPS = [
     Icon: RiRadarLine,
     title: "Scrape",
     description:
-      "Point it at LinkedIn. Applied pulls every Easy Apply role that matches the criteria you set — location, work type, seniority.",
+      "Point it at LinkedIn. Applied pulls every Easy Apply role that matches the criteria you set — job title, location, work type.",
   },
   {
     number: "02",

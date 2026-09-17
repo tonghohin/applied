@@ -47,7 +47,6 @@ export async function runSearch(
     status: "running",
     searchCriteria: {
       jobTitle: criteriaRow.jobTitle,
-      skills: criteriaRow.skills,
       locations: criteriaRow.locations,
     },
   });

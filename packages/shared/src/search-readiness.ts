@@ -8,7 +8,6 @@ type ProfileReadiness = {
 
 type CriteriaReadiness = {
   jobTitle?: string | null;
-  skills?: string[] | null;
   locations?: unknown[] | null;
 };
 
@@ -34,7 +33,6 @@ export function getMissingSearchFields(
     [linkedinAccount?.email, "LinkedIn email"],
     [linkedinAccount?.passwordEncrypted, "LinkedIn password"],
     [criteria?.jobTitle, "Job title"],
-    [criteria?.skills?.length, "Skills"],
     [criteria?.locations?.length, "Locations"],
   ];
   return checks.filter(([value]) => !value).map(([, label]) => label);

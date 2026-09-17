@@ -5,7 +5,6 @@ import { platformEnum, searchRunStatusEnum } from "./enums";
 
 export type SearchCriteriaSnapshot = {
   jobTitle: string;
-  skills: string[];
   locations: LocationEntry[];
 };
 

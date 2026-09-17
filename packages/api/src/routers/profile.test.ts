@@ -162,9 +162,7 @@ describe("profile.upsertCriteria", () => {
     const caller = profileRouter.createCaller(makeCtx());
     const result = await caller.upsertCriteria({
       jobTitle: "Software Engineer",
-      skills: ["TypeScript"],
       locations: [{ location: "Toronto", workTypes: ["hybrid", "remote"] }],
-      seniority: ["Senior"],
       minSalary: 120000,
     });
 
