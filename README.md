@@ -50,8 +50,6 @@ It's still improving, with real limitations worth knowing before you rely on it:
 
 ### 1. Get the compose file
 
-No clone needed — just this one file:
-
 ```bash
 mkdir applied && cd applied
 curl -O https://raw.githubusercontent.com/tonghohin/applied/main/docker-compose.yml
@@ -64,8 +62,6 @@ docker compose up -d
 ```
 
 Pulls the published images, starts everything (database, queue, web app, worker), and runs migrations automatically.
-
-> **Before exposing this to the internet:** put `BETTER_AUTH_SECRET` (`openssl rand -base64 32`) and `ENCRYPTION_KEY` (`openssl rand -hex 32`) in a `.env` file next to `docker-compose.yml` — otherwise it starts with insecure defaults meant only for local use.
 
 ### 3. Open the app
 
