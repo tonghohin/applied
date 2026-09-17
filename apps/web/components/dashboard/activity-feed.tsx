@@ -27,7 +27,7 @@ function buildActivity(jobs: DashboardJob[]): ActivityItem[] {
         job.status === "skipped"
     )
     .sort((jobA, jobB) => jobB.updatedAt.getTime() - jobA.updatedAt.getTime())
-    .slice(0, 8)
+    .slice(0, 6)
     .map((job) => {
       if (job.status === "applied") {
         return {

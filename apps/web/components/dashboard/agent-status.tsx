@@ -5,10 +5,6 @@ import type { SearchRun } from "@repo/db";
 import { capitalize } from "@repo/shared";
 import { formatDistanceToNow } from "date-fns";
 
-const META_ROWS = [
-  { key: "autoApply", label: "Auto-apply", value: "Not implemented yet" },
-] as const;
-
 function nextScheduledLabel(searchSchedule: DashboardStats["searchSchedule"]) {
   if (!searchSchedule.enabled) return "Disabled";
   if (!searchSchedule.nextRunAt) return "Waiting for setup";
@@ -46,12 +42,6 @@ export function AgentStatus({
             <span>Next scheduled</span>
             <span className="font-medium">{nextScheduledLabel(searchSchedule)}</span>
           </div>
-          {META_ROWS.map(({ key, label, value }) => (
-            <div key={key} className="flex items-center justify-between">
-              <span>{label}</span>
-              <span className="font-medium">{value}</span>
-            </div>
-          ))}
         </div>
       </CardContent>
     </Card>
