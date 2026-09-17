@@ -5,6 +5,7 @@ import {
   RiErrorWarningLine,
   RiSendPlaneLine,
   RiSkipRightLine,
+  RiThumbDownLine,
 } from "@remixicon/react";
 import type { DashboardJob } from "@repo/api";
 import { capitalize } from "@repo/shared";
@@ -23,6 +24,7 @@ function buildActivity(jobs: DashboardJob[]): ActivityItem[] {
       (job) =>
         job.status === "applied" ||
         job.status === "interviewing" ||
+        job.status === "rejected" ||
         job.status === "failed" ||
         job.status === "skipped"
     )
@@ -51,6 +53,18 @@ function buildActivity(jobs: DashboardJob[]): ActivityItem[] {
             <span>
               Moved <span className="font-medium">{job.title}</span> at {job.company} to
               interviewing
+            </span>
+          ),
+          createdAt: job.updatedAt,
+        };
+      }
+      if (job.status === "rejected") {
+        return {
+          id: job.id,
+          icon: <IconBadge icon={RiThumbDownLine} variant="secondary" iconClassName="size-3.5" />,
+          label: (
+            <span>
+              Rejected from <span className="font-medium">{job.title}</span> at {job.company}
             </span>
           ),
           createdAt: job.updatedAt,
