@@ -36,7 +36,7 @@ export async function runSearch(
   email: string,
   password: string,
   runId: string,
-  scoreJob: (job: ScrapedJob) => Promise<number>,
+  scoreJob: (job: ScrapedJob) => Promise<{ score: number; reasoning: string }>,
   existingSessionJson?: string,
   options?: { maxPages?: number }
 ): Promise<{ jobCount: number; newSessionJson: string | null }> {
@@ -103,25 +103,28 @@ export async function runSearch(
 
     if (scraped.length === 0) return { jobCount: 0, newSessionJson };
 
-    const scores = await Promise.all(scraped.map((job) => scoreJob(job)));
-
-    const jobCount = await insertJobs(
-      db,
-      scraped.map((job, index) => ({
-        userId,
-        runId,
-        title: job.title,
-        company: job.company,
-        location: job.location,
-        description: job.description,
-        url: job.url,
-        platform: job.platform,
-        workplaceType: job.workplaceType,
-        score: scores[index],
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      }))
+    const rows = await Promise.all(
+      scraped.map(async (job) => {
+        const { score, reasoning } = await scoreJob(job);
+        return {
+          userId,
+          runId,
+          title: job.title,
+          company: job.company,
+          location: job.location,
+          description: job.description,
+          url: job.url,
+          platform: job.platform,
+          workplaceType: job.workplaceType,
+          score,
+          scoreReasoning: reasoning,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        };
+      })
     );
+
+    const jobCount = await insertJobs(db, rows);
     return { jobCount, newSessionJson };
   } finally {
     await context.close();

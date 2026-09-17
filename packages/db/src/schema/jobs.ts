@@ -20,6 +20,9 @@ export const jobs = pgTable(
     platform: platformEnum("platform").notNull(),
     workplaceType: workplaceTypeEnum("workplace_type").notNull().default("on-site"),
     score: integer("score").notNull().default(0),
+    scoreReasoning: text("score_reasoning")
+      .notNull()
+      .default("Legacy job — no AI reasoning recorded."),
     status: jobStatusEnum("status").notNull().default("pending_review"),
     runId: uuid("run_id")
       .notNull()

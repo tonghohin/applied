@@ -49,7 +49,7 @@ export function JobListItem({
         >
           <span className="flex items-start justify-between gap-2">
             <span className="min-w-0 truncate font-medium text-sm">{job.title}</span>
-            <ScoreRing score={job.score} />
+            <ScoreRing score={job.score} reasoning={job.scoreReasoning} />
           </span>
           <span className="truncate text-xs">{job.company}</span>
           <span className="truncate text-muted-foreground text-xs">

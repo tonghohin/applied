@@ -22,7 +22,7 @@ const {
   mockGetProfileForUser: vi.fn().mockResolvedValue({ id: "p1", resume: "My resume" }),
   mockGetJobCriteriaForUser: vi.fn().mockResolvedValue({ id: "c1" }),
   mockGetAiGatewayKey: vi.fn().mockResolvedValue("test-api-key"),
-  mockScoreJob: vi.fn().mockResolvedValue(75),
+  mockScoreJob: vi.fn().mockResolvedValue({ score: 75, reasoning: "Strong skill overlap." }),
   mockHasActiveSearchRun: vi.fn().mockResolvedValue(false),
   mockInsertSearchRun: vi.fn(),
   mockUpdateSearchRun: vi

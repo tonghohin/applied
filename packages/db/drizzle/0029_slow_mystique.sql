@@ -1,0 +1,1 @@
+ALTER TABLE "jobs" ADD COLUMN "score_reasoning" text DEFAULT 'Legacy job — no AI reasoning recorded.' NOT NULL;

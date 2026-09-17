@@ -4,10 +4,15 @@ import { cn } from "@/lib/utils";
 // Circle radius chosen so the circumference is ~100, letting strokeDasharray use the score directly as a percentage.
 const SCORE_RING_RADIUS = 15.9155;
 
-const SCORE_EXPLANATION =
-  "AI-estimated match score based on skill overlap, seniority fit, role relevance, industry alignment, and salary fit with your resume.";
-
-export function ScoreRing({ score, className }: { score: number; className?: string }) {
+export function ScoreRing({
+  score,
+  reasoning,
+  className,
+}: {
+  score: number;
+  reasoning: string;
+  className?: string;
+}) {
   return (
     <Tooltip>
       <TooltipTrigger
@@ -45,7 +50,7 @@ export function ScoreRing({ score, className }: { score: number; className?: str
           {score}
         </span>
       </TooltipTrigger>
-      <TooltipContent className="max-w-56 text-balance">{SCORE_EXPLANATION}</TooltipContent>
+      <TooltipContent className="text-balance">{reasoning}</TooltipContent>
     </Tooltip>
   );
 }

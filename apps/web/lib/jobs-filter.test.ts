@@ -17,6 +17,7 @@ function makeJob(overrides: Partial<Job> = {}): Job {
     platform: "linkedin",
     workplaceType: "remote",
     score: 90,
+    scoreReasoning: "Strong skill overlap, seniority matches.",
     status: "pending_review",
     runId: "run-1",
     appliedAt: null,

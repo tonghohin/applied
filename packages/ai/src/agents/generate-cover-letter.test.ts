@@ -22,6 +22,7 @@ const mockJob = {
   platform: "linkedin" as const,
   workplaceType: "remote" as const,
   score: 80,
+  scoreReasoning: "Strong skill overlap, seniority matches.",
   status: "pending_review" as const,
   appliedAt: null,
   failureReason: null,
