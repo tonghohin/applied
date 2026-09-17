@@ -11,7 +11,7 @@
 
 Job hunting on LinkedIn usually means running the same search every day, scrolling through every result by hand, and tracking whatever you apply to in a separate spreadsheet. This tool automates that grind, so you can spend the time you get back on the applications that actually matter.
 
-## Key features
+## Features
 
 - **Smart search** — scrapes LinkedIn for postings matching your target titles, skills, and location preferences
 - **LLM scoring** — every job is scored 0–100 against your resume, so you can triage without re-reading each posting
