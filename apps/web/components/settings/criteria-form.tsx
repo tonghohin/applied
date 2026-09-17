@@ -125,6 +125,7 @@ export function CriteriaForm({
           {...register("jobTitle")}
           aria-invalid={!!errors.jobTitle}
         />
+        <FieldDescription>A single role title to search for on LinkedIn.</FieldDescription>
         <FieldError errors={[errors.jobTitle]} />
       </Field>
 
