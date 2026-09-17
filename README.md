@@ -4,7 +4,7 @@
     <img src="apps/web/public/lockup.svg" alt="Applied" height="72">
   </picture>
 
-  <p>Automated job application tool — find, score, and apply to LinkedIn positions hands-free.</p>
+  <p>Automated job search tool — finds and scores LinkedIn positions hands-free, then applies to the ones you approve.</p>
 </div>
 
 ## Why this exists
@@ -20,7 +20,7 @@ Job hunting on LinkedIn usually means running the same search every day, scrolli
 - **Status pipeline** — replaces the spreadsheet: each job starts at `pending_review` and moves to `applied`, `interviewing`, `rejected`, or `skipped` (`applying`/`failed` are set automatically when the AI agent runs)
 - **Search + filter + sort** — filter by status or workplace type (on-site/remote/hybrid), search by title/company/location, sort by score or recency
 - **Company history** — see how many times you've applied to or been rejected by a company before, and which titles
-- **AI application filling** — an agent generates a tailored cover letter and resume PDF, then drives a real browser to fill out and submit each application (LinkedIn Easy Apply, plus external redirects to other ATS platforms) — optional, so you can use this purely as a scraper and tracker and apply yourself
+- **AI application filling** — after you review the scored results and pick which jobs to apply to, an agent generates a tailored cover letter and resume PDF and drives a real browser to fill out and submit each one you selected (LinkedIn Easy Apply, plus external redirects to other ATS platforms); nothing is submitted automatically after a search — optional, so you can use this purely as a scraper and tracker and apply yourself
 - **Scheduled searches** — run automatically on a daily or weekly cron
 
 ## How it works
