@@ -7,11 +7,14 @@ import { trpc } from "@/lib/trpc";
 import { RiDownloadCloud2Line } from "@remixicon/react";
 
 export function AppVersionIndicator() {
+  const isDev = env.NEXT_PUBLIC_APP_VERSION === "dev";
+
   const { data: latestVersion } = trpc.system.latestVersion.useQuery(undefined, {
     staleTime: 30 * 60 * 1000,
+    enabled: !isDev,
   });
 
-  const hasUpdate = !!latestVersion && latestVersion !== env.NEXT_PUBLIC_APP_VERSION;
+  const hasUpdate = !isDev && !!latestVersion && latestVersion !== env.NEXT_PUBLIC_APP_VERSION;
 
   if (!hasUpdate) {
     return (
