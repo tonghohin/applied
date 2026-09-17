@@ -20,8 +20,6 @@ RUN npm install -g --allow-scripts=pnpm pnpm@12.3.4
 COPY --from=installer /app .
 COPY --from=pruner /app/out/full/ .
 COPY --from=pruner /app/tsconfig.json ./tsconfig.json
-ARG NEXT_PUBLIC_BASE_URL=http://localhost:3000
-ENV NEXT_PUBLIC_BASE_URL=$NEXT_PUBLIC_BASE_URL
 ARG NEXT_PUBLIC_APP_VERSION=dev
 ENV NEXT_PUBLIC_APP_VERSION=$NEXT_PUBLIC_APP_VERSION
 # Placeholder values so next build doesn't throw during page rendering.

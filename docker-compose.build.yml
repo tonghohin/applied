@@ -10,9 +10,6 @@ services:
     build:
       context: .
       dockerfile: apps/web/Dockerfile
-      args:
-        # Baked into the client bundle at build time — must match how you reach the app.
-        NEXT_PUBLIC_BASE_URL: ${APP_URL:-http://localhost:8420}
 
   worker:
     build:
