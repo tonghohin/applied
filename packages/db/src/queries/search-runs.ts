@@ -22,6 +22,18 @@ export async function updateSearchRun(db: Db, runId: string, updates: SearchRunU
     .then((rows) => rows[0]);
 }
 
+export async function failOrphanedSearchRuns(db: Db) {
+  return db
+    .update(searchRuns)
+    .set({
+      status: "failed",
+      completedAt: new Date(),
+      errorMessage: "Worker restarted while this run was in progress",
+    })
+    .where(inArray(searchRuns.status, ["pending", "running"]))
+    .returning({ id: searchRuns.id, userId: searchRuns.userId });
+}
+
 export async function hasActiveSearchRun(db: Db, userId: string) {
   const rows = await db
     .select({ id: searchRuns.id })
