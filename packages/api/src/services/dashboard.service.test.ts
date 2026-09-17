@@ -64,10 +64,7 @@ type SearchRunRow = {
   startedAt: Date;
 };
 
-function setupMocks({
-  jobRows = [] as JobRow[],
-  searchRunRows = [] as SearchRunRow[],
-} = {}) {
+function setupMocks({ jobRows = [] as JobRow[], searchRunRows = [] as SearchRunRow[] } = {}) {
   mockSelect.mockReturnValueOnce(resolves(jobRows));
   vi.mocked(listSearchRuns).mockResolvedValueOnce(searchRunRows as never);
 }
@@ -104,7 +101,12 @@ describe("getDashboardStats", () => {
   });
 
   it("passes all search run rows through to the frontend unchanged", async () => {
-    const run = { status: "completed", jobCount: 5, completedAt: new Date(), startedAt: new Date() };
+    const run = {
+      status: "completed",
+      jobCount: 5,
+      completedAt: new Date(),
+      startedAt: new Date(),
+    };
     setupMocks({ searchRunRows: [run] });
 
     const result = await getDashboardStats(mockDb, "user-1");

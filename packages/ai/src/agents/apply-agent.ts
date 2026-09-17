@@ -1,6 +1,14 @@
 import type { Job, Profile } from "@repo/db";
 import { toTitleCase } from "@repo/shared";
-import { type ModelMessage, Output, createGateway, generateText, isLoopFinished, isStepCount, tool } from "ai";
+import {
+  type ModelMessage,
+  Output,
+  createGateway,
+  generateText,
+  isLoopFinished,
+  isStepCount,
+  tool,
+} from "ai";
 import { z } from "zod";
 import { createPlaywrightMCPClient } from "../mcp";
 import { generateCoverLetter } from "./generate-cover-letter";

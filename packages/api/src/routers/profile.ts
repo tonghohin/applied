@@ -1,9 +1,4 @@
 import {
-  syncSearchScheduler,
-  upsertSchedule,
-  upsertScheduleSchema,
-} from "../services/search-schedule.service";
-import {
   getProfile,
   upsertAiKey,
   upsertAiKeySchema,
@@ -18,6 +13,11 @@ import {
   upsertResume,
   upsertResumeSchema,
 } from "../services/profile.service";
+import {
+  syncSearchScheduler,
+  upsertSchedule,
+  upsertScheduleSchema,
+} from "../services/search-schedule.service";
 import { protectedProcedure, router } from "../trpc";
 
 export const profileRouter = router({

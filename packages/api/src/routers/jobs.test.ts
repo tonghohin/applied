@@ -15,10 +15,14 @@ const {
   mockGetProfile: vi.fn(),
   mockGetCriteria: vi.fn(),
   mockGetLinkedInAccount: vi.fn(),
-  mockInsertApplyRun: vi.fn().mockImplementation((_db: unknown, data: { jobId: string; userId: string }) =>
-    Promise.resolve({ id: "run-1", jobId: data.jobId, userId: data.userId, status: "pending" })
-  ),
-  mockInsertSearchRun: vi.fn().mockResolvedValue({ id: "run-1", userId: "user_1", status: "pending" }),
+  mockInsertApplyRun: vi
+    .fn()
+    .mockImplementation((_db: unknown, data: { jobId: string; userId: string }) =>
+      Promise.resolve({ id: "run-1", jobId: data.jobId, userId: data.userId, status: "pending" })
+    ),
+  mockInsertSearchRun: vi
+    .fn()
+    .mockResolvedValue({ id: "run-1", userId: "user_1", status: "pending" }),
   mockUpdateJobApplying: vi.fn().mockResolvedValue(undefined),
 }));
 

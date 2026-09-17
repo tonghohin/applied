@@ -1,5 +1,5 @@
-import { AiForm } from "@/components/settings/ai-form";
 import { PageLayout } from "@/components/page-layout";
+import { AiForm } from "@/components/settings/ai-form";
 import { getSession } from "@/lib/session";
 import { getProfile } from "@repo/api";
 import { getDb } from "@repo/db";

@@ -30,7 +30,11 @@ vi.mock("@repo/db", () => ({
   upsertSearchSchedule: mockUpsertSearchSchedule,
 }));
 
-import { syncSearchScheduler, upsertSchedule, upsertScheduleSchema } from "./search-schedule.service";
+import {
+  syncSearchScheduler,
+  upsertSchedule,
+  upsertScheduleSchema,
+} from "./search-schedule.service";
 
 const mockDb = {} as never;
 

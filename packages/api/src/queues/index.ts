@@ -13,7 +13,8 @@ let _searchQueue: Queue<SearchJobData> | undefined;
 let _applyQueue: Queue<ApplyJobData> | undefined;
 
 export function getSearchQueue(): Queue<SearchJobData> {
-  if (!_searchQueue) _searchQueue = new Queue<SearchJobData>("search", { connection: getConnection() });
+  if (!_searchQueue)
+    _searchQueue = new Queue<SearchJobData>("search", { connection: getConnection() });
   return _searchQueue;
 }
 

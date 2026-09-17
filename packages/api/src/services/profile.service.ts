@@ -147,10 +147,7 @@ export async function upsertCriteria(db: Db, userId: string, input: UpsertCriter
 }
 
 export async function upsertAiKey(db: Db, userId: string, input: UpsertAiKeyInput) {
-  const aiGatewayKeyEncrypted = encrypt(
-    input.aiGatewayKey,
-    process.env.ENCRYPTION_KEY ?? "",
-  );
+  const aiGatewayKeyEncrypted = encrypt(input.aiGatewayKey, process.env.ENCRYPTION_KEY ?? "");
   const set = { aiGatewayKeyEncrypted, updatedAt: new Date() };
   const [row] = await db
     .insert(profiles)

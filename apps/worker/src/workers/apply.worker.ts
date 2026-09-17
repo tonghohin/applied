@@ -43,7 +43,14 @@ export const applyWorker = new Worker<ApplyJobData>(
           tags: ["apply"],
         },
         async () => {
-          applyResult = await processApplyJob(getDb(), jobId, userId, aiGatewayKey, linkedinSessionJson, log);
+          applyResult = await processApplyJob(
+            getDb(),
+            jobId,
+            userId,
+            aiGatewayKey,
+            linkedinSessionJson,
+            log
+          );
         }
       );
       const completedAt = new Date();

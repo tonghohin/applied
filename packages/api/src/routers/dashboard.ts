@@ -1,8 +1,6 @@
-import { protectedProcedure, router } from "../trpc";
 import { getDashboardStats } from "../services/dashboard.service";
+import { protectedProcedure, router } from "../trpc";
 
 export const dashboardRouter = router({
-  getStats: protectedProcedure.query(({ ctx }) =>
-    getDashboardStats(ctx.db, ctx.session.user.id),
-  ),
+  getStats: protectedProcedure.query(({ ctx }) => getDashboardStats(ctx.db, ctx.session.user.id)),
 });

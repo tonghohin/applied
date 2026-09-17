@@ -1,5 +1,5 @@
-import { SseProvider } from "@/components/sse-provider";
 import { AppSidebar } from "@/components/nav/sidebar";
+import { SseProvider } from "@/components/sse-provider";
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
 
 export default function DashboardLayout({

@@ -10,7 +10,6 @@ import superjson from "superjson";
 export type Job = RouterOutputs["jobs"]["list"][number];
 export type JobStatus = Job["status"];
 
-
 export const trpc = createTRPCReact<AppRouter>();
 
 export function TRPCProvider({ children }: { children: React.ReactNode }) {

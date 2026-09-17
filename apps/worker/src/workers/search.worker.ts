@@ -1,7 +1,7 @@
+import { scoreJob as scoreJobWithLLM } from "@repo/ai";
 import { getAiGatewayKey } from "@repo/api";
 import { runSearch } from "@repo/automation";
 import type { ScrapedJob } from "@repo/automation";
-import { scoreJob as scoreJobWithLLM } from "@repo/ai";
 import {
   clearLinkedInSession,
   getDb,
@@ -33,7 +33,8 @@ async function processSearch(userId: string, runId: string) {
     ]);
 
     if (!account) throw new Error("LinkedIn credentials not configured");
-    if (!profile?.resume) throw new Error("Resume is required to score jobs — add your resume in Profile settings.");
+    if (!profile?.resume)
+      throw new Error("Resume is required to score jobs — add your resume in Profile settings.");
     if (!aiGatewayKey) throw new Error("AI Gateway API key not configured");
 
     const scorer = (job: ScrapedJob) =>
