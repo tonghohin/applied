@@ -9,11 +9,19 @@
 
 ## Why this exists
 
-Job hunting on LinkedIn usually means running the same search every day, scrolling through every result by hand, and tracking whatever you apply to in a separate spreadsheet. This tool automates that:
+Job hunting on LinkedIn usually means running the same search every day, scrolling through every result by hand, and tracking whatever you apply to in a separate spreadsheet. This tool automates that grind, so you can spend the time you get back on the applications that actually matter.
 
-- **Filters the noise** — runs your search and drops postings that match your excluded keywords or companies, or that you've already seen
-- **Replaces the spreadsheet** — every job it finds is saved with a status (`pending_review`, `applied`, `interviewing`, `rejected`, `skipped`), so it's a job board and tracker in one place
-- **Applies, if you want it to** — AI filling out and submitting applications is the feature on top, not the point; you can use this purely as a scraper and tracker and apply yourself
+## Key features
+
+- **Smart search** — scrapes LinkedIn for postings matching your target titles, skills, and location preferences
+- **LLM scoring** — every job is scored 0–100 against your resume, so you can triage without re-reading each posting
+- **Smart deduplication** — skips jobs already in your dashboard by URL, and (if enabled) by matching company + title + location, so re-running a search doesn't flood you with the same postings
+- **Filtering** — drops postings that match your excluded keywords or companies
+- **Status pipeline** — replaces the spreadsheet: each job starts at `pending_review` and moves to `applied`, `interviewing`, `rejected`, or `skipped` (`applying`/`failed` are set automatically when the AI agent runs)
+- **Search + filter + sort** — filter by status or workplace type (on-site/remote/hybrid), search by title/company/location, sort by score or recency
+- **Company history** — see how many times you've applied to or been rejected by a company before, and which titles
+- **AI application filling** — an agent generates a tailored cover letter and resume PDF, then drives a real browser to fill out and submit each application (LinkedIn Easy Apply, plus external redirects to other ATS platforms) — optional, so you can use this purely as a scraper and tracker and apply yourself
+- **Scheduled searches** — run automatically on a daily or weekly cron
 
 ## How it works
 
@@ -23,26 +31,9 @@ Job hunting on LinkedIn usually means running the same search every day, scrolli
 4. Select jobs and click **Apply now** — an AI agent fills out and submits each application, generating a personalized cover letter and PDF resume on the fly
 5. Optionally configure a schedule to run searches automatically on a daily or weekly cron
 
-## Job tracking
-
-Every job found by a search is saved and stays in your dashboard whether or not you ever apply to it — so the app works as a standalone job board even if you skip Easy Apply entirely.
-
-- **Status pipeline** — each job starts at `pending_review` and can be moved to `applied`, `interviewing`, `rejected`, or `skipped` manually from the dashboard (`applying`/`failed` are set automatically when the AI agent runs)
-- **Search + filter + sort** — filter by status or workplace type (on-site/remote/hybrid), search by title/company/location, sort by score or recency
-- **Score at a glance** — every job carries its 0–100 LLM match score, so you can triage without re-reading each posting
-- **Company history** — the detail view shows how many times you've applied to or been rejected by that company before, and which titles
-- **One-click back to source** — every job links back to the original LinkedIn posting
-- **Smart deduplication** — skips jobs already in your dashboard by URL, and (if enabled) by matching company + title + location, so re-running a search doesn't flood you with the same postings; exclude keywords and companies you never want to see
-
-## AI application filling
-
-For each job you select, an AI agent generates a tailored cover letter and a resume PDF from your profile, then drives a real browser to fill out and submit the application — LinkedIn Easy Apply, plus external redirects to other ATS platforms.
-
-It's still improving, with real limitations worth knowing before you rely on it:
-
-- **Bot detection varies by platform** — some ATS platforms flag or block automated submissions more aggressively than others; a job can fail for this reason alone, independent of your profile or answers
-- **Can't handle "create an account first"** — if an application requires signing up for the employer's own portal before you can apply, the agent can't get through that step
-- **Not every form is covered** — custom or unusual application forms can trip it up; a failed application shows up as `failed` in your dashboard so you can finish it yourself
+<p align="center">
+  <img src=".github/screenshot-dashboard.png" alt="Applied dashboard showing application stats, weekly activity, agent status, and search criteria" width="800">
+</p>
 
 ## Getting started
 
@@ -80,3 +71,9 @@ Please read the [contributing guide](CONTRIBUTING.md).
 ## Disclaimer
 
 This tool automates interactions with LinkedIn in ways that may violate their [User Agreement](https://www.linkedin.com/legal/user-agreement). Use it at your own risk. The authors are not responsible for any consequences including account suspension or legal action.
+
+The AI application filling is still improving, with real limitations worth knowing before you rely on it:
+
+- **Bot detection varies by platform** — some ATS platforms flag or block automated submissions more aggressively than others; a job can fail for this reason alone, independent of your profile or answers
+- **Can't handle "create an account first"** — if an application requires signing up for the employer's own portal before you can apply, the agent can't get through that step
+- **Not every form is covered** — custom or unusual application forms can trip it up; a failed application shows up as `failed` in your dashboard so you can finish it yourself
