@@ -75,7 +75,7 @@ docker compose pull && docker compose up -d
 
 ## Contributing
 
-See [CONTRIBUTING.md](CONTRIBUTING.md) for local development setup, commands, and architecture notes.
+Please read the [contributing guide](CONTRIBUTING.md).
 
 ## Disclaimer
 
