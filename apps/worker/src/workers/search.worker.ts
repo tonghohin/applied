@@ -38,7 +38,13 @@ async function processSearch(userId: string, runId: string) {
     if (!aiGatewayKey) throw new Error("AI Gateway API key not configured");
 
     const scorer = (job: ScrapedJob) =>
-      scoreJobWithLLM(job, profile.resume, aiGatewayKey, criteria?.minSalary);
+      scoreJobWithLLM(
+        job,
+        profile.resume,
+        aiGatewayKey,
+        criteria?.minSalary,
+        profile.requiresSponsorship
+      );
 
     const password = decrypt(account.passwordEncrypted, env.ENCRYPTION_KEY);
     const existingSessionJson = account.sessionEncrypted

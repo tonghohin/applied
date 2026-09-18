@@ -5,7 +5,7 @@ const scoreSchema = z.object({
   reasoning: z
     .string()
     .describe(
-      "2-4 sentences, written for the candidate deciding whether to apply: what in the resume matched the job's requirements, and what didn't. Reason through the weighted dimensions below before settling on a score."
+      "2-4 sentences shown directly to the candidate, explaining how and why the job does or doesn't match their resume: which skills, experience, and role aspects line up, and which job requirements the resume doesn't show. Never mention points, weights, or how the score was calculated."
     ),
   score: z
     .number()
@@ -21,7 +21,8 @@ export async function scoreJob(
   job: { title: string; company: string; description: string | null | undefined },
   resume: string,
   apiKey: string,
-  minSalary?: number | null
+  minSalary?: number | null,
+  requiresSponsorship = false
 ): Promise<{ score: number; reasoning: string }> {
   const gatewayProvider = createGateway({ apiKey });
 
@@ -38,16 +39,21 @@ export async function scoreJob(
 
 Base every judgment strictly on what is explicitly written in the job description. Do not assume typical industry norms, typical salary ranges, or unstated requirements that aren't in the text — if something isn't mentioned in the job description, treat it as unknown, not as a gap or red flag.
 
-- Skills & experience overlap (50%): how much of the job's required/preferred technical skills, tools, and hands-on experience are demonstrated in the resume.
+- Skills & experience overlap (40%): how much of the job's required/preferred technical skills, tools, and hands-on experience are demonstrated in the resume.
 - Seniority fit (20%): whether the candidate's years of experience and level match what the job title and description expect (junior/mid/senior/staff/etc).
 - Role & industry relevance (20%): how closely the role type and industry match the candidate's background.
-- Salary fit (10%, penalty only): only consider this if the job description explicitly states a salary or salary range. If no salary is stated, do not guess or infer one from typical rates for the role — skip this dimension entirely and don't mention salary in the reasoning. When a salary is stated, compare its lower bound against the candidate's minimum requirement. Apply a significant penalty ONLY when the job's stated salary is lower than the candidate's minimum — i.e. the job would pay the candidate less than they need. If the job's salary meets or exceeds the candidate's minimum, this is a non-issue: do not mention it as a concern and do not penalize the score.
+- Salary fit (10%): award all 10 points unless the salary check below fails. Salary can only cost points when the job pays LESS than the candidate needs; a job that pays more than the candidate requires is a full-marks result, never a reason to lower the score. Check it in this order:
+  1. Look for a salary or salary range explicitly stated in the job description. If none is stated, award all 10 points and do not mention salary in the reasoning. Never guess or infer a salary from typical rates for the role.
+  2. If the salary is hourly, convert it to annual (hourly rate x 2,080). If a range is given, use the upper bound of the range.
+  3. Compare that annual figure to the candidate's minimum requirement. If it is greater than or equal to the minimum, award all 10 points and do not mention salary as a concern. This includes ranges that start below the minimum but reach it or go past it (e.g. minimum 130,000 and a stated range of 114,800-191,800: the top, 191,800, is above 130,000, so full points; the lower end is irrelevant). Only if the upper bound itself is lower than the minimum, award 0 of the 10 points and note the shortfall in the reasoning.
+- Work authorization (10%): award all 10 points unless BOTH are true: the candidate requires visa sponsorship (see the candidate details), and the job description explicitly says it does not offer sponsorship or requires existing work authorization, citizenship, or a security clearance the candidate can't be assumed to have. If the job description doesn't address it, or the candidate doesn't require sponsorship, award all 10 points and say nothing about it. When both are true, award 0 of the 10 points and note it in the reasoning.
 
-Weigh each dimension before committing to a final integer score. Then write a short reasoning explaining what matched and what didn't — this is what the candidate will read to decide whether to apply, so be concrete about specific skills, seniority signals, or the salary penalty rather than restating the score.`,
+Weigh each dimension before committing to a final integer score. Then write the reasoning. It is shown directly to the candidate, so write it as a plain explanation of how and why the job does or doesn't match their resume: name the specific skills, tools, experience level, and role aspects that line up, and the specific job requirements the resume doesn't show. Do not mention points, weights, percentages, the rubric, or how the score was calculated. Mention salary only when the job description states a salary whose upper bound is below the candidate's minimum; otherwise say nothing about salary.`,
     prompt: [
       `## Resume\n${resume}`,
       `## Job\nTitle: ${job.title}\nCompany: ${job.company}`,
       minSalaryLine,
+      `Candidate requires visa sponsorship: ${requiresSponsorship ? "Yes" : "No"}`,
       `Description: ${job.description ?? "(no description provided)"}`,
     ]
       .filter(Boolean)
