@@ -34,7 +34,7 @@ export function AppVersionIndicator() {
               <RiDownloadCloud2Line data-icon="inline-end" />
             </Badge>
           </TooltipTrigger>
-          <TooltipContent side="right">Update available</TooltipContent>
+          <TooltipContent side="right">Update available: {latestVersion}</TooltipContent>
         </Tooltip>
       </TooltipProvider>
     </div>
