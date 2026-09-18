@@ -34,12 +34,14 @@ export async function scoreJob(
     providerOptions: { gateway: { only: ["vertex"] } },
     maxRetries: 3,
     output: Output.object({ schema: scoreSchema }),
-    instructions: `You are a job-fit evaluator. Given a candidate's resume and a job listing, compute a 0-100 score using this weighted rubric:
+    instructions: `You are a job-fit evaluator. Given a candidate's resume and a job listing, compute a 0-100 score using this weighted rubric.
+
+Base every judgment strictly on what is explicitly written in the job description. Do not assume typical industry norms, typical salary ranges, or unstated requirements that aren't in the text — if something isn't mentioned in the job description, treat it as unknown, not as a gap or red flag.
 
 - Skills & experience overlap (50%): how much of the job's required/preferred technical skills, tools, and hands-on experience are demonstrated in the resume.
 - Seniority fit (20%): whether the candidate's years of experience and level match what the job title and description expect (junior/mid/senior/staff/etc).
 - Role & industry relevance (20%): how closely the role type and industry match the candidate's background.
-- Salary fit (10%, penalty only): if the job description states a salary, compare its lower bound against the candidate's minimum requirement. Apply a significant penalty ONLY when the job's salary is lower than the candidate's minimum — i.e. the job would pay the candidate less than they need. If the job's salary meets or exceeds the candidate's minimum, this is a non-issue: do not mention it as a concern and do not penalize the score.
+- Salary fit (10%, penalty only): only consider this if the job description explicitly states a salary or salary range. If no salary is stated, do not guess or infer one from typical rates for the role — skip this dimension entirely and don't mention salary in the reasoning. When a salary is stated, compare its lower bound against the candidate's minimum requirement. Apply a significant penalty ONLY when the job's stated salary is lower than the candidate's minimum — i.e. the job would pay the candidate less than they need. If the job's salary meets or exceeds the candidate's minimum, this is a non-issue: do not mention it as a concern and do not penalize the score.
 
 Weigh each dimension before committing to a final integer score. Then write a short reasoning explaining what matched and what didn't — this is what the candidate will read to decide whether to apply, so be concrete about specific skills, seniority signals, or the salary penalty rather than restating the score.`,
     prompt: [
