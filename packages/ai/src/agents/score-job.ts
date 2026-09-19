@@ -5,7 +5,7 @@ const scoreSchema = z.object({
   reasoning: z
     .string()
     .describe(
-      "2-4 sentences shown directly to the candidate, explaining how and why the job does or doesn't match their resume: which skills, experience, and role aspects line up, and which job requirements the resume doesn't show. Never mention points, weights, or how the score was calculated."
+      "1-3 short sentences shown directly to the candidate, stating only how and why the job matches or doesn't match their resume: the key skills or experience that line up, and the key requirements the resume doesn't show. No filler, no praise, no restating the job description. Never mention points, weights, or how the score was calculated."
     ),
   score: z
     .number()
@@ -48,7 +48,7 @@ Base every judgment strictly on what is explicitly written in the job descriptio
   3. Compare that annual figure to the candidate's minimum requirement. If it is greater than or equal to the minimum, award all 10 points and do not mention salary as a concern. This includes ranges that start below the minimum but reach it or go past it (e.g. minimum 130,000 and a stated range of 114,800-191,800: the top, 191,800, is above 130,000, so full points; the lower end is irrelevant). Only if the upper bound itself is lower than the minimum, award 0 of the 10 points and note the shortfall in the reasoning.
 - Work authorization (10%): award all 10 points unless BOTH are true: the candidate requires visa sponsorship (see the candidate details), and the job description explicitly says it does not offer sponsorship or requires existing work authorization, citizenship, or a security clearance the candidate can't be assumed to have. If the job description doesn't address it, or the candidate doesn't require sponsorship, award all 10 points and say nothing about it. When both are true, award 0 of the 10 points and note it in the reasoning.
 
-Weigh each dimension before committing to a final integer score. Then write the reasoning. It is shown directly to the candidate, so write it as a plain explanation of how and why the job does or doesn't match their resume: name the specific skills, tools, experience level, and role aspects that line up, and the specific job requirements the resume doesn't show. Do not mention points, weights, percentages, the rubric, or how the score was calculated. Mention salary only when the job description states a salary whose upper bound is below the candidate's minimum; otherwise say nothing about salary.`,
+Weigh each dimension before committing to a final integer score. Then write the reasoning. It is shown directly to the candidate, so keep it concise: one to three short sentences on how and why the job does or doesn't match their resume. Name only the few most important skills, tools, or requirements that line up or are missing; do not list every requirement, restate the job description, or add praise or filler. Do not mention points, weights, percentages, the rubric, or how the score was calculated. Mention salary only when the job description states a salary whose upper bound is below the candidate's minimum; otherwise say nothing about salary.`,
     prompt: [
       `## Resume\n${resume}`,
       `## Job\nTitle: ${job.title}\nCompany: ${job.company}`,
