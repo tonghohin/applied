@@ -2,6 +2,7 @@ import { Card, CardAction, CardContent, CardHeader, CardTitle } from "@/componen
 import { IconBadge } from "@/components/ui/icon-badge";
 import { RiFocus3Line, RiInboxLine, RiSendPlaneLine } from "@remixicon/react";
 import type { DashboardJob } from "@repo/api";
+import { STRONG_MATCH_THRESHOLD } from "@repo/shared";
 
 const STATS = [
   {
@@ -23,7 +24,8 @@ const STATS = [
     label: "Strong matches",
     description: "Best alignment with your profile",
     icon: <IconBadge icon={RiFocus3Line} variant="secondary" />,
-    count: (jobs: DashboardJob[]) => jobs.filter((job) => job.score >= 70).length,
+    count: (jobs: DashboardJob[]) =>
+      jobs.filter((job) => job.score >= STRONG_MATCH_THRESHOLD).length,
   },
 ];
 
