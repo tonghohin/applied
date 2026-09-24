@@ -162,6 +162,18 @@ async function gotoWithRetry(page: Page, url: string): Promise<void> {
   }
 }
 
+// Stable containers that hold exactly the employer's description, in order of preference.
+// The last one is the current logged-in layout, whose class names are obfuscated hashes —
+// its `componentkey` attribute and `data-testid` are the only durable hooks.
+const KNOWN_DESCRIPTION_SELECTORS = [
+  ".jobs-description__content",
+  ".jobs-description-content__text",
+  ".jobs-box__html-content",
+  "[class*='jobs-description__content']",
+  ".show-more-less-html__markup",
+  "[componentkey^='JobDetails_AboutTheJob_'] [data-testid='expandable-text-box']",
+];
+
 async function fetchJobDetails(page: Page, url: string): Promise<{ description: string }> {
   await gotoWithRetry(page, url);
   // Adaptive wait with a dwell floor: proceed as soon as the description has rendered,
@@ -169,16 +181,28 @@ async function fetchJobDetails(page: Page, url: string): Promise<{ description: 
   // of looking human even when the content loads instantly.
   const minDwellMs = randomDelay(1500, 2500);
   const navigatedAt = Date.now();
+  // Wait for the description *body*, not just the "About the job" header: LinkedIn streams
+  // the header in before the text box, so matching on the header alone let extraction run
+  // against an empty section and store a blank description.
   await page
-    .waitForFunction(() => document.body?.textContent?.includes("About the job") ?? false, {
-      timeout: 4000,
-    })
+    .waitForFunction(
+      (selectors) =>
+        selectors.some(
+          (selector) => (document.querySelector(selector)?.textContent?.trim().length ?? 0) > 100
+        ) ||
+        Array.from(document.querySelectorAll("div, section, article")).some((el) => {
+          const text = el.textContent?.trim() ?? "";
+          return text.startsWith("About the job") && text.length > 100;
+        }),
+      KNOWN_DESCRIPTION_SELECTORS,
+      { timeout: 8000 }
+    )
     .catch(() => {
       // description never rendered or uses a different layout — extraction below falls back
     });
   const remainingDwellMs = minDwellMs - (Date.now() - navigatedAt);
   if (remainingDwellMs > 0) await page.waitForTimeout(remainingDwellMs);
-  return page.evaluate(() => {
+  return page.evaluate((knownDescriptionSelectors) => {
     // LinkedIn's own upsell/rail widgets (e.g. the "Reactivate Premium" card, or the
     // "Insights about the company" Bing-powered panel — company focus areas, hiring
     // trends, competitors — that can run to 2000+ chars on its own) can outsize the real
@@ -223,13 +247,6 @@ async function fetchJobDetails(page: Page, url: string): Promise<{ description: 
     // which otherwise reject the entire pane whenever LinkedIn's "Insights about the
     // company" / premium-insights widget renders as a sibling inside it (it trips
     // promoPattern) or the post is long enough to breach the length cap.
-    const knownDescriptionSelectors = [
-      ".jobs-description__content",
-      ".jobs-description-content__text",
-      ".jobs-box__html-content",
-      "[class*='jobs-description__content']",
-      ".show-more-less-html__markup",
-    ];
     let knownRoot: Element | null = null;
     for (const selector of knownDescriptionSelectors) {
       const candidate = document.querySelector(selector);
@@ -380,7 +397,7 @@ async function fetchJobDetails(page: Page, url: string): Promise<{ description: 
       .trim();
 
     return { description };
-  });
+  }, KNOWN_DESCRIPTION_SELECTORS);
 }
 
 export function identityKey(company: string, title: string, location: string): string {
