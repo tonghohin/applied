@@ -130,6 +130,10 @@ export function CriteriaForm({
             Add location
           </Button>
         </div>
+        <FieldDescription>
+          Tick every workplace type you want for each location. For example, to find both remote and
+          hybrid jobs in Toronto, tick both Remote and Hybrid.
+        </FieldDescription>
 
         {fields.length === 0 && (
           <p className="text-muted-foreground text-sm">No locations added yet.</p>
