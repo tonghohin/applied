@@ -1,3 +1,5 @@
+import { isValidTimeZone } from "@repo/shared";
+import { z } from "zod";
 import {
   getProfile,
   upsertAiKey,
@@ -14,6 +16,7 @@ import {
   upsertResumeSchema,
 } from "../services/profile.service";
 import {
+  createDefaultScheduleIfMissing,
   syncSearchScheduler,
   upsertSchedule,
   upsertScheduleSchema,
@@ -43,9 +46,16 @@ export const profileRouter = router({
     }),
 
   upsertCriteria: protectedProcedure
-    .input(upsertCriteriaSchema)
+    .input(
+      // Browser timezone rides along so the default schedule can be created on first save
+      upsertCriteriaSchema.extend({
+        timezone: z.string().refine(isValidTimeZone, "Invalid timezone"),
+      })
+    )
     .mutation(async ({ ctx, input }) => {
-      const row = await upsertCriteria(ctx.db, ctx.session.user.id, input);
+      const { timezone, ...criteria } = input;
+      const row = await upsertCriteria(ctx.db, ctx.session.user.id, criteria);
+      await createDefaultScheduleIfMissing(ctx.db, ctx.session.user.id, timezone);
       await syncSearchScheduler(ctx.db, ctx.session.user.id);
       return row;
     }),

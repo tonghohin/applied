@@ -97,6 +97,7 @@ export function CriteriaForm({
         excludeCompanies: splitCsv(values.excludeCompanies),
         minSalary: Number(values.minSalary),
         skipDuplicateIdentity: values.skipDuplicateIdentity,
+        timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
       });
     } catch {
       toast.error("Failed to save job criteria");

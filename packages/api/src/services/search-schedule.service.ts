@@ -2,9 +2,10 @@ import {
   getJobCriteriaForUser,
   getLinkedInAccount,
   getSearchScheduleForUser,
+  insertSearchScheduleIfMissing,
   upsertSearchSchedule,
 } from "@repo/db";
-import { buildSearchCronPattern, isValidTimeZone } from "@repo/shared";
+import { SEARCH_SCHEDULE_DEFAULTS, buildSearchCronPattern, isValidTimeZone } from "@repo/shared";
 import { z } from "zod";
 import type { Context } from "../context";
 import { getSearchQueue } from "../queues/index";
@@ -47,6 +48,16 @@ export async function syncSearchScheduler(db: Db, userId: string) {
   } else {
     await getSearchQueue().removeJobScheduler(searchSchedulerId(userId));
   }
+}
+
+// The schedule is on by default, but its row needs the browser's timezone — so it's
+// created the first time criteria are saved (the first point that timezone is known)
+export async function createDefaultScheduleIfMissing(db: Db, userId: string, timezone: string) {
+  await insertSearchScheduleIfMissing(db, userId, {
+    ...SEARCH_SCHEDULE_DEFAULTS,
+    days: [...SEARCH_SCHEDULE_DEFAULTS.days],
+    timezone,
+  });
 }
 
 export async function upsertSchedule(db: Db, userId: string, input: UpsertScheduleInput) {

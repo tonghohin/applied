@@ -8,6 +8,8 @@ import {
   ComboboxInput,
   ComboboxItem,
   ComboboxList,
+  ComboboxTrigger,
+  ComboboxValue,
 } from "@/components/ui/combobox";
 import { Field, FieldDescription, FieldError, FieldLabel } from "@/components/ui/field";
 import {
@@ -165,7 +167,8 @@ export function ScheduleForm({ initial }: { initial: SearchSchedule | null }) {
               Automatically search for jobs
             </FieldLabel>
             <FieldDescription className="text-muted-foreground text-sm">
-              Runs on your saved criteria — no manual searching.
+              Each search finds jobs posted in the last 24 hours, so keep this on with every day
+              selected to catch every new job.
             </FieldDescription>
           </div>
         </div>
@@ -259,11 +262,50 @@ export function ScheduleForm({ initial }: { initial: SearchSchedule | null }) {
         <FieldError errors={[errors.startHour, errors.endHour]} />
       </Field>
 
+      <Field data-invalid={!!errors.timezone} className="flex flex-col gap-2">
+        <FieldDescription className="flex items-center gap-1 text-muted-foreground text-sm">
+          Times are in
+          <Controller
+            control={control}
+            name="timezone"
+            render={({ field }) => (
+              <Combobox
+                items={timezones}
+                value={field.value || null}
+                onValueChange={(value) => field.onChange(value ?? "")}
+                disabled={!enabled}
+              >
+                <ComboboxTrigger render={<Button type="button" variant="secondary" />}>
+                  <ComboboxValue />
+                </ComboboxTrigger>
+                <ComboboxContent className="w-72">
+                  <ComboboxInput
+                    id="timezone"
+                    showTrigger={false}
+                    placeholder="Search timezones…"
+                    aria-invalid={!!errors.timezone}
+                  />
+                  <ComboboxEmpty>No timezone found.</ComboboxEmpty>
+                  <ComboboxList>
+                    {(timezoneOption: string) => (
+                      <ComboboxItem key={timezoneOption} value={timezoneOption}>
+                        {timezoneOption}
+                      </ComboboxItem>
+                    )}
+                  </ComboboxList>
+                </ComboboxContent>
+              </Combobox>
+            )}
+          />
+        </FieldDescription>
+        <FieldError errors={[errors.timezone]} />
+      </Field>
+
       <div className="flex flex-col gap-2.5">
         <div>
           <FieldLabel>Days</FieldLabel>
           <FieldDescription className="text-muted-foreground text-sm">
-            Which days the agent searches.
+            Which days the agent searches. Jobs posted on unselected days won't be found.
           </FieldDescription>
         </div>
         <ToggleGroup
@@ -290,45 +332,6 @@ export function ScheduleForm({ initial }: { initial: SearchSchedule | null }) {
         </ToggleGroup>
         <FieldError errors={[errors.days as { message?: string } | undefined]} />
       </div>
-
-      <Field data-invalid={!!errors.timezone} className="flex flex-col gap-2.5">
-        <div>
-          <FieldLabel htmlFor="timezone">Timezone</FieldLabel>
-          <FieldDescription className="text-muted-foreground text-sm">
-            Detected from your browser.
-          </FieldDescription>
-        </div>
-        <Controller
-          control={control}
-          name="timezone"
-          render={({ field }) => (
-            <Combobox
-              items={timezones}
-              value={field.value || null}
-              onValueChange={(value) => field.onChange(value ?? "")}
-              disabled={!enabled}
-            >
-              <ComboboxInput
-                id="timezone"
-                placeholder="Search timezones…"
-                className="w-full"
-                aria-invalid={!!errors.timezone}
-              />
-              <ComboboxContent>
-                <ComboboxEmpty>No timezone found.</ComboboxEmpty>
-                <ComboboxList>
-                  {(timezone: string) => (
-                    <ComboboxItem key={timezone} value={timezone}>
-                      {timezone}
-                    </ComboboxItem>
-                  )}
-                </ComboboxList>
-              </ComboboxContent>
-            </Combobox>
-          )}
-        />
-        <FieldError errors={[errors.timezone]} />
-      </Field>
 
       <Button type="submit" disabled={loading} className="self-end">
         {loading ? "Saving…" : "Save schedule"}

@@ -8,6 +8,7 @@ const {
   mockGetJobCriteriaForUser,
   mockGetSearchScheduleForUser,
   mockUpsertSearchSchedule,
+  mockInsertSearchScheduleIfMissing,
   mockUpsertJobScheduler,
   mockRemoveJobScheduler,
 } = vi.hoisted(() => ({
@@ -16,6 +17,7 @@ const {
   mockGetJobCriteriaForUser: vi.fn().mockResolvedValue(null),
   mockGetSearchScheduleForUser: vi.fn().mockResolvedValue(null),
   mockUpsertSearchSchedule: vi.fn().mockResolvedValue(undefined),
+  mockInsertSearchScheduleIfMissing: vi.fn().mockResolvedValue(undefined),
   mockUpsertJobScheduler: vi.fn().mockResolvedValue(undefined),
   mockRemoveJobScheduler: vi.fn().mockResolvedValue(undefined),
 }));
@@ -56,6 +58,7 @@ vi.mock("@repo/db", () => ({
   getJobCriteriaForUser: mockGetJobCriteriaForUser,
   getSearchScheduleForUser: mockGetSearchScheduleForUser,
   upsertSearchSchedule: mockUpsertSearchSchedule,
+  insertSearchScheduleIfMissing: mockInsertSearchScheduleIfMissing,
 }));
 
 import { decrypt } from "@repo/shared";
@@ -164,8 +167,48 @@ describe("profile.upsertCriteria", () => {
       jobTitle: "Software Engineer",
       locations: [{ location: "Toronto", workTypes: ["hybrid", "remote"] }],
       minSalary: 120000,
+      timezone: "America/Toronto",
     });
 
     expect(result).toMatchObject({ id: "c1" });
+    expect(chain.values).toHaveBeenCalledWith(
+      expect.not.objectContaining({ timezone: expect.anything() })
+    );
+  });
+
+  it("creates the default (enabled) schedule in the browser's timezone", async () => {
+    mockInsertSearchScheduleIfMissing.mockClear();
+    const chain = {
+      values: vi.fn().mockReturnThis(),
+      onConflictDoUpdate: vi.fn().mockReturnThis(),
+      returning: vi.fn().mockResolvedValue([{ id: "c1", userId: "user_1" }]),
+    };
+    mockDb.insert.mockReturnValueOnce(chain);
+
+    const caller = profileRouter.createCaller(makeCtx());
+    await caller.upsertCriteria({
+      jobTitle: "Software Engineer",
+      locations: [{ location: "Toronto", workTypes: ["hybrid"] }],
+      minSalary: 120000,
+      timezone: "America/Toronto",
+    });
+
+    expect(mockInsertSearchScheduleIfMissing).toHaveBeenCalledWith(
+      mockDb,
+      "user_1",
+      expect.objectContaining({ enabled: true, timezone: "America/Toronto" })
+    );
+  });
+
+  it("rejects an invalid timezone", async () => {
+    const caller = profileRouter.createCaller(makeCtx());
+    await expect(
+      caller.upsertCriteria({
+        jobTitle: "Software Engineer",
+        locations: [{ location: "Toronto", workTypes: ["hybrid"] }],
+        minSalary: 120000,
+        timezone: "Not/AZone",
+      })
+    ).rejects.toThrow();
   });
 });

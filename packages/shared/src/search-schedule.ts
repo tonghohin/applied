@@ -9,7 +9,7 @@ export interface SearchScheduleConfig {
 
 // No timezone here — it is always browser-detected or user-chosen, never hardcoded.
 export const SEARCH_SCHEDULE_DEFAULTS = {
-  enabled: false,
+  enabled: true,
   intervalHours: 4,
   startHour: 9,
   endHour: 17,

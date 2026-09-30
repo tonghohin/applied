@@ -211,6 +211,13 @@
       "when": 1789674080597,
       "tag": "0029_slow_mystique",
       "breakpoints": true
+    },
+    {
+      "idx": 30,
+      "version": "7",
+      "when": 1790727102846,
+      "tag": "0030_search-schedule-enabled-default",
+      "breakpoints": true
     }
   ]
 }

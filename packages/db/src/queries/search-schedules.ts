@@ -23,6 +23,18 @@ export async function upsertSearchSchedule(db: Db, userId: string, values: Searc
     .then((rows) => rows[0]);
 }
 
+// Never overwrites — a user who already saved a schedule (even a disabled one) keeps it
+export async function insertSearchScheduleIfMissing(
+  db: Db,
+  userId: string,
+  values: SearchScheduleValues
+) {
+  await db
+    .insert(searchSchedules)
+    .values({ ...values, userId })
+    .onConflictDoNothing({ target: searchSchedules.userId });
+}
+
 export type ScheduleSyncTarget = {
   schedule: SearchSchedule;
   hasCriteria: boolean;

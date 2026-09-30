@@ -7,6 +7,7 @@ const {
   mockGetCriteria,
   mockGetLinkedInAccount,
   mockUpsertSearchSchedule,
+  mockInsertSearchScheduleIfMissing,
 } = vi.hoisted(() => ({
   mockUpsertJobScheduler: vi.fn().mockResolvedValue(undefined),
   mockRemoveJobScheduler: vi.fn().mockResolvedValue(undefined),
@@ -14,6 +15,7 @@ const {
   mockGetCriteria: vi.fn(),
   mockGetLinkedInAccount: vi.fn(),
   mockUpsertSearchSchedule: vi.fn(),
+  mockInsertSearchScheduleIfMissing: vi.fn().mockResolvedValue(undefined),
 }));
 
 vi.mock("../queues/index", () => ({
@@ -28,9 +30,11 @@ vi.mock("@repo/db", () => ({
   getJobCriteriaForUser: mockGetCriteria,
   getLinkedInAccount: mockGetLinkedInAccount,
   upsertSearchSchedule: mockUpsertSearchSchedule,
+  insertSearchScheduleIfMissing: mockInsertSearchScheduleIfMissing,
 }));
 
 import {
+  createDefaultScheduleIfMissing,
   syncSearchScheduler,
   upsertSchedule,
   upsertScheduleSchema,
@@ -144,6 +148,21 @@ describe("upsertSchedule", () => {
     expect(mockUpsertSearchSchedule).toHaveBeenCalledWith(mockDb, "user_1", input);
     expect(mockUpsertJobScheduler).toHaveBeenCalled();
     expect(row).toEqual(enabledSchedule);
+  });
+});
+
+describe("createDefaultScheduleIfMissing", () => {
+  it("inserts the enabled default schedule with the given timezone", async () => {
+    await createDefaultScheduleIfMissing(mockDb, "user_1", "America/Toronto");
+
+    expect(mockInsertSearchScheduleIfMissing).toHaveBeenCalledWith(mockDb, "user_1", {
+      enabled: true,
+      intervalHours: 4,
+      startHour: 9,
+      endHour: 17,
+      days: [0, 1, 2, 3, 4, 5, 6],
+      timezone: "America/Toronto",
+    });
   });
 });
 

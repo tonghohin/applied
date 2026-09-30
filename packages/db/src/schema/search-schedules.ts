@@ -7,7 +7,7 @@ export const searchSchedules = pgTable("search_schedules", {
     .notNull()
     .unique()
     .references(() => users.id, { onDelete: "cascade" }),
-  enabled: boolean("enabled").notNull().default(false),
+  enabled: boolean("enabled").notNull().default(true),
   intervalHours: integer("interval_hours").notNull().default(4),
   startHour: integer("start_hour").notNull().default(9),
   endHour: integer("end_hour").notNull().default(17),
