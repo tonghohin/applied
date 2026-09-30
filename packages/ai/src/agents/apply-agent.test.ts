@@ -34,8 +34,8 @@ vi.mock("ai", () => ({
   createGateway: vi.fn().mockReturnValue((modelId: string) => modelId),
 }));
 
-vi.mock("./generate-cover-letter", () => ({
-  generateCoverLetter: vi.fn().mockResolvedValue("Mock cover letter"),
+vi.mock("@repo/documents", () => ({
+  tailorCoverLetter: vi.fn().mockResolvedValue("Mock cover letter"),
 }));
 
 import type { Job } from "@repo/db";

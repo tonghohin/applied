@@ -16,10 +16,11 @@ RUN npm install -g --allow-scripts=pnpm pnpm@12.3.4
 COPY --from=pruner /app/out/json/ .
 COPY --from=pruner /app/out/pnpm-lock.yaml ./pnpm-lock.yaml
 RUN pnpm install --frozen-lockfile
-# Bundled Chromium — used by the resume-PDF renderer, and as the headed stealth
-# browser's automatic fallback (see packages/automation/src/stealth.ts) on
-# platforms without Chrome. Real Google Chrome (materially better stealth than
-# Chromium) is added on amd64 only — Chrome has no Linux/arm64 build.
+# Bundled Chromium — the headed stealth browser's automatic fallback (see
+# packages/automation/src/stealth.ts) on platforms without Chrome. Resume PDFs
+# don't need a browser: @repo/documents renders them with react-pdf. Real
+# Google Chrome (materially better stealth than Chromium) is added on amd64
+# only — Chrome has no Linux/arm64 build.
 RUN pnpm --filter @repo/automation exec playwright install --with-deps chromium \
     && if [ "$TARGETARCH" = "amd64" ]; then \
          pnpm --filter @repo/automation exec playwright install --with-deps chrome; \

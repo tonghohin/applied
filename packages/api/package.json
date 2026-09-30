@@ -21,6 +21,7 @@
   "dependencies": {
     "@better-auth/drizzle-adapter": "^1.6.20",
     "@repo/db": "workspace:*",
+    "@repo/documents": "workspace:*",
     "@repo/shared": "workspace:^",
     "@trpc/server": "^11.17.0",
     "better-auth": "^1.6.20",

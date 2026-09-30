@@ -26,6 +26,20 @@ const {
   mockUpdateJobApplying: vi.fn().mockResolvedValue(undefined),
 }));
 
+const { mockGetTailoredDocuments, mockGenerateTailoredDocuments, mockSaveTailoredDocument } =
+  vi.hoisted(() => ({
+    mockGetTailoredDocuments: vi.fn(),
+    mockGenerateTailoredDocuments: vi.fn(),
+    mockSaveTailoredDocument: vi.fn(),
+  }));
+
+vi.mock("../services/tailored-documents.service", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("../services/tailored-documents.service")>()),
+  getTailoredDocuments: mockGetTailoredDocuments,
+  generateTailoredDocuments: mockGenerateTailoredDocuments,
+  saveTailoredDocument: mockSaveTailoredDocument,
+}));
+
 vi.mock("../queues/index", () => ({
   getSearchQueue: () => ({ add: mockSearchAdd }),
   getApplyQueue: () => ({ add: mockApplyAdd }),
@@ -183,5 +197,71 @@ describe("jobs.search", () => {
     const caller = jobsRouter.createCaller(makeCtx());
     await expect(caller.search()).rejects.toMatchObject({ code: "PRECONDITION_FAILED" });
     expect(mockSearchAdd).not.toHaveBeenCalled();
+  });
+});
+
+describe("jobs tailored documents", () => {
+  const jobId = "11111111-1111-4111-8111-111111111111";
+
+  it("tailoredDocuments passes the session user and job id to the service", async () => {
+    mockGetTailoredDocuments.mockResolvedValueOnce({ resume: null, coverLetter: null });
+
+    const caller = jobsRouter.createCaller(makeCtx());
+    const result = await caller.tailoredDocuments({ jobId });
+
+    expect(mockGetTailoredDocuments).toHaveBeenCalledWith(mockDb, "user_1", jobId);
+    expect(result).toEqual({ resume: null, coverLetter: null });
+  });
+
+  it("generateTailoredDocuments forwards the requested kinds", async () => {
+    mockGenerateTailoredDocuments.mockResolvedValueOnce({ resume: null, coverLetter: null });
+
+    const caller = jobsRouter.createCaller(makeCtx());
+    await caller.generateTailoredDocuments({ jobId, kinds: ["resume"] });
+
+    expect(mockGenerateTailoredDocuments).toHaveBeenCalledWith(mockDb, "user_1", {
+      jobId,
+      kinds: ["resume"],
+    });
+  });
+
+  it("generateTailoredDocuments rejects an empty kinds list", async () => {
+    mockGenerateTailoredDocuments.mockClear();
+    const caller = jobsRouter.createCaller(makeCtx());
+
+    await expect(caller.generateTailoredDocuments({ jobId, kinds: [] })).rejects.toMatchObject({
+      code: "BAD_REQUEST",
+    });
+    expect(mockGenerateTailoredDocuments).not.toHaveBeenCalled();
+  });
+
+  it("saveTailoredDocument trims content and rejects blank content", async () => {
+    mockSaveTailoredDocument.mockResolvedValueOnce({});
+    const caller = jobsRouter.createCaller(makeCtx());
+
+    await caller.saveTailoredDocument({ jobId, kind: "resume", content: "  # Edited  " });
+    expect(mockSaveTailoredDocument).toHaveBeenCalledWith(mockDb, "user_1", {
+      jobId,
+      kind: "resume",
+      content: "# Edited",
+    });
+
+    await expect(
+      caller.saveTailoredDocument({ jobId, kind: "resume", content: "   " })
+    ).rejects.toMatchObject({ code: "BAD_REQUEST" });
+  });
+
+  it("throws UNAUTHORIZED when session is null", async () => {
+    const caller = jobsRouter.createCaller({ db: {} as never, session: null } as never);
+
+    await expect(caller.tailoredDocuments({ jobId })).rejects.toMatchObject({
+      code: "UNAUTHORIZED",
+    });
+    await expect(
+      caller.generateTailoredDocuments({ jobId, kinds: ["resume"] })
+    ).rejects.toMatchObject({ code: "UNAUTHORIZED" });
+    await expect(
+      caller.saveTailoredDocument({ jobId, kind: "resume", content: "x" })
+    ).rejects.toMatchObject({ code: "UNAUTHORIZED" });
   });
 });

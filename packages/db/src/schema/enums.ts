@@ -1,4 +1,4 @@
-import { NOTICE_PERIODS, WORK_TYPES } from "@repo/shared";
+import { NOTICE_PERIODS, TAILORED_DOCUMENT_KINDS, WORK_TYPES } from "@repo/shared";
 import { pgEnum } from "drizzle-orm/pg-core";
 
 export const platformEnum = pgEnum("platform", ["linkedin"]);
@@ -25,3 +25,4 @@ export const applyRunStatusEnum = pgEnum("apply_run_status", [
   "completed",
   "failed",
 ]);
+export const tailoredDocumentKindEnum = pgEnum("tailored_document_kind", TAILORED_DOCUMENT_KINDS);

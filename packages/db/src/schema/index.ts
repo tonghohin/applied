@@ -7,3 +7,4 @@ export * from "./jobs";
 export * from "./search-runs";
 export * from "./search-schedules";
 export * from "./apply-runs";
+export * from "./tailored-documents";

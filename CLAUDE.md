@@ -44,6 +44,7 @@ packages/api    tRPC routers, services, Better Auth config, BullMQ queue definit
 packages/db     Drizzle schema, migrations, db connection, and repository query functions
 packages/automation  Playwright LinkedIn scraper (no scorer — scoring is handled by packages/ai)
 packages/ai     Gemini 2.5 Flash agent that fills and submits job applications using Playwright MCP; also exports scoreJob (Gemini Flash Lite, facts extracted by the model and scored by the deduction table in `score-rubric.ts`) used during search
+packages/documents  Tailored resume/cover letter generation (Gemini 2.5 Flash via `tailorResume`/`tailorCoverLetter`) and ATS-friendly PDF rendering with react-pdf (`renderResumePdf`/`renderCoverLetterPdf`) — no browser needed, so both web and worker use it
 packages/shared Shared utilities and constants (used by api + worker), e.g. cron pattern building for search schedules
 ```
 
@@ -65,7 +66,18 @@ Better Auth with email + password, configured in `packages/api/src/auth.ts`. The
 
 ### AI apply agent
 
-`jobs.applyJobs` inserts an `apply_runs` row (`pending`) per job and enqueues to `applyQueue`. Worker updates the run to `running`, then calls `processApplyJob` from `packages/ai` which generates a PDF from the user's resume text (`generateResumePdf`), sets job status to `applying`, then calls `applyToJob` which launches a stealth browser (playwright-extra + StealthPlugin, `--disable-blink-features=AutomationControlled`) and loads the saved LinkedIn session into a browser context. The `@playwright/mcp` MCP server runs in-process against that context via `InMemoryTransport`, and `generateText` with `stopWhen: [isLoopFinished(), isStepCount(150)]` drives the agent to fill and submit the application (uploading the PDF if the form has a file upload field). Job status is updated to `applied` or `failed`; run status to `completed` or `failed`.
+`jobs.applyJobs` inserts an `apply_runs` row (`pending`) per job and enqueues to `applyQueue`. Worker updates the run to `running`, then calls `processApplyJob` from `packages/ai`, which picks the resume to submit: the job's saved tailored resume if there is one; otherwise it tailors one with `tailorResume` and saves it to `tailored_documents` first, so every application's resume can be inspected afterwards (tailoring failures or a job with no description fall back to the base resume and never block the application). It renders that resume to a temp PDF with `renderResumePdf`, sets job status to `applying`, then calls `applyToJob` which launches a stealth browser (playwright-extra + StealthPlugin, `--disable-blink-features=AutomationControlled`) and loads the saved LinkedIn session into a browser context. The `@playwright/mcp` MCP server runs in-process against that context via `InMemoryTransport`, and `generateText` with `stopWhen: [isLoopFinished(), isStepCount(150)]` drives the agent to fill and submit the application (uploading the PDF if the form has a file upload field). `applyToJob` receives an `ApplyDocuments` object (PDF path, resume text used for form answers, optional saved cover letter). The `generate_cover_letter` tool returns the saved cover letter, or, only when the form actually has a cover letter field, writes one from the submitted resume and saves it via the `onCoverLetterGenerated` callback, so the job panel shows exactly what was sent. Job status is updated to `applied` or `failed`; run status to `completed` or `failed`.
+
+### Tailored documents
+
+Each job can have one tailored resume and one tailored cover letter (`tailored_documents`, unique on `job_id` + `kind`, `kind` from `TAILORED_DOCUMENT_KINDS` in `packages/shared`). Content is text: the resume is a fixed markdown structure (`#` name, `##` sections, `###` roles, `-` bullets), and the cover letter is paragraphs separated by blank lines.
+
+- `jobs.generateTailoredDocuments` is a synchronous mutation (no queue, about 10–30s). It checks ownership, a job description, a base resume and an AI key, then tailors the resume first and writes the cover letter from it so the two agree. Nothing is saved unless every requested document generates. Prompts forbid inventing facts not in the base resume.
+- `jobs.saveTailoredDocument` stores the user's edits, and `jobs.tailoredDocuments` reads both documents.
+- PDFs are served by the route handler `GET /api/jobs/[jobId]/documents/[kind]` (`?download=1` for an attachment). It renders on each request via `renderTailoredDocumentPdf`. The UI adds `?v=<updatedAt>` as a cache-buster.
+- The UI is `TailoredDocumentsSection` in `JobDetail`, which opens `TailoredDocumentsSheet`: a textarea editor, iframe preview and download per tab.
+- **ATS rules for the renderer:** single column; Helvetica (a standard PDF font with extractable text); contact details in the body, not a PDF header; standard section headings; no hyphenation (`Font.registerHyphenationCallback`); PDF title/author metadata set. Standard fonts only cover WinAnsi, so `toWinAnsi` maps lookalikes (→ becomes ->) and drops unsupported characters such as CJK and emoji.
+- AI Gateway credential errors go through `describeAiError`/`isAiKeyError`, so users see "Your AI Gateway key was rejected. Check it in Settings → AI." (412) instead of the gateway's developer-facing message.
 
 ### Search scheduling
 
@@ -97,7 +109,7 @@ Each package/app validates only the env vars it uses via its own `src/env.ts` (Z
 - Use `trpc.x.queryOptions()` syntax (TanStack Query v5)
 - All procedures except `health` require authentication (`protectedProcedure` throws `UNAUTHORIZED` if no session)
 - Profile mutations are split by tab: `upsertPersonal`, `upsertResume`, `upsertCoverLetter`, `upsertLinkedIn`, `upsertCriteria`, `upsertSchedule`, `upsertAiKey` — each only validates and updates its own fields
-- `resume` is plain text (`profiles.resume`); the agent generates a PDF from it on the fly per application
+- `resume` is whatever the user pastes, usually plain text copied from a PDF or Word file, though markdown also works (`profiles.resume`); the Settings copy deliberately never mentions markdown. It's the source for tailoring and is rendered directly only as a fallback. The markdown parser runs with `breaks: true`, so pasted plain text keeps its line breaks
 - `coverLetterInstructions` is optional free-text (tone, length, emphasis hints); the agent writes a personalised cover letter per job using the resume and job details, following the instructions if provided
 
 ### Data fetching pattern (server → client)
@@ -131,6 +143,8 @@ export function JobCard({ title, company }: JobCardProps) {}
 
 **Module imports**
 - Never use `.js` extensions on relative imports (e.g. `from "./auth"` not `from "./auth.js"`). The root tsconfig uses `moduleResolution: "bundler"` — Turbopack resolves imports literally and does not remap `.js` → `.ts`.
+- Every workspace package is ESM (`"type": "module"`), so ESM-only dependencies such as `@react-pdf/renderer` load in the worker, which runs through tsx. Don't use `__dirname`/`require`; use `import.meta.dirname`.
+- `.tsx` files in `packages/*` that the worker imports need `/** @jsxRuntime automatic */` and `/** @jsxImportSource react */` pragmas. tsx applies a tsconfig's `jsx` setting only to files that tsconfig includes, so without them the worker compiles them with the classic runtime (`React is not defined`). Type checking uses `"jsx": "react-jsx"` from the root tsconfig.
 
 **Package manager**
 - pnpm is pinned via the root `packageManager` field; pnpm 12 tracks its own version + the `@pnpm/exe.*` binaries in `pnpm-lock.yaml` (`packageManagerDependencies`). Bump both together (`pnpm self-update latest-N`), never hand-edit.
@@ -138,8 +152,8 @@ export function JobCard({ title, company }: JobCardProps) {}
 
 **shadcn/ui components**
 - Before writing any UI markup, check `apps/web/components/ui/` for an installed component that covers the use case. Prefer the shadcn component over raw HTML + Tailwind every time — even for one-off elements like pills, dividers, or loading states.
-- If no installed component fits, install one: `npx shadcn@latest add <name>` (run from `apps/web/`). Only fall back to raw HTML when no shadcn component exists for the pattern.
-- For links styled as buttons, use `<Button render={<Link href="..." />}>` — this Button uses base-ui's `render` prop (not Radix's `asChild`). Works in server components: `@base-ui/react` declares its own `"use client"` boundary internally.
+- If no installed component fits, install one: `npx shadcn@latest add <name>` (run from `apps/web/`). Only fall back to raw HTML when no shadcn component exists for the pattern. Afterwards, check the new file: the CLI has generated `import { cn } from "cn"` and added a stray `cn` package to `package.json`. Change the import to `@/lib/utils`, run `pnpm remove cn`, and answer "no" when it offers to overwrite existing components.
+- For links styled as buttons, use `<Button nativeButton={false} render={<Link href="..." />}>` — this Button uses base-ui's `render` prop (not Radix's `asChild`). Works in server components: `@base-ui/react` declares its own `"use client"` boundary internally. For a plain `<a>` (downloads, API routes), use the function form `render={(props) => <a {...props} href="..." download />}`. Biome's `useAnchorContent` rule rejects a self-closing `<a />`.
 - For forms, use `Field`, `FieldLabel`, `FieldError`, `FieldDescription` from `@/components/ui/field` with react-hook-form. Each `Field` takes `data-invalid={!!errors.x}`; each input takes `aria-invalid={!!errors.x}`; `<FieldError errors={[errors.x]} />` renders nothing when there is no error so no conditional needed.
 
 **Form feedback**

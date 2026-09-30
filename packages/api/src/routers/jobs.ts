@@ -20,6 +20,14 @@ import {
   updateStatusSchema,
   validateApplyJobs,
 } from "../services/jobs.service";
+import {
+  generateTailoredDocuments,
+  generateTailoredDocumentsSchema,
+  getTailoredDocuments,
+  saveTailoredDocument,
+  saveTailoredDocumentSchema,
+  tailoredDocumentsInputSchema,
+} from "../services/tailored-documents.service";
 import { protectedProcedure, router } from "../trpc";
 
 export const jobsRouter = router({
@@ -90,4 +98,16 @@ export const jobsRouter = router({
       );
       return { queued: true };
     }),
+
+  tailoredDocuments: protectedProcedure
+    .input(tailoredDocumentsInputSchema)
+    .query(({ ctx, input }) => getTailoredDocuments(ctx.db, ctx.session.user.id, input.jobId)),
+
+  generateTailoredDocuments: protectedProcedure
+    .input(generateTailoredDocumentsSchema)
+    .mutation(({ ctx, input }) => generateTailoredDocuments(ctx.db, ctx.session.user.id, input)),
+
+  saveTailoredDocument: protectedProcedure
+    .input(saveTailoredDocumentSchema)
+    .mutation(({ ctx, input }) => saveTailoredDocument(ctx.db, ctx.session.user.id, input)),
 });
