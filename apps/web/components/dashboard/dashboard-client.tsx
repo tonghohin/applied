@@ -8,7 +8,6 @@ import { StatCards } from "@/components/dashboard/stat-cards";
 import { WeeklyActivityChart } from "@/components/dashboard/weekly-activity-chart";
 import { PageLayout } from "@/components/page-layout";
 import { SearchJobsButton } from "@/components/search-jobs-button";
-import { Button } from "@/components/ui/button";
 import {
   Empty,
   EmptyContent,
@@ -21,7 +20,6 @@ import { trpc } from "@/lib/trpc";
 import { RiDashboardLine } from "@remixicon/react";
 import type { DashboardStats } from "@repo/api";
 import type { getJobCriteriaForUser } from "@repo/db";
-import Link from "next/link";
 
 type Criteria = Awaited<ReturnType<typeof getJobCriteriaForUser>>;
 
@@ -40,17 +38,7 @@ export function DashboardClient({
   const isEmpty = jobs.length === 0 && searchRuns.length === 0;
 
   return (
-    <PageLayout
-      title="Dashboard"
-      action={
-        <div className="flex items-center gap-2">
-          <Button variant="outline" nativeButton={false} render={<Link href="/runs" />}>
-            View runs
-          </Button>
-          <SearchJobsButton />
-        </div>
-      }
-    >
+    <PageLayout title="Dashboard" action={<SearchJobsButton />}>
       {isEmpty ? (
         <Empty className="min-h-80 border">
           <EmptyHeader>
