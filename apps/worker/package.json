@@ -2,6 +2,7 @@
   "name": "@repo/worker",
   "version": "0.0.0",
   "private": true,
+  "type": "module",
   "scripts": {
     "dev": "tsx watch --env-file .env src/index.ts",
     "build": "tsc --noEmit",
