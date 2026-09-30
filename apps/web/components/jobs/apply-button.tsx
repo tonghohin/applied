@@ -3,14 +3,21 @@
 import { Button } from "@/components/ui/button";
 import { trpc } from "@/lib/trpc";
 import { RiSendPlaneLine } from "@remixicon/react";
+import { toast } from "sonner";
 
 export function ApplyButton({ jobId }: { jobId: string }) {
   const utils = trpc.useUtils();
   const applyMutation = trpc.jobs.applyJobs.useMutation();
 
   async function handleApply() {
-    await applyMutation.mutateAsync({ jobIds: [jobId] });
-    utils.jobs.list.invalidate();
+    try {
+      await applyMutation.mutateAsync({ jobIds: [jobId] });
+      utils.jobs.list.invalidate();
+    } catch (err) {
+      toast.error("Couldn't start application", {
+        description: err instanceof Error ? err.message : undefined,
+      });
+    }
   }
 
   return (

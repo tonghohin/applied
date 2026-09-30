@@ -47,6 +47,7 @@ const completeProfile = {
   address: "123 Main",
   resume: "Resume",
   coverLetterInstructions: null,
+  aiGatewayKeyEncrypted: "enc_key",
 };
 
 const completeLinkedInAccount = {

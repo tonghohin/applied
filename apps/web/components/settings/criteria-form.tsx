@@ -132,8 +132,8 @@ export function CriteriaForm({
           </Button>
         </div>
         <FieldDescription>
-          Tick every workplace type you want for each location. For example, to find both remote and
-          hybrid jobs in Toronto, tick both Remote and Hybrid.
+          Enter one location per entry. Tick every workplace type you want for each location. For
+          example, to find both remote and hybrid jobs in Toronto, tick both Remote and Hybrid.
         </FieldDescription>
 
         {fields.length === 0 && (
@@ -145,7 +145,7 @@ export function CriteriaForm({
             <div className="flex items-center gap-2">
               <Field data-invalid={!!errors.locations?.[index]?.location} className="flex-1">
                 <Input
-                  placeholder="Toronto, Canada, New York…"
+                  placeholder="e.g. Toronto, Canada"
                   {...register(`locations.${index}.location`)}
                   aria-invalid={!!errors.locations?.[index]?.location}
                 />

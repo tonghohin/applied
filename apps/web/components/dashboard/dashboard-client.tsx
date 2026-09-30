@@ -8,6 +8,7 @@ import { StatCards } from "@/components/dashboard/stat-cards";
 import { WeeklyActivityChart } from "@/components/dashboard/weekly-activity-chart";
 import { PageLayout } from "@/components/page-layout";
 import { SearchJobsButton } from "@/components/search-jobs-button";
+import { SetupRequiredEmpty } from "@/components/setup-required-empty";
 import {
   Empty,
   EmptyContent,
@@ -20,6 +21,7 @@ import { trpc } from "@/lib/trpc";
 import { RiDashboardLine } from "@remixicon/react";
 import type { DashboardStats } from "@repo/api";
 import type { getJobCriteriaForUser } from "@repo/db";
+import type { MissingSearchField } from "@repo/shared";
 
 type Criteria = Awaited<ReturnType<typeof getJobCriteriaForUser>>;
 
@@ -27,19 +29,33 @@ export function DashboardClient({
   initialData,
   criteria,
   linkedInConnected,
+  missingSetupFields,
 }: {
   initialData: DashboardStats;
   criteria: Criteria;
   linkedInConnected: boolean;
+  missingSetupFields: MissingSearchField[];
 }) {
   const { data } = trpc.dashboard.getStats.useQuery(undefined, { initialData });
   const { jobs, searchRuns, searchSchedule } = data ?? initialData;
 
   const isEmpty = jobs.length === 0 && searchRuns.length === 0;
+  const isSetupComplete = missingSetupFields.length === 0;
 
   return (
-    <PageLayout title="Dashboard" action={<SearchJobsButton />}>
-      {isEmpty ? (
+    <PageLayout
+      title="Dashboard"
+      action={
+        <SearchJobsButton
+          disabledReason={
+            isSetupComplete ? undefined : "Finish setting up your profile to search for jobs"
+          }
+        />
+      }
+    >
+      {isEmpty && !isSetupComplete ? (
+        <SetupRequiredEmpty missingFields={missingSetupFields} />
+      ) : isEmpty ? (
         <Empty className="min-h-80 border">
           <EmptyHeader>
             <EmptyMedia variant="icon">

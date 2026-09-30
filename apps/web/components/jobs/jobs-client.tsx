@@ -4,6 +4,7 @@ import { JobListSkeleton } from "@/components/jobs/job-list-skeleton";
 import { JobsSplitView } from "@/components/jobs/jobs-split-view";
 import { PageLayout } from "@/components/page-layout";
 import { SearchJobsButton } from "@/components/search-jobs-button";
+import { SetupRequiredEmpty } from "@/components/setup-required-empty";
 import {
   Empty,
   EmptyContent,
@@ -17,7 +18,7 @@ import type { JobStatus } from "@/lib/trpc";
 import { trpc } from "@/lib/trpc";
 import { RiBriefcaseLine } from "@remixicon/react";
 import type { RouterOutputs } from "@repo/api";
-import type { WorkType } from "@repo/shared";
+import type { MissingSearchField, WorkType } from "@repo/shared";
 import { usePathname, useSearchParams } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 
@@ -34,7 +35,13 @@ function writeJobIdParam(pathname: string, jobId: string | null) {
   window.history.replaceState(null, "", query ? `${pathname}?${query}` : pathname);
 }
 
-export function JobsClient({ initialJobs }: { initialJobs: InitialJobs }) {
+export function JobsClient({
+  initialJobs,
+  missingSetupFields,
+}: {
+  initialJobs: InitialJobs;
+  missingSetupFields: MissingSearchField[];
+}) {
   const { data: jobs = [], isLoading } = trpc.jobs.list.useQuery(undefined, {
     initialData: initialJobs,
   });
@@ -82,11 +89,23 @@ export function JobsClient({ initialJobs }: { initialJobs: InitialJobs }) {
   }, [jobs, filteredSortedJobs, selectedJobId, filterKey, pathname]);
 
   const selectedJob = jobs.find((job) => job.id === selectedJobId) ?? null;
+  const isSetupComplete = missingSetupFields.length === 0;
 
   return (
-    <PageLayout title="Jobs" action={<SearchJobsButton />}>
+    <PageLayout
+      title="Jobs"
+      action={
+        <SearchJobsButton
+          disabledReason={
+            isSetupComplete ? undefined : "Finish setting up your profile to search for jobs"
+          }
+        />
+      }
+    >
       {isLoading ? (
         <JobListSkeleton />
+      ) : jobs.length === 0 && !isSetupComplete ? (
+        <SetupRequiredEmpty missingFields={missingSetupFields} />
       ) : jobs.length === 0 ? (
         <Empty className="min-h-80 border">
           <EmptyHeader>

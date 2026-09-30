@@ -18,6 +18,7 @@ import {
   SidebarMenuSubItem,
 } from "@/components/ui/sidebar";
 import { authClient } from "@/lib/auth-client";
+import { SETTINGS_PAGES } from "@/lib/settings-pages";
 import {
   RiArrowRightSLine,
   RiBriefcaseLine,
@@ -37,15 +38,6 @@ const NAV_LINKS = [
     exact: false,
     badge: <SearchRunStatusIndicator />,
   },
-];
-
-const SETTINGS_LINKS = [
-  { href: "/settings/personal", label: "Personal info" },
-  { href: "/settings/security", label: "Security" },
-  { href: "/settings/documents", label: "Documents" },
-  { href: "/settings/job-search", label: "Job search" },
-  { href: "/settings/linkedin", label: "LinkedIn account" },
-  { href: "/settings/ai", label: "AI provider" },
 ];
 
 export function AppSidebar() {
@@ -89,7 +81,7 @@ export function AppSidebar() {
             </CollapsibleTrigger>
             <CollapsibleContent>
               <SidebarMenuSub>
-                {SETTINGS_LINKS.map(({ href, label }) => (
+                {Object.values(SETTINGS_PAGES).map(({ href, label }) => (
                   <SidebarMenuSubItem key={href}>
                     <SidebarMenuSubButton
                       render={<Link href={href} />}
