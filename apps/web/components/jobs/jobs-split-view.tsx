@@ -3,6 +3,7 @@
 import { JobDetail } from "@/components/jobs/job-detail";
 import { JobListItem } from "@/components/jobs/job-list-item";
 import { JobsFilterBar } from "@/components/jobs/jobs-filter-bar";
+import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import type { CompanyHistoryFilter, JobSortBy } from "@/lib/jobs-filter";
 import type { Job, JobStatus } from "@/lib/trpc";
@@ -74,6 +75,20 @@ export function JobsSplitView({
     onSelectedIdsChange(next);
   }
 
+  const allVisibleSelected = jobs.length > 0 && jobs.every((job) => selectedIds.has(job.id));
+
+  function toggleSelectAll() {
+    const next = new Set(selectedIds);
+    for (const job of jobs) {
+      if (allVisibleSelected) {
+        next.delete(job.id);
+      } else {
+        next.add(job.id);
+      }
+    }
+    onSelectedIdsChange(next);
+  }
+
   return (
     <div className="flex h-[calc(100vh-7rem)] overflow-hidden rounded-lg border">
       <div className="flex min-h-0 w-96 shrink-0 flex-col border-r">
@@ -90,8 +105,13 @@ export function JobsSplitView({
           onSortByChange={onSortByChange}
         />
 
-        <div className="border-b px-4 py-2 text-muted-foreground text-xs">
-          {jobs.length} {jobs.length === 1 ? "job" : "jobs"}
+        <div className="flex items-center justify-between border-b px-4 py-2 text-muted-foreground text-xs">
+          <span>
+            {jobs.length} {jobs.length === 1 ? "job" : "jobs"}
+          </span>
+          <Button variant="ghost" size="xs" onClick={toggleSelectAll} disabled={jobs.length === 0}>
+            {allVisibleSelected ? "Deselect all" : "Select all"}
+          </Button>
         </div>
 
         <ScrollArea viewportRef={setScrollElement} className="min-h-0 flex-1">
