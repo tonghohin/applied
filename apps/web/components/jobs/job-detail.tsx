@@ -4,6 +4,7 @@ import { ApplyButton } from "@/components/jobs/apply-button";
 import { ApplyRunLog } from "@/components/jobs/apply-run-log";
 import { StatusIcon } from "@/components/jobs/job-status-icon";
 import { JobStatusSelect } from "@/components/jobs/job-status-select";
+import { TailoredDocumentsSection } from "@/components/jobs/tailored-documents-section";
 import { Button } from "@/components/ui/button";
 import {
   Popover,
@@ -165,6 +166,8 @@ export function JobDetail({ job }: { job: Job }) {
       </div>
 
       {isActionable && <ApplyButton jobId={job.id} />}
+
+      <TailoredDocumentsSection job={job} />
 
       <div className="border-t pt-4">
         {job.description ? (

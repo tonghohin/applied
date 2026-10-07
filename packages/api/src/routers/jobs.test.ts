@@ -26,18 +26,24 @@ const {
   mockUpdateJobApplying: vi.fn().mockResolvedValue(undefined),
 }));
 
-const { mockGetTailoredDocuments, mockGenerateTailoredDocuments, mockSaveTailoredDocument } =
-  vi.hoisted(() => ({
-    mockGetTailoredDocuments: vi.fn(),
-    mockGenerateTailoredDocuments: vi.fn(),
-    mockSaveTailoredDocument: vi.fn(),
-  }));
+const {
+  mockGetTailoredDocuments,
+  mockGenerateTailoredDocuments,
+  mockSaveTailoredDocument,
+  mockDeleteTailoredDocument,
+} = vi.hoisted(() => ({
+  mockGetTailoredDocuments: vi.fn(),
+  mockGenerateTailoredDocuments: vi.fn(),
+  mockSaveTailoredDocument: vi.fn(),
+  mockDeleteTailoredDocument: vi.fn(),
+}));
 
 vi.mock("../services/tailored-documents.service", async (importOriginal) => ({
   ...(await importOriginal<typeof import("../services/tailored-documents.service")>()),
   getTailoredDocuments: mockGetTailoredDocuments,
   generateTailoredDocuments: mockGenerateTailoredDocuments,
   saveTailoredDocument: mockSaveTailoredDocument,
+  deleteTailoredDocument: mockDeleteTailoredDocument,
 }));
 
 vi.mock("../queues/index", () => ({
@@ -251,9 +257,24 @@ describe("jobs tailored documents", () => {
     ).rejects.toMatchObject({ code: "BAD_REQUEST" });
   });
 
+  it("deleteTailoredDocument passes the session user, job and kind to the service", async () => {
+    mockDeleteTailoredDocument.mockResolvedValueOnce({ resume: null, coverLetter: null });
+    const caller = jobsRouter.createCaller(makeCtx());
+
+    await caller.deleteTailoredDocument({ jobId, kind: "cover_letter" });
+
+    expect(mockDeleteTailoredDocument).toHaveBeenCalledWith(mockDb, "user_1", {
+      jobId,
+      kind: "cover_letter",
+    });
+  });
+
   it("throws UNAUTHORIZED when session is null", async () => {
     const caller = jobsRouter.createCaller({ db: {} as never, session: null } as never);
 
+    await expect(caller.deleteTailoredDocument({ jobId, kind: "resume" })).rejects.toMatchObject({
+      code: "UNAUTHORIZED",
+    });
     await expect(caller.tailoredDocuments({ jobId })).rejects.toMatchObject({
       code: "UNAUTHORIZED",
     });

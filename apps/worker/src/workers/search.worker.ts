@@ -1,4 +1,4 @@
-import { scoreJob as scoreJobWithLLM } from "@repo/ai";
+import { describeAiError, scoreJob as scoreJobWithLLM } from "@repo/ai";
 import { getAiGatewayKey } from "@repo/api";
 import { runSearch } from "@repo/automation";
 import type { ScrapedJob } from "@repo/automation";
@@ -74,7 +74,7 @@ async function processSearch(userId: string, runId: string) {
     const failedRun = await updateSearchRun(getDb(), runId, {
       status: "failed",
       completedAt: new Date(),
-      errorMessage: err instanceof Error ? err.message : String(err),
+      errorMessage: describeAiError(err),
     });
     if (failedRun) publishEvent(userId, { type: "search-run:update", run: failedRun });
     if (isCaptcha) await clearLinkedInSession(getDb(), userId);

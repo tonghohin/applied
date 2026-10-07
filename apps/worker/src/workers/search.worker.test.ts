@@ -53,8 +53,9 @@ vi.mock("@repo/api", () => ({
   getAiGatewayKey: mockGetAiGatewayKey,
 }));
 
-vi.mock("@repo/ai", () => ({
+vi.mock("@repo/ai", async () => ({
   scoreJob: mockScoreJob,
+  describeAiError: (await import("@repo/ai/errors")).describeAiError,
 }));
 
 vi.mock("@repo/db", () => ({
@@ -163,5 +164,39 @@ describe("search worker — scheduled tick", () => {
       "run-9",
       expect.objectContaining({ status: "completed" })
     );
+  });
+});
+
+describe("search worker — failures", () => {
+  function failedRunUpdate() {
+    return mockUpdateSearchRun.mock.calls.find(([, , values]) => values?.status === "failed")?.[2];
+  }
+
+  it("reports a rejected AI key during scoring as a Settings hint", async () => {
+    mockUpdateSearchRun.mockClear();
+    const keyError = new Error("\u001b[31mUnauthenticated request to AI Gateway.\u001b[0m");
+    keyError.name = "GatewayAuthenticationError";
+    mockRunSearch.mockRejectedValueOnce(keyError);
+    mockGetLinkedInAccount.mockResolvedValueOnce(account);
+
+    await expect(processor({ data: { userId: "user-1", runId: "run-1" } })).rejects.toThrow();
+
+    expect(failedRunUpdate()).toMatchObject({
+      errorMessage: "Your AI Gateway key was rejected. Check it in Settings → AI.",
+    });
+  });
+
+  it("keeps other error messages and still clears the session on a captcha", async () => {
+    mockUpdateSearchRun.mockClear();
+    mockClearLinkedInSession.mockClear();
+    mockRunSearch.mockRejectedValueOnce(new Error("LinkedIn showed a CAPTCHA challenge"));
+    mockGetLinkedInAccount.mockResolvedValueOnce(account);
+
+    await expect(processor({ data: { userId: "user-1", runId: "run-1" } })).rejects.toThrow();
+
+    expect(failedRunUpdate()).toMatchObject({
+      errorMessage: "LinkedIn showed a CAPTCHA challenge",
+    });
+    expect(mockClearLinkedInSession).toHaveBeenCalled();
   });
 });

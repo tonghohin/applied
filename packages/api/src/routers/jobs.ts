@@ -21,6 +21,8 @@ import {
   validateApplyJobs,
 } from "../services/jobs.service";
 import {
+  deleteTailoredDocument,
+  deleteTailoredDocumentSchema,
   generateTailoredDocuments,
   generateTailoredDocumentsSchema,
   getTailoredDocuments,
@@ -110,4 +112,8 @@ export const jobsRouter = router({
   saveTailoredDocument: protectedProcedure
     .input(saveTailoredDocumentSchema)
     .mutation(({ ctx, input }) => saveTailoredDocument(ctx.db, ctx.session.user.id, input)),
+
+  deleteTailoredDocument: protectedProcedure
+    .input(deleteTailoredDocumentSchema)
+    .mutation(({ ctx, input }) => deleteTailoredDocument(ctx.db, ctx.session.user.id, input)),
 });

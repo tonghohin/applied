@@ -33,5 +33,24 @@
   },
   "files": {
     "ignore": ["node_modules", ".next", "dist", ".turbo", "drizzle", ".claude"]
-  }
+  },
+  "overrides": [
+    {
+      "include": ["packages/api/**", "apps/web/**"],
+      "linter": {
+        "rules": {
+          "nursery": {
+            "noRestrictedImports": {
+              "level": "error",
+              "options": {
+                "paths": {
+                  "@repo/ai": "Import from @repo/ai/tailoring or @repo/ai/errors instead. The root entry point pulls in the apply agent (Playwright stealth + MCP), which breaks the Next.js server build."
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  ]
 }

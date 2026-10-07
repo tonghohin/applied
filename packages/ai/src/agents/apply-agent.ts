@@ -3,6 +3,7 @@ import { toTitleCase } from "@repo/shared";
 import {
   type ModelMessage,
   Output,
+  type ToolExecutionOptions,
   createGateway,
   generateText,
   isLoopFinished,
@@ -10,8 +11,9 @@ import {
   tool,
 } from "ai";
 import { z } from "zod";
+import { describeAiError } from "../errors";
 import { createPlaywrightMCPClient } from "../mcp";
-import { generateCoverLetter } from "./generate-cover-letter";
+import { tailorCoverLetter } from "../tailoring";
 
 const applyResultSchema = z.object({
   success: z
@@ -31,6 +33,21 @@ export type ApplyResult = z.infer<typeof applyResultSchema>;
 
 export type ProfileWithEmail = Profile & { email: string };
 
+export type ApplyDocuments = {
+  // Attached by the upload_resume tool; the model never sees or types this path
+  resumePdfPath: string;
+  // The text behind the uploaded PDF, so form answers match the resume the employer receives
+  resumeText: string;
+  // A cover letter the user already reviewed for this job; generated on demand when absent
+  coverLetter?: string;
+  // Called once with a cover letter generated mid-application, so the user can see what was
+  // sent. If it throws, the application is stopped before the letter can be submitted.
+  onCoverLetterGenerated?: (content: string) => Promise<void>;
+  // Renders a cover letter to a PDF (same renderer as the web preview) and returns its path,
+  // for cover letter or attachment upload fields
+  writeCoverLetterPdf: (content: string) => Promise<string>;
+};
+
 type ApplyPlatform = "linkedin" | "greenhouse" | "lever" | "ashby" | "bamboohr" | "generic";
 
 function detectPlatform(url: string): ApplyPlatform {
@@ -44,7 +61,11 @@ function detectPlatform(url: string): ApplyPlatform {
 
 const FORM_FILLING_RULES = `## Form filling rules
 - Use the resume content to answer questions about experience, skills, and education.
-- When a cover letter field is required, call generate_cover_letter to obtain the cover letter text, then type the returned text into the field.
+- When the form has a cover letter field (required or optional), set required to whether the form marks that field as required (an asterisk, "required", or the form refusing to continue without it):
+  - Text box: call generate_cover_letter, then type the returned text into the field.
+  - File upload: click it so the file chooser opens, then call upload_cover_letter.
+  If either tool says no cover letter is available, leave that field empty (for an upload the chooser is already closed) and carry on with the rest of the form.
+- Type cover letter text exactly as returned and in full — never shorten, summarise, or edit it. Use browser_press_sequentially with delay:40 for it (the cover letter has a longer typing time limit than other fields).
 - For yes/no questions about work authorization: answer "Yes" (authorized to work).
 - For yes/no questions about sponsorship: answer based on the applicant's profile — "Yes" if they require sponsorship, "No" if they do not.
 - For open-ended questions (e.g. "Why do you want to work here?", "Describe a challenging project", "What interests you about this role?"): write the answer in first person as the applicant, grounded in the resume and the job details. Be specific — reference actual skills, projects, or experience from the resume and connect them to the role or company. Keep it to 2-4 sentences unless the field indicates a longer answer is expected. Never mention being an AI or an automated agent.
@@ -52,7 +73,7 @@ const FORM_FILLING_RULES = `## Form filling rules
 - For notice period / availability / start date questions: answer with the applicant's notice period from the profile, or the nearest equivalent option.
 - For demographic / EEO / self-identification questions (gender, race, ethnicity, veteran status, disability, sexual orientation): select "Prefer not to answer", "Decline to self-identify", or the closest equivalent option. Only if the field is required and no decline option exists, leave it at the default or pick the most neutral option. Never guess demographic information about the applicant.
 - If a required field still cannot be answered from any of the above, use a reasonable placeholder.
-- If a file upload field for a resume appears and a Resume PDF path is provided in the prompt, upload it BEFORE filling any other text field on that step — do this first, ahead of name/email/phone/etc, even if the resume field appears lower down visually or later in a typical field-order list. Many ATS platforms (Lever, Greenhouse, and others) parse the uploaded resume and asynchronously auto-populate fields like name, email, and phone a few seconds after upload; filling those fields first means the parser's autofill lands on top of what you just typed and produces a doubled value (e.g. "Hin TongHin Tong"). After uploading, use browser_wait_for with time:3, then take a fresh snapshot before filling any other field — treat whatever the parser filled in as the field's current value for the "skip if already correct" check below, and only type over it if it's missing or wrong. For any other (non-resume) file upload fields, skip them.
+- If a file upload field for a resume appears, upload the resume BEFORE filling any other text field on that step — do this first, ahead of name/email/phone/etc, even if the resume field appears lower down visually or later in a typical field-order list. Many ATS platforms (Lever, Greenhouse, and others) parse the uploaded resume and asynchronously auto-populate fields like name, email, and phone a few seconds after upload; filling those fields first means the parser's autofill lands on top of what you just typed and produces a doubled value (e.g. "Hin TongHin Tong"). After uploading, use browser_wait_for with time:3, then take a fresh snapshot before filling any other field — treat whatever the parser filled in as the field's current value for the "skip if already correct" check below, and only type over it if it's missing or wrong. For any other file upload fields (portfolio, transcript, other attachments), skip them — if you open a file chooser for one, call cancel_file_upload to close it. The exceptions are cover letter upload fields and, when the prompt says a saved cover letter exists, a general attachments field (see the cover letter rules).
 - Fill text fields one at a time. Do not use browser_fill_form.
 - Before interacting with any field or button, ALWAYS first use browser_hover to move the mouse over the element, then click it. This simulates natural mouse movement and is required to avoid spam detection.
 - Text field procedure — follow these steps in EXACT order, every time, no exceptions:
@@ -60,7 +81,7 @@ const FORM_FILLING_RULES = `## Form filling rules
   2. If the field already shows the correct value → STOP. Do not hover, click, or type. Skip to the next field.
   3. hover the field → click it to focus → browser_wait_for with time:1 (focusing a field can trigger asynchronous autofill — e.g. an ATS's "Apply with LinkedIn" integration repopulating name, email, or phone — so give it a moment to land before you select) → press "Control+a" with browser_press_key to select ALL current content, including anything autofill just inserted → call browser_press_sequentially with the correct value and delay:80.
      browser_press_sequentially dispatches real per-character keyboard events (unlike browser_type/fill(), which sets the value atomically with no keystroke events) — this is required to avoid bot/spam detection on ATS forms. Selecting all first means the typed text replaces any existing content instead of appending to it.
-     Per-tool-call timeout is 30 seconds, so at delay:80 a field's value must stay under ~300 characters — keep open-ended answers and cover letter text within the length guidance above so typing never risks timing out.
+     Per-tool-call timeout is 30 seconds, so at delay:80 a field's value must stay under ~300 characters — keep open-ended answers within the length guidance above so typing never risks timing out. Cover letter text is the exception: type it in full with delay:40.
 - After filling each text field, add a browser_wait_for with time:600 before moving to the next field.
 
 ## Contact info fields (name, email, phone) — preventing doubled values
@@ -68,7 +89,7 @@ These are the fields ATS "Apply with LinkedIn" integrations most commonly autofi
 - For location/address/city autocomplete fields: after typing the value, use browser_wait_for with time:2 to allow the dropdown to load asynchronously, then press "ArrowDown" with browser_press_key to highlight the first suggestion, then press "Enter" to confirm the selection. Always press ArrowDown + Enter even if the dropdown is not visible in your last snapshot — the suggestions load asynchronously after typing. After pressing Enter, take a snapshot to verify the field contains the expected value; if it is still empty, type the value again and repeat.
 - When targeting elements from a snapshot, use the bare ref value as the target (e.g. if the snapshot shows [ref=e123], use target: "e123"). Never use "ref=e123" or "[ref=e123]" as a selector — those are invalid.
 - Prefer targeting by accessible role and name when refs fail: use getByRole("button", { name: "Submit" }) or getByRole("textbox", { name: "Email" }) syntax as the target value.
-- For resume file upload: click the upload button first to open the file dialog, then immediately call browser_file_upload with the resume PDF path. Do not call browser_file_upload before triggering the dialog.
+- For resume file upload: click the upload button first to open the file dialog, then immediately call upload_resume (it takes no arguments — the resume file is attached automatically). Do not call upload_resume before triggering the dialog.
 - Do not take a snapshot unless the page has changed (after a navigation, click, or form submission). Never take consecutive snapshots without an action in between.
 - When clicking multiple checkboxes or radio buttons in sequence, add a browser_wait_for with time:1500 between each click. This avoids triggering spam/bot detection heuristics that flag rapid consecutive clicks.
 - For checkbox and radio inputs that appear in the accessibility snapshot without a [ref] (e.g. inside a container like "generic [ref=e1121]: checkbox 'Yes'"): use getByRole("checkbox", { name: "Yes" }) or getByRole("radio", { name: "Yes" }) as the target — never click the parent container. After clicking, take a snapshot to confirm [checked] appears on the element before proceeding. If it does not show [checked], click it once more with the same getByRole target.
@@ -241,10 +262,35 @@ function logToolCall(
   log(`[step ${stepNumber + 1}] ${toolName}${brief}`);
 }
 
+// maxRetries: 6 with the SDK's default exponential backoff sums to 126s of retry delay alone,
+// so stepMs must clear that plus request time. Cover letters get longer limits: writing one is
+// an LLM call, and typing a full letter at delay:40 takes 1–2 minutes. Declared separately
+// because the MCP browser tools are added dynamically, so their names aren't in the inferred
+// per-tool timeout keys — the SDK still matches them by name at runtime.
+const AGENT_TIMEOUTS: {
+  toolMs: number;
+  stepMs: number;
+  tools: Record<string, number>;
+} = {
+  toolMs: 30_000,
+  stepMs: 240_000,
+  tools: {
+    generate_cover_letterMs: 120_000,
+    upload_cover_letterMs: 150_000,
+    browser_press_sequentiallyMs: 200_000,
+  },
+};
+
+// Added to the prompt only when the user saved a cover letter for this job
+const SAVED_COVER_LETTER_NOTE = `
+
+--- SAVED COVER LETTER ---
+The applicant saved a cover letter for this job, so include it even if the form has no cover letter field: paste it into a general free-text field meant for extra information (e.g. "Additional information", "Message to the hiring manager", "Anything else you'd like us to know") using generate_cover_letter, or, if there is no such field, upload it to a general attachments field (e.g. "Attachments", "Additional documents") using upload_cover_letter — with required set to false in both cases. Never put it into a field that asks a specific question. If the form has neither kind of field, submit without it.`;
+
 export async function applyToJob(
   job: Job,
   profile: ProfileWithEmail,
-  resumePdfPath: string,
+  documents: ApplyDocuments,
   minSalary: number,
   linkedinSessionJson?: string,
   log: (msg: string) => void = () => {},
@@ -270,7 +316,6 @@ export async function applyToJob(
       "browser_press_sequentially",
       "browser_hover",
       "browser_select_option",
-      "browser_file_upload",
       "browser_press_key",
       "browser_tabs",
       "browser_close",
@@ -278,15 +323,128 @@ export async function applyToJob(
       "browser_network_requests",
       "browser_navigate_back",
     ]);
+    // Reused if the tool is called again, so the saved letter is always the one submitted
+    let coverLetter = documents.coverLetter;
+    let coverLetterPdfPath: string | undefined;
+    // A tool error alone just goes back to the model, which could carry on and submit without
+    // the letter — so a failed cover letter for a required field aborts the whole run instead
+    const documentAbort = new AbortController();
+    let documentFailure: string | undefined;
+    // Set when an optional letter couldn't be produced, so repeat calls don't retry the LLM
+    let optionalCoverLetterSkipped = false;
+    const coverLetterSkipMessage =
+      "No cover letter is available for this application. The field is optional, so leave it empty and continue with the rest of the form.";
+
+    // Required: stop the run so nothing is submitted without the letter (throws).
+    // Optional: log it and return null so the caller leaves the field empty.
+    function handleCoverLetterFailure(required: boolean, reason: string, error: unknown): null {
+      if (!required) {
+        log(`${reason} — leaving the optional cover letter field empty`);
+        optionalCoverLetterSkipped = true;
+        return null;
+      }
+      documentFailure = reason;
+      log(reason);
+      documentAbort.abort();
+      throw error;
+    }
+
+    // The saved letter, or a newly generated one that has been saved — null means "skip"
+    async function obtainCoverLetter(required: boolean): Promise<string | null> {
+      if (coverLetter) return coverLetter;
+      if (!required && optionalCoverLetterSkipped) return null;
+
+      let generated: string;
+      try {
+        generated = await tailorCoverLetter({
+          resume: documents.resumeText,
+          job,
+          instructions: profile.coverLetterInstructions,
+          apiKey,
+        });
+      } catch (error) {
+        return handleCoverLetterFailure(
+          required,
+          `Couldn't generate a cover letter: ${describeAiError(error)}`,
+          error
+        );
+      }
+      if (!generated) {
+        const reason = "Couldn't generate a cover letter: the model returned nothing";
+        return handleCoverLetterFailure(required, reason, new Error(reason));
+      }
+      try {
+        await documents.onCoverLetterGenerated?.(generated);
+      } catch (error) {
+        // The caller's message already says what failed (e.g. saving the letter). A letter
+        // the user can't see is never submitted.
+        return handleCoverLetterFailure(required, describeAiError(error), error);
+      }
+      coverLetter = generated;
+      return generated;
+    }
+
+    const browserTools = await client.tools();
+    // File uploads go through upload_resume/cancel_file_upload instead of the raw
+    // browser_file_upload tool, so the model can only ever attach the resume PDF
+    const fileUpload = browserTools.browser_file_upload;
+    async function runFileUpload(
+      paths: string[] | undefined,
+      options: ToolExecutionOptions<unknown>
+    ) {
+      if (!fileUpload?.execute) throw new Error("browser_file_upload is unavailable");
+      return fileUpload.execute(paths ? { paths } : {}, options);
+    }
     const tools = {
       ...Object.fromEntries(
-        Object.entries(await client.tools()).filter(([name]) => ALLOWED_TOOL_NAMES.has(name))
+        Object.entries(browserTools).filter(([name]) => ALLOWED_TOOL_NAMES.has(name))
       ),
+      upload_resume: tool({
+        description:
+          "Attach the applicant's resume PDF to the file chooser that is currently open. Click the resume upload button or field first so the file chooser opens, then call this. Takes no arguments — the resume file is supplied automatically.",
+        inputSchema: z.object({}),
+        execute: (_input, options) => runFileUpload([documents.resumePdfPath], options),
+      }),
+      cancel_file_upload: tool({
+        description:
+          "Close the file chooser that is currently open without attaching anything. Use this when a file chooser opened for anything other than the resume.",
+        inputSchema: z.object({}),
+        execute: (_input, options) => runFileUpload(undefined, options),
+      }),
       generate_cover_letter: tool({
         description:
-          'Generate a personalized cover letter for this job application. Call this ONLY when the form has an explicit field labelled "Cover Letter" or "Cover letter". Do NOT call this for generic open-ended questions, experience descriptions, or motivation fields.',
-        inputSchema: z.object({}),
-        execute: async () => generateCoverLetter(job, profile, apiKey),
+          'Get the cover letter text for a cover letter text box. Call this ONLY for a field labelled "Cover Letter" / "Cover letter", or — when the prompt says a saved cover letter exists and the form has no cover letter field — for a general free-text field meant for extra information. Do NOT call this for specific questions, experience descriptions, or motivation fields. Set required to true only if the form marks the field as required. If the result says no cover letter is available, leave the field empty.',
+        inputSchema: z.object({
+          required: z.boolean().describe("Whether the form marks the field as required"),
+        }),
+        execute: async ({ required }) =>
+          (await obtainCoverLetter(required)) ?? coverLetterSkipMessage,
+      }),
+      upload_cover_letter: tool({
+        description:
+          "Attach the cover letter as a PDF to the file chooser that is currently open. Use it for a cover letter upload field, or — when the prompt says a saved cover letter exists and the form has no cover letter field — a general attachments field. Click the field first so the file chooser opens, then call this. Set required to true only if the form marks the field as required. If the result says no cover letter is available, the chooser has been closed: leave the field empty.",
+        inputSchema: z.object({
+          required: z.boolean().describe("Whether the form marks the field as required"),
+        }),
+        execute: async ({ required }, options) => {
+          const letter = await obtainCoverLetter(required);
+          if (letter && !coverLetterPdfPath) {
+            try {
+              coverLetterPdfPath = await documents.writeCoverLetterPdf(letter);
+            } catch (error) {
+              handleCoverLetterFailure(
+                required,
+                `Couldn't create the cover letter PDF: ${describeAiError(error)}`,
+                error
+              );
+            }
+          }
+          if (!letter || !coverLetterPdfPath) {
+            await runFileUpload(undefined, options);
+            return coverLetterSkipMessage;
+          }
+          return runFileUpload([coverLetterPdfPath], options);
+        },
       }),
     };
 
@@ -308,7 +466,7 @@ export async function applyToJob(
       profile.linkedinUrl ? `LinkedIn: ${profile.linkedinUrl}` : null,
       profile.githubUrl ? `GitHub: ${profile.githubUrl}` : null,
       profile.websiteUrl ? `Website: ${profile.websiteUrl}` : null,
-      `\n--- RESUME ---\n${profile.resume}`,
+      `\n--- RESUME ---\n${documents.resumeText}`,
       profile.coverLetterInstructions
         ? `\n--- COVER LETTER INSTRUCTIONS ---\n${profile.coverLetterInstructions}`
         : null,
@@ -320,7 +478,7 @@ export async function applyToJob(
     log(`Platform detected: ${platform}`);
 
     const gatewayProvider = createGateway({ apiKey });
-    const { output, steps } = await generateText({
+    const generation = generateText({
       model: gatewayProvider("google/gemini-2.5-flash"),
       // Pin gateway routing to Vertex. Output.object adds a JSON responseFormat to every
       // step, and the gateway's fallback route (Google AI Studio) rejects requests that
@@ -329,14 +487,12 @@ export async function applyToJob(
       maxRetries: 6,
       tools,
       stopWhen: [isLoopFinished(), isStepCount(150)],
-      // maxRetries: 6 with the SDK's default exponential backoff (2s, 4s, 8s, 16s, 32s, 64s)
-      // sums to 126s of retry delay alone — stepMs must clear that plus request time, or a
-      // step that hits several retryable gateway errors gets killed mid-backoff.
-      timeout: { toolMs: 30_000, stepMs: 240_000 },
+      timeout: AGENT_TIMEOUTS,
+      abortSignal: documentAbort.signal,
       output: Output.object({ schema: applyResultSchema }),
       telemetry: { functionId: "apply-job" },
       instructions: PROMPTS[platform],
-      prompt: `Apply to this job:\nURL: ${job.url}\nTitle: ${job.title} at ${job.company}\n\nApplicant profile:\n${profileSummary}${resumePdfPath ? `\n\nResume PDF path: ${resumePdfPath}` : ""}`,
+      prompt: `Apply to this job:\nURL: ${job.url}\nTitle: ${job.title} at ${job.company}\n\nApplicant profile:\n${profileSummary}${documents.coverLetter ? SAVED_COVER_LETTER_NOTE : ""}`,
       prepareStep: ({ messages }) => {
         // Keep only the most recent browser_snapshot result; replace older ones with a
         // short placeholder to avoid re-sending large DOM snapshots every step.
@@ -382,6 +538,14 @@ export async function applyToJob(
         }
       },
     });
+    let result: Awaited<typeof generation>;
+    try {
+      result = await generation;
+    } catch (error) {
+      if (documentFailure) return { success: false, reason: documentFailure };
+      throw error;
+    }
+    const { output, steps } = result;
     log(`AI agent finished after ${steps.length} step(s)`);
     log(
       `Agent result: success=${output.success}${output.reason ? ` reason=${output.reason}` : ""}`

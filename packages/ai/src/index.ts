@@ -3,3 +3,4 @@ export { applyToJob } from "./agents/apply-agent";
 export type { ApplyResult } from "./agents/apply-agent";
 export { processApplyJob } from "./agents/process-apply";
 export { scoreJob } from "./agents/score-job";
+export { INVALID_AI_KEY_MESSAGE, describeAiError, isAiKeyError } from "./errors";

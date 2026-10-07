@@ -1,8 +1,8 @@
 import { propagateAttributes } from "@langfuse/tracing";
-import { processApplyJob } from "@repo/ai";
+import { describeAiError, processApplyJob } from "@repo/ai";
 import { getAiGatewayKey } from "@repo/api";
-import { getDb, getLinkedInAccount, updateApplyRun, updateJobFailed } from "@repo/db";
 import type { ApplyRunLog } from "@repo/db";
+import { getDb, getLinkedInAccount, updateApplyRun, updateJobFailed } from "@repo/db";
 import { decrypt } from "@repo/shared";
 import { Worker } from "bullmq";
 import { env } from "../env";
@@ -84,9 +84,9 @@ export const applyWorker = new Worker<ApplyJobData>(
         });
       }
     } catch (err) {
-      log(`Unexpected error: ${err instanceof Error ? err.message : String(err)}`);
+      const failureReason = describeAiError(err);
+      log(`Unexpected error: ${failureReason}`);
       const completedAt = new Date();
-      const failureReason = err instanceof Error ? err.message : String(err);
       // processApplyJob only updates the job row when applyToJob returns; on a thrown
       // error the job would otherwise stay in "applying" forever.
       await updateJobFailed(getDb(), jobId, failureReason);

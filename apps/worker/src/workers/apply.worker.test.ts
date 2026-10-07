@@ -36,8 +36,9 @@ vi.mock("@repo/db", () => ({
   updateJobFailed: mockUpdateJobFailed,
 }));
 
-vi.mock("@repo/ai", () => ({
+vi.mock("@repo/ai", async () => ({
   processApplyJob: mockProcessApplyJob,
+  describeAiError: (await import("@repo/ai/errors")).describeAiError,
 }));
 
 vi.mock("@repo/api", () => ({
@@ -86,6 +87,22 @@ describe("apply worker", () => {
       expect.anything(),
       "run-1",
       expect.objectContaining({ status: "failed", errorMessage: "gateway exploded" })
+    );
+  });
+
+  it("reports a rejected AI key as a Settings hint instead of the gateway's message", async () => {
+    const keyError = new Error("\u001b[31mUnauthenticated request to AI Gateway.\u001b[0m");
+    keyError.name = "GatewayAuthenticationError";
+    mockProcessApplyJob.mockRejectedValueOnce(keyError);
+
+    await expect(processor(jobData)).rejects.toThrow();
+
+    const hint = "Your AI Gateway key was rejected. Check it in Settings → AI.";
+    expect(mockUpdateJobFailed).toHaveBeenCalledWith(expect.anything(), "job-1", hint);
+    expect(mockUpdateApplyRun).toHaveBeenCalledWith(
+      expect.anything(),
+      "run-1",
+      expect.objectContaining({ status: "failed", errorMessage: hint })
     );
   });
 
