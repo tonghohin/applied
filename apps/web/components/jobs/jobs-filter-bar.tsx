@@ -18,7 +18,7 @@ import {
   InputGroupButton,
   InputGroupText,
 } from "@/components/ui/input-group";
-import type { JobSortBy } from "@/lib/jobs-filter";
+import type { CompanyHistoryFilter, JobSortBy } from "@/lib/jobs-filter";
 import type { JobStatus } from "@/lib/trpc";
 import { RiCloseLine, RiSearchLine } from "@remixicon/react";
 import { WORK_TYPES, type WorkType, toTitleCase } from "@repo/shared";
@@ -40,6 +40,12 @@ const SORT_OPTIONS: { value: JobSortBy; label: string }[] = [
   { value: "oldest", label: "Oldest" },
 ];
 
+const COMPANY_HISTORY_OPTIONS: { value: CompanyHistoryFilter; label: string }[] = [
+  { value: "all", label: "All" },
+  { value: "applied-before", label: "Applied before" },
+  { value: "not-applied-before", label: "Not applied before" },
+];
+
 function toggleValue<Value extends string>(
   allValues: Value[],
   selected: Value[],
@@ -55,6 +61,8 @@ export function JobsFilterBar({
   onStatusFilterChange,
   workplaceFilter,
   onWorkplaceFilterChange,
+  companyHistoryFilter,
+  onCompanyHistoryFilterChange,
   search,
   onSearchChange,
   sortBy,
@@ -64,6 +72,8 @@ export function JobsFilterBar({
   onStatusFilterChange: (statuses: JobStatus[]) => void;
   workplaceFilter: WorkType[];
   onWorkplaceFilterChange: (workplaceTypes: WorkType[]) => void;
+  companyHistoryFilter: CompanyHistoryFilter;
+  onCompanyHistoryFilterChange: (companyHistory: CompanyHistoryFilter) => void;
   search: string;
   onSearchChange: (search: string) => void;
   sortBy: JobSortBy;
@@ -96,7 +106,7 @@ export function JobsFilterBar({
           )}
         </InputGroup>
       </div>
-      <div className="flex items-center gap-2 border-b p-3">
+      <div className="flex items-center gap-2 overflow-auto border-b p-3">
         <DropdownMenu>
           <Button render={<DropdownMenuTrigger />} variant="outline" size="sm">
             Status{" "}
@@ -104,7 +114,7 @@ export function JobsFilterBar({
               ? "All"
               : statusFilter.length}
           </Button>
-          <DropdownMenuContent align="start">
+          <DropdownMenuContent className="w-fit" align="start">
             <DropdownMenuGroup>
               <DropdownMenuLabel>Status</DropdownMenuLabel>
               {ALL_STATUSES.map((status) => (
@@ -145,6 +155,36 @@ export function JobsFilterBar({
                   {toTitleCase(workplaceType)}
                 </DropdownMenuCheckboxItem>
               ))}
+            </DropdownMenuGroup>
+          </DropdownMenuContent>
+        </DropdownMenu>
+
+        <DropdownMenu>
+          <Button render={<DropdownMenuTrigger />} variant="outline" size="sm">
+            Company{" "}
+            {companyHistoryFilter === "all"
+              ? "All"
+              : COMPANY_HISTORY_OPTIONS.find((option) => option.value === companyHistoryFilter)
+                  ?.label}
+          </Button>
+          <DropdownMenuContent className="w-fit" align="start">
+            <DropdownMenuGroup>
+              <DropdownMenuLabel>Company</DropdownMenuLabel>
+              <DropdownMenuRadioGroup
+                value={companyHistoryFilter}
+                onValueChange={(value) => {
+                  const option = COMPANY_HISTORY_OPTIONS.find(
+                    (historyOption) => historyOption.value === value
+                  );
+                  if (option) onCompanyHistoryFilterChange(option.value);
+                }}
+              >
+                {COMPANY_HISTORY_OPTIONS.map((option) => (
+                  <DropdownMenuRadioItem key={option.value} value={option.value}>
+                    {option.label}
+                  </DropdownMenuRadioItem>
+                ))}
+              </DropdownMenuRadioGroup>
             </DropdownMenuGroup>
           </DropdownMenuContent>
         </DropdownMenu>

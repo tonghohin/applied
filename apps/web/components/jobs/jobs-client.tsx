@@ -13,7 +13,12 @@ import {
   EmptyMedia,
   EmptyTitle,
 } from "@/components/ui/empty";
-import { DEFAULT_VISIBLE_STATUSES, type JobSortBy, filterAndSortJobs } from "@/lib/jobs-filter";
+import {
+  type CompanyHistoryFilter,
+  DEFAULT_VISIBLE_STATUSES,
+  type JobSortBy,
+  filterAndSortJobs,
+} from "@/lib/jobs-filter";
 import type { JobStatus } from "@/lib/trpc";
 import { trpc } from "@/lib/trpc";
 import { RiBriefcaseLine } from "@remixicon/react";
@@ -54,6 +59,7 @@ export function JobsClient({
 
   const [statusFilter, setStatusFilter] = useState<JobStatus[]>(DEFAULT_VISIBLE_STATUSES);
   const [workplaceFilter, setWorkplaceFilter] = useState<WorkType[]>([]);
+  const [companyHistoryFilter, setCompanyHistoryFilter] = useState<CompanyHistoryFilter>("all");
   const [search, setSearch] = useState("");
   const [sortBy, setSortBy] = useState<JobSortBy>("score-desc");
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
@@ -61,6 +67,7 @@ export function JobsClient({
   const filteredSortedJobs = filterAndSortJobs(jobs, {
     statuses: statusFilter,
     workplaceTypes: workplaceFilter,
+    companyHistory: companyHistoryFilter,
     search,
     sortBy,
   });
@@ -75,7 +82,13 @@ export function JobsClient({
   // in the detail pane). Job data changing under the same filter (SSE) is left
   // alone.
   const lastFilterKey = useRef<string | null>(null);
-  const filterKey = JSON.stringify([statusFilter, workplaceFilter, search, sortBy]);
+  const filterKey = JSON.stringify([
+    statusFilter,
+    workplaceFilter,
+    companyHistoryFilter,
+    search,
+    sortBy,
+  ]);
   useEffect(() => {
     if (jobs.length === 0 || lastFilterKey.current === filterKey) return;
     const isFirstRun = lastFilterKey.current === null;
@@ -130,6 +143,8 @@ export function JobsClient({
           onStatusFilterChange={setStatusFilter}
           workplaceFilter={workplaceFilter}
           onWorkplaceFilterChange={setWorkplaceFilter}
+          companyHistoryFilter={companyHistoryFilter}
+          onCompanyHistoryFilterChange={setCompanyHistoryFilter}
           search={search}
           onSearchChange={setSearch}
           sortBy={sortBy}

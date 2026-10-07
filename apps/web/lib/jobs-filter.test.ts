@@ -35,6 +35,7 @@ function makeJob(overrides: Partial<Job> = {}): Job {
 const baseArgs = {
   statuses: [] as Job["status"][],
   workplaceTypes: [] as Job["workplaceType"][],
+  companyHistory: "all" as const,
   search: "",
   sortBy: "score-desc" as const,
 };
@@ -95,6 +96,25 @@ describe("filterAndSortJobs", () => {
     const result = filterAndSortJobs(jobs, { ...baseArgs, workplaceTypes: ["remote"] });
 
     expect(result.map((job) => job.workplaceType)).toEqual(["remote"]);
+  });
+
+  it("narrows by whether the user has applied to the company before", () => {
+    const jobs = [
+      makeJob({ company: "Vercel", appliedCountAtCompany: 2 }),
+      makeJob({ company: "Linear", appliedCountAtCompany: 0 }),
+    ];
+
+    const appliedBefore = filterAndSortJobs(jobs, {
+      ...baseArgs,
+      companyHistory: "applied-before",
+    });
+    expect(appliedBefore.map((job) => job.company)).toEqual(["Vercel"]);
+
+    const notAppliedBefore = filterAndSortJobs(jobs, {
+      ...baseArgs,
+      companyHistory: "not-applied-before",
+    });
+    expect(notAppliedBefore.map((job) => job.company)).toEqual(["Linear"]);
   });
 
   it("matches search against title, company, and location, case-insensitively", () => {

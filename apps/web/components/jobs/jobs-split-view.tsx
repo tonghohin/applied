@@ -4,7 +4,7 @@ import { JobDetail } from "@/components/jobs/job-detail";
 import { JobListItem } from "@/components/jobs/job-list-item";
 import { JobsFilterBar } from "@/components/jobs/jobs-filter-bar";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import type { JobSortBy } from "@/lib/jobs-filter";
+import type { CompanyHistoryFilter, JobSortBy } from "@/lib/jobs-filter";
 import type { Job, JobStatus } from "@/lib/trpc";
 import type { WorkType } from "@repo/shared";
 import { useVirtualizer } from "@tanstack/react-virtual";
@@ -20,6 +20,8 @@ export function JobsSplitView({
   onStatusFilterChange,
   workplaceFilter,
   onWorkplaceFilterChange,
+  companyHistoryFilter,
+  onCompanyHistoryFilterChange,
   search,
   onSearchChange,
   sortBy,
@@ -34,6 +36,8 @@ export function JobsSplitView({
   onStatusFilterChange: (statuses: JobStatus[]) => void;
   workplaceFilter: WorkType[];
   onWorkplaceFilterChange: (workplaceTypes: WorkType[]) => void;
+  companyHistoryFilter: CompanyHistoryFilter;
+  onCompanyHistoryFilterChange: (companyHistory: CompanyHistoryFilter) => void;
   search: string;
   onSearchChange: (search: string) => void;
   sortBy: JobSortBy;
@@ -78,6 +82,8 @@ export function JobsSplitView({
           onStatusFilterChange={onStatusFilterChange}
           workplaceFilter={workplaceFilter}
           onWorkplaceFilterChange={onWorkplaceFilterChange}
+          companyHistoryFilter={companyHistoryFilter}
+          onCompanyHistoryFilterChange={onCompanyHistoryFilterChange}
           search={search}
           onSearchChange={onSearchChange}
           sortBy={sortBy}
