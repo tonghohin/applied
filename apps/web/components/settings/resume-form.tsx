@@ -51,7 +51,7 @@ export function ResumeForm({ initial }: { initial?: InitialProfile }) {
           id="resume"
           aria-label="Resume"
           rows={20}
-          placeholder="Paste your resume here. Copy the text straight from your PDF or Word file. We tailor and format it for each job."
+          placeholder="Paste your resume here. Copy the text straight from your PDF or Word file."
           {...register("resume")}
           aria-invalid={!!errors.resume}
         />

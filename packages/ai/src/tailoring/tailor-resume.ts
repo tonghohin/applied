@@ -11,6 +11,8 @@ const RESUME_INSTRUCTIONS = `You tailor resumes to a specific job so they pass a
 
 ${NO_FABRICATION_RULE}
 
+The candidate's resume may be a long master document listing everything they have done. Treat it as source material, not a draft to shorten: choose the roles, bullets, projects, and skills that best support this job and leave the rest out, rather than trimming every section evenly.
+
 What you may do:
 - Reorder sections, roles' bullets, and skills so the most job-relevant material comes first.
 - Reword bullets to use the job description's terminology where the resume already supports it (e.g. "k8s" -> "Kubernetes" when the job says Kubernetes).

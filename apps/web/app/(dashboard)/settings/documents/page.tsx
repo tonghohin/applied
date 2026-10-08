@@ -21,7 +21,10 @@ export default async function DocumentsSettingsPage() {
               Resume <span className="text-destructive">*</span>
             </CardTitle>
             <CardDescription>
-              The agent generates a PDF from this text for every application.
+              The agent generates a PDF from this text for every application. Include everything:
+              every role, project, skill and result, even the ones you'd normally cut for length.
+              For each job we pick what's relevant and keep it to a page or two, but we never add
+              anything that isn't here.
             </CardDescription>
           </CardHeader>
           <CardContent>
