@@ -73,7 +73,8 @@ export function TailoredDocumentEditor({
 }
 
 function MissingDocument({ jobId, kind }: { jobId: string; kind: TailoredDocumentKind }) {
-  const { generate, isGenerating } = useGenerateTailoredDocuments(jobId);
+  const { generate, isGenerating: isGeneratingKind } = useGenerateTailoredDocuments(jobId);
+  const isGenerating = isGeneratingKind(kind);
   const label = TAILORED_DOCUMENT_LABELS[kind].toLowerCase();
 
   return (
@@ -110,7 +111,9 @@ function DocumentForm({
 }) {
   const utils = trpc.useUtils();
   const saveMutation = trpc.jobs.saveTailoredDocument.useMutation();
-  const { generate, isGenerating } = useGenerateTailoredDocuments(jobId);
+  const { generate, isGenerating: isGeneratingKind } = useGenerateTailoredDocuments(jobId);
+  // Only this document's generation; the other tab can generate at the same time
+  const isGenerating = isGeneratingKind(document.kind);
   const [regeneratePopoverOpen, setRegeneratePopoverOpen] = useState(false);
   const label = TAILORED_DOCUMENT_LABELS[document.kind];
   const fieldId = `tailored-${document.kind}`;

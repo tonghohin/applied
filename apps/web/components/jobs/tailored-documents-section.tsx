@@ -17,13 +17,22 @@ import { cn } from "@/lib/utils";
 import { RiDownload2Line, RiFileTextLine, RiSparklingLine } from "@remixicon/react";
 import { TAILORED_DOCUMENT_KINDS, type TailoredDocumentKind } from "@repo/shared";
 import { formatDistanceToNow } from "date-fns";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 export function TailoredDocumentsSection({ job }: { job: Job }) {
   const { data: documents, isLoading } = trpc.jobs.tailoredDocuments.useQuery({ jobId: job.id });
-  const { generate, isGenerating, generatingKinds } = useGenerateTailoredDocuments(job.id);
+  const { generate, isGenerating } = useGenerateTailoredDocuments(job.id);
   const [sheetOpen, setSheetOpen] = useState(false);
   const [activeKind, setActiveKind] = useState<TailoredDocumentKind>("resume");
+  // The job on screen right now; this component is reused when another job is selected
+  const displayedJobId = useRef(job.id);
+  useEffect(() => {
+    displayedJobId.current = job.id;
+  }, [job.id]);
+  const sheetOpenRef = useRef(sheetOpen);
+  useEffect(() => {
+    sheetOpenRef.current = sheetOpen;
+  }, [sheetOpen]);
   const noDescriptionReason = job.description ? undefined : "This job has no description";
 
   function openEditor(kind: TailoredDocumentKind) {
@@ -32,7 +41,13 @@ export function TailoredDocumentsSection({ job }: { job: Job }) {
   }
 
   async function handleGenerate(kind: TailoredDocumentKind) {
-    if (await generate([kind])) openEditor(kind);
+    const startedForJobId = job.id;
+    const generated = await generate([kind]);
+    // Only open the editor if the user is still on the job it was generated for (otherwise it
+    // would open over another job's empty documents), and don't switch tabs under someone who is
+    // already in the editor, e.g. reading the cover letter when the resume finishes
+    const stillOnJob = displayedJobId.current === startedForJobId;
+    if (generated && stillOnJob && !sheetOpenRef.current) openEditor(kind);
   }
 
   return (
@@ -48,7 +63,7 @@ export function TailoredDocumentsSection({ job }: { job: Job }) {
         {TAILORED_DOCUMENT_KINDS.map((kind) => {
           const document = tailoredDocumentFor(documents, kind);
           const label = TAILORED_DOCUMENT_LABELS[kind];
-          const isPending = generatingKinds.includes(kind);
+          const isPending = isGenerating(kind);
           return (
             <li key={kind} className="flex items-center gap-3 px-3 py-2">
               {/* Muted until a document exists, so present documents stand out at a glance */}
@@ -104,7 +119,6 @@ export function TailoredDocumentsSection({ job }: { job: Job }) {
               ) : (
                 <GenerateButton
                   disabledReason={noDescriptionReason}
-                  disabled={isGenerating}
                   isPending={isPending}
                   onGenerate={() => handleGenerate(kind)}
                 />
@@ -128,12 +142,10 @@ export function TailoredDocumentsSection({ job }: { job: Job }) {
 
 function GenerateButton({
   disabledReason,
-  disabled,
   isPending,
   onGenerate,
 }: {
   disabledReason?: string;
-  disabled: boolean;
   isPending: boolean;
   onGenerate: () => void;
 }) {
@@ -144,7 +156,7 @@ function GenerateButton({
       variant="outline"
       size="sm"
       className="w-fit aria-disabled:opacity-50"
-      disabled={disabledReason !== undefined || disabled}
+      disabled={disabledReason !== undefined || isPending}
       onClick={onGenerate}
     >
       {isPending ? (
