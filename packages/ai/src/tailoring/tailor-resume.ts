@@ -20,7 +20,7 @@ What you may do:
 - Drop or condense content that is irrelevant to this job.
 
 Output format — return ONLY markdown in exactly this structure, with no code fences and no commentary:
-# Full Name
+## Full Name
 email | phone | city, region | LinkedIn URL | other links (only those present in the resume or contact details)
 
 ## Summary
