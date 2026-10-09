@@ -4,66 +4,52 @@
     <img src="apps/web/public/lockup.svg" alt="Applied" height="72">
   </picture>
 
-  <p>Automated job search tool — finds and scores LinkedIn positions hands-free, then applies to the ones you approve.</p>
+  <p>Finds and scores LinkedIn jobs against your resume, tailors a resume and cover letter for each one, and can fill out the application for you.</p>
 </div>
 
 ## Why this exists
 
-Job hunting on LinkedIn usually means running the same search every day, scrolling through every result by hand, and tracking whatever you apply to in a separate spreadsheet. This tool automates that grind, so you can spend the time you get back on the applications that actually matter.
+Job hunting on LinkedIn usually means running the same search every day, scrolling through every result by hand, rewriting your resume for each role, and tracking what you applied to in a spreadsheet. Applied automates that grind so you can spend your time on the applications that matter.
 
 ## Features
 
-- **Smart search** — scrapes LinkedIn for postings matching your target titles, skills, and location preferences
-- **LLM scoring** — every job is scored 0–100 against your resume, so you can triage without re-reading each posting
-- **Smart deduplication** — skips jobs already in your dashboard by URL, and (if enabled) by matching company + title + location, so re-running a search doesn't flood you with the same postings
-- **Filtering** — drops postings that match your excluded keywords or companies
-- **Status pipeline** — replaces the spreadsheet: each job starts at `pending_review` and moves to `applied`, `interviewing`, `rejected`, or `skipped` (`applying`/`failed` are set automatically when the AI agent runs)
-- **Search + filter + sort** — filter by status or workplace type (on-site/remote/hybrid), search by title/company/location, sort by score or recency
-- **Company history** — see how many times you've applied to or been rejected by a company before, and which titles
-- **Tailored resume & cover letter** — generate a resume and/or cover letter tailored to any job's description
-- **AI application filling** — after you review the scored results and pick which jobs to apply to, an agent drives a real browser to fill out and submit each one you selected. It uploads the tailored resume for that job (creating one first if you haven't) and writes a cover letter if the form asks for one; both are saved on the job so you can see exactly what was sent. Nothing is submitted automatically after a search — optional, so you can use this purely as a scraper and tracker and apply yourself
-- **Scheduled searches** — on by default: every 4 hours from 9am to 5pm, every day, in your timezone; each search finds jobs posted in the last 24 hours and reads up to 5 pages (~125 jobs) per location and workplace type, so keep the schedule running daily to avoid missing postings
-
-## How it works
-
-1. Fill in your profile — target job titles, skills, resume, and location preferences
-2. Click **Search Jobs** — the scraper finds matching LinkedIn postings and scores each one
-3. Review results in the dashboard — each job is scored 0–100 against your resume by an LLM
-4. Open a job to generate a tailored resume and cover letter — edit, preview, and download them to apply yourself — or select jobs and click **Apply now** to have an AI agent fill out and submit each application with a tailored resume
-5. Searches then run automatically on the default schedule (every 4 hours, 9am–5pm, daily) — adjust or turn it off under **Settings → Job search**. Keep every day selected: each search only looks back 24 hours, so skipped days are never caught up
+- **Scheduled search**: scrapes LinkedIn for new postings matching your titles, skills and locations, several times a day
+- **Resume scoring**: every job is scored 0–100 against your resume, so you can triage without reading each posting
+- **No noise**: duplicates and postings matching your excluded keywords or companies are skipped
+- **Tailored resume & cover letter**: generate ATS-friendly PDFs tailored to a job's description, then edit, preview and download them
+- **Built-in tracker**: move jobs from review → applied → interviewing → rejected, filter and sort by score, status or workplace type, and see your history with each company
+- **AI application filling** (optional): select jobs and an agent fills out and submits each application in a real browser, using that job's tailored documents. Nothing is submitted without your approval
 
 <p align="center">
   <img src=".github/screenshot-dashboard.png" alt="Applied dashboard showing application stats, weekly activity, agent status, and search criteria" width="800">
 </p>
 
+## How it works
+
+1. Fill in your profile: target titles, skills, resume and locations
+2. Click **Search jobs**. Matching postings appear in the dashboard, each with a score
+3. Open a job to generate a tailored resume and cover letter and apply yourself, or select jobs and click **Apply now** to let the agent do it
+4. New searches run automatically every 4 hours from 9am to 5pm. Change this under **Settings → Job search**
+
 ## Getting started
 
-**Prerequisites:** [Docker](https://docs.docker.com/get-docker/) with Compose v2.20+ (ships with Docker Desktop 4.22+)
-
-### 1. Get the compose file
+**You'll need:** [Docker](https://docs.docker.com/get-docker/) with Compose v2.20+ (ships with Docker Desktop 4.22+), a LinkedIn account, and a [v0.dev/gateway](https://v0.dev/gateway) AI key.
 
 ```bash
 mkdir applied && cd applied
 curl -O https://raw.githubusercontent.com/tonghohin/applied/main/docker-compose.yml
-```
-
-### 2. Start it
-
-```bash
 docker compose up -d
 ```
 
-Pulls the published images, starts everything (database, queue, web app, worker), and runs migrations automatically.
+This pulls the images, starts everything and runs migrations. Then open [http://localhost:8420](http://localhost:8420), create an account, add your AI key under **Settings → AI provider**, and fill in your profile and LinkedIn login.
 
-### 3. Open the app
+To update: `docker compose pull && docker compose up -d`
 
-Go to [http://localhost:8420](http://localhost:8420), create an account, add your [v0.dev/gateway](https://v0.dev/gateway) AI key under **Settings → AI provider**, then fill in your profile and LinkedIn login.
+## Limitations
 
-### Updating
-
-```bash
-docker compose pull && docker compose up -d
-```
+- **Keep the schedule running daily.** Each search only looks at jobs posted in the last 24 hours (up to ~125 per location and workplace type), and days the schedule skips aren't caught up later
+- **The agent can't finish every application.** Some application sites block bots, some forms are too unusual, and it can't sign up for an employer's own portal. Failed applications are marked `failed` so you can finish them yourself
+- **Review AI-written documents before sending.** They're instructed to use only facts from your resume. The PDFs can't show some symbols (→, ≥, ✓), emoji or Chinese, Japanese and Korean text
 
 ## Contributing
 
@@ -71,11 +57,4 @@ Please read the [contributing guide](CONTRIBUTING.md).
 
 ## Disclaimer
 
-This tool automates interactions with LinkedIn in ways that may violate their [User Agreement](https://www.linkedin.com/legal/user-agreement). Use it at your own risk. The authors are not responsible for any consequences including account suspension or legal action.
-
-The AI application filling is still improving, with real limitations worth knowing before you rely on it:
-
-- **Bot detection varies by platform** — some ATS platforms flag or block automated submissions more aggressively than others; a job can fail for this reason alone, independent of your profile or answers
-- **Can't handle "create an account first"** — if an application requires signing up for the employer's own portal before you can apply, the agent can't get through that step
-- **Not every form is covered** — custom or unusual application forms can trip it up; a failed application shows up as `failed` in your dashboard so you can finish it yourself
-- **Tailored documents are AI-written** — they're instructed to use only facts from your resume, but review them before you send them; PDFs support Latin (including accents), Greek and Cyrillic text; symbols such as arrows (→), ≥ or ✓, Chinese, Japanese, Korean and emoji are left out
+This tool automates interactions with LinkedIn in ways that may violate their [User Agreement](https://www.linkedin.com/legal/user-agreement). Use it at your own risk. The authors are not responsible for any consequences, including account suspension or legal action.
