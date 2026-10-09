@@ -196,7 +196,8 @@ export function CriteriaForm({
           {...register("excludeKeywords")}
         />
         <FieldDescription>
-          Jobs whose title contains any of these words will be skipped entirely.
+          Jobs whose title contains any of these words will be skipped entirely. You can also
+          highlight words in a job's title to add them here.
         </FieldDescription>
       </Field>
 
@@ -208,7 +209,8 @@ export function CriteriaForm({
           {...register("excludeCompanies")}
         />
         <FieldDescription>
-          Jobs from any of these companies will be skipped entirely.
+          Jobs from any of these companies will be skipped entirely. You can also click a job's
+          company name to add it here.
         </FieldDescription>
       </Field>
 
