@@ -1,6 +1,7 @@
 "use client";
 
 import { DeleteTailoredDocumentButton } from "@/components/jobs/delete-tailored-document-button";
+import { RegenerateTailoredDocumentButton } from "@/components/jobs/regenerate-tailored-document-button";
 import { TailoredDocumentsSheet } from "@/components/jobs/tailored-documents-sheet";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -40,14 +41,18 @@ export function TailoredDocumentsSection({ job }: { job: Job }) {
     setSheetOpen(true);
   }
 
+  // After a (re)generation finishes: only open the editor if the user is still on the job it was
+  // generated for (otherwise it would open over another job's documents), and don't switch tabs
+  // under someone who is already in the editor, e.g. reading the cover letter when the resume
+  // finishes
+  function openEditorIfStillOnJob(kind: TailoredDocumentKind, startedForJobId: string) {
+    const stillOnJob = displayedJobId.current === startedForJobId;
+    if (stillOnJob && !sheetOpenRef.current) openEditor(kind);
+  }
+
   async function handleGenerate(kind: TailoredDocumentKind) {
     const startedForJobId = job.id;
-    const generated = await generate([kind]);
-    // Only open the editor if the user is still on the job it was generated for (otherwise it
-    // would open over another job's empty documents), and don't switch tabs under someone who is
-    // already in the editor, e.g. reading the cover letter when the resume finishes
-    const stillOnJob = displayedJobId.current === startedForJobId;
-    if (generated && stillOnJob && !sheetOpenRef.current) openEditor(kind);
+    if (await generate([kind])) openEditorIfStillOnJob(kind, startedForJobId);
   }
 
   return (
@@ -109,6 +114,12 @@ export function TailoredDocumentsSection({ job }: { job: Job }) {
                   >
                     <RiDownload2Line />
                   </Button>
+                  <RegenerateTailoredDocumentButton
+                    jobId={job.id}
+                    kind={kind}
+                    iconOnly
+                    onRegenerated={() => openEditorIfStillOnJob(kind, job.id)}
+                  />
                   <DeleteTailoredDocumentButton
                     jobId={job.id}
                     kind={kind}

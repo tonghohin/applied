@@ -1,6 +1,7 @@
 "use client";
 
 import { DeleteTailoredDocumentButton } from "@/components/jobs/delete-tailored-document-button";
+import { RegenerateTailoredDocumentButton } from "@/components/jobs/regenerate-tailored-document-button";
 import { Button } from "@/components/ui/button";
 import {
   Empty,
@@ -10,28 +11,15 @@ import {
   EmptyTitle,
 } from "@/components/ui/empty";
 import { Field, FieldDescription, FieldError, FieldLabel } from "@/components/ui/field";
-import {
-  Popover,
-  PopoverContent,
-  PopoverDescription,
-  PopoverHeader,
-  PopoverTitle,
-  PopoverTrigger,
-} from "@/components/ui/popover";
 import { Spinner } from "@/components/ui/spinner";
 import { Textarea } from "@/components/ui/textarea";
 import { useGenerateTailoredDocuments } from "@/hooks/use-generate-tailored-documents";
 import { TAILORED_DOCUMENT_LABELS, tailoredDocumentUrl } from "@/lib/tailored-documents";
 import { type TailoredDocument, trpc } from "@/lib/trpc";
 import { zodResolver } from "@hookform/resolvers/zod";
-import {
-  RiDownload2Line,
-  RiExternalLinkLine,
-  RiRefreshLine,
-  RiSparklingLine,
-} from "@remixicon/react";
+import { RiDownload2Line, RiExternalLinkLine, RiSparklingLine } from "@remixicon/react";
 import type { TailoredDocumentKind } from "@repo/shared";
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import { z } from "zod";
@@ -111,10 +99,9 @@ function DocumentForm({
 }) {
   const utils = trpc.useUtils();
   const saveMutation = trpc.jobs.saveTailoredDocument.useMutation();
-  const { generate, isGenerating: isGeneratingKind } = useGenerateTailoredDocuments(jobId);
+  const { isGenerating: isGeneratingKind } = useGenerateTailoredDocuments(jobId);
   // Only this document's generation; the other tab can generate at the same time
   const isGenerating = isGeneratingKind(document.kind);
-  const [regeneratePopoverOpen, setRegeneratePopoverOpen] = useState(false);
   const label = TAILORED_DOCUMENT_LABELS[document.kind];
   const fieldId = `tailored-${document.kind}`;
   const previewUrl = tailoredDocumentUrl(jobId, document);
@@ -146,11 +133,6 @@ function DocumentForm({
         description: error instanceof Error ? error.message : undefined,
       });
     }
-  }
-
-  async function handleRegenerate() {
-    setRegeneratePopoverOpen(false);
-    await generate([document.kind]);
   }
 
   const isSaving = isSubmitting || saveMutation.isPending;
@@ -206,30 +188,7 @@ function DocumentForm({
           kind={document.kind}
           disabled={isGenerating || isSaving}
         />
-        <Popover open={regeneratePopoverOpen} onOpenChange={setRegeneratePopoverOpen}>
-          <PopoverTrigger
-            render={<Button type="button" variant="ghost" disabled={isGenerating || isSaving} />}
-          >
-            {isGenerating ? (
-              <Spinner data-icon="inline-start" />
-            ) : (
-              <RiRefreshLine data-icon="inline-start" />
-            )}
-            {isGenerating ? "Regenerating…" : "Regenerate"}
-          </PopoverTrigger>
-          <PopoverContent initialFocus={false}>
-            <PopoverHeader>
-              <PopoverTitle>Regenerate {label.toLowerCase()}?</PopoverTitle>
-              <PopoverDescription>
-                Replaces this {label.toLowerCase()} with a new version, including any edits you've
-                made.
-              </PopoverDescription>
-            </PopoverHeader>
-            <Button type="button" size="xs" variant="outline" onClick={handleRegenerate}>
-              Regenerate
-            </Button>
-          </PopoverContent>
-        </Popover>
+        <RegenerateTailoredDocumentButton jobId={jobId} kind={document.kind} disabled={isSaving} />
         <Button
           variant="outline"
           nativeButton={false}
