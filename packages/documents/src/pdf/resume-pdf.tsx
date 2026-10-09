@@ -65,7 +65,7 @@ export async function renderResumePdf({
   return renderWithFontRetry(() =>
     renderToBuffer(
       <Document title={title} author={applicantName} creator={PDF_CREATOR} producer={PDF_CREATOR}>
-        <Page size="LETTER" style={pdfStyles.page}>
+        <Page size="LETTER" style={[pdfStyles.page, pdfStyles.resumePage]}>
           {blocks.map((block, index) => (
             <ResumeBlockView key={`${index}-${block.type}`} block={block} />
           ))}

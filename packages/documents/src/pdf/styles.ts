@@ -14,11 +14,17 @@ export const pdfStyles = StyleSheet.create({
     paddingVertical: 43,
     paddingHorizontal: 54,
   },
+  // Tighter than the cover letter so a typical one-page resume stays on one page
+  resumePage: {
+    lineHeight: 1.3,
+    paddingVertical: 32,
+    paddingHorizontal: 40,
+  },
   name: {
     fontWeight: "bold",
     fontSize: 18,
     lineHeight: 1.2,
-    marginBottom: 6,
+    marginBottom: 4,
   },
   heading: {
     fontWeight: "bold",
@@ -27,21 +33,21 @@ export const pdfStyles = StyleSheet.create({
     letterSpacing: 0.6,
     borderBottomWidth: 0.75,
     borderBottomColor: TEXT_COLOR,
-    paddingBottom: 2,
-    marginTop: 10,
-    marginBottom: 5,
+    paddingBottom: 1,
+    marginTop: 7,
+    marginBottom: 4,
   },
   subheading: {
     fontWeight: "bold",
-    marginTop: 5,
+    marginTop: 4,
     marginBottom: 1,
   },
   paragraph: {
-    marginBottom: 3,
+    marginBottom: 2,
   },
   bulletRow: {
     flexDirection: "row",
-    marginBottom: 2,
+    marginBottom: 1,
   },
   bulletMark: {
     width: 12,
