@@ -18,7 +18,7 @@ Job hunting on LinkedIn usually means running the same search every day, scrolli
 - **No noise**: duplicates and postings matching your excluded keywords or companies are skipped
 - **Tailored resume & cover letter**: generate ATS-friendly PDFs tailored to a job's description, then edit, preview and download them
 - **Built-in tracker**: move jobs from review → applied → interviewing → rejected, filter and sort by score, status or workplace type, and see your history with each company
-- **AI application filling** (optional): select jobs and an agent fills out and submits each application in a real browser, using that job's tailored documents. Nothing is submitted without your approval
+- **AI application filling** (optional): select jobs and an agent fills out and submits each application in a real browser, using that job's tailored documents. It only runs on the jobs you pick, when you click **Apply now**
 
 <p align="center">
   <img src=".github/screenshot-dashboard.png" alt="Applied dashboard showing application stats, weekly activity, agent status, and search criteria" width="800">
@@ -29,7 +29,7 @@ Job hunting on LinkedIn usually means running the same search every day, scrolli
 1. Fill in your profile: target titles, skills, resume and locations
 2. Click **Search jobs**. Matching postings appear in the dashboard, each with a score
 3. Open a job to generate a tailored resume and cover letter and apply yourself, or select jobs and click **Apply now** to let the agent do it
-4. New searches run automatically every 4 hours from 9am to 5pm. Change this under **Settings → Job search**
+4. New searches run automatically every 4 hours from 9am to 5pm. Change this under **Settings → Job search**. Scheduled searches only find and score jobs; they never apply
 
 ## Getting started
 
