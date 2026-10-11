@@ -33,15 +33,16 @@ Job hunting on LinkedIn usually means running the same search every day, scrolli
 
 ## Getting started
 
-**You'll need:** [Docker](https://docs.docker.com/get-docker/) with Compose v2.20+ (ships with Docker Desktop 4.22+), a LinkedIn account, and a [v0.dev/gateway](https://v0.dev/gateway) AI key.
+**You'll need:** [Docker](https://docs.docker.com/get-docker/) with Compose v2.20+ (ships with Docker Desktop 4.22+), a LinkedIn account, and a [v0.dev/gateway](https://v0.dev/gateway) AI key (it has a free tier).
 
 ```bash
 mkdir applied && cd applied
 curl -O https://raw.githubusercontent.com/tonghohin/applied/main/docker-compose.yml
+printf 'BETTER_AUTH_SECRET=%s\nENCRYPTION_KEY=%s\n' "$(openssl rand -hex 32)" "$(openssl rand -hex 32)" > .env
 docker compose up -d
 ```
 
-This pulls the images, starts everything and runs migrations. Then open [http://localhost:8420](http://localhost:8420), create an account, add your AI key under **Settings → AI provider**, and fill in your profile and LinkedIn login.
+This generates the secrets that encrypt your LinkedIn login and AI key (keep `.env`), pulls the images, starts everything and runs migrations. Then open [http://localhost:8420](http://localhost:8420), create an account, add your AI key under **Settings → AI provider**, and fill in your profile and LinkedIn login.
 
 To update: `docker compose pull && docker compose up -d`
 

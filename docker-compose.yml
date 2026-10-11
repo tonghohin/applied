@@ -43,15 +43,14 @@ services:
       cache:
         condition: service_healthy
     ports:
-      - "${WEB_PORT:-8420}:3000"
+      - "${WEB_HOST:-127.0.0.1}:${WEB_PORT:-8420}:3000"
     environment:
       DATABASE_URL: postgresql://applied:${DB_PASSWORD:-applied}@db:5432/applied
       REDIS_URL: redis://cache:6379
       BETTER_AUTH_URL: ${APP_URL:-http://localhost:8420}
-      # Change before exposing to the internet: openssl rand -base64 32
-      BETTER_AUTH_SECRET: ${BETTER_AUTH_SECRET:-this-is-a-default-secret-change-before-going-public}
+      BETTER_AUTH_SECRET: ${BETTER_AUTH_SECRET:?set BETTER_AUTH_SECRET in .env (openssl rand -hex 32)}
       # Must match worker's ENCRYPTION_KEY — used to encrypt LinkedIn credentials on save
-      ENCRYPTION_KEY: ${ENCRYPTION_KEY:-0000000000000000000000000000000000000000000000000000000000000000}
+      ENCRYPTION_KEY: ${ENCRYPTION_KEY:?set ENCRYPTION_KEY in .env (openssl rand -hex 32)}
 
   worker:
     image: ${WORKER_IMAGE:-ghcr.io/tonghohin/applied-worker:latest}
@@ -73,7 +72,7 @@ services:
       REDIS_URL: redis://cache:6379
       # Must match web's ENCRYPTION_KEY — used to decrypt the per-user AI Gateway
       # key (set in the app at Settings → AI) and the stored LinkedIn login.
-      ENCRYPTION_KEY: ${ENCRYPTION_KEY:-0000000000000000000000000000000000000000000000000000000000000000}
+      ENCRYPTION_KEY: ${ENCRYPTION_KEY:?set ENCRYPTION_KEY in .env (openssl rand -hex 32)}
 
 volumes:
   db-data:
