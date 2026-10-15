@@ -7,6 +7,10 @@
   <p>Finds and scores LinkedIn jobs against your resume, tailors a resume and cover letter for each one, and can fill out the application for you.</p>
 </div>
 
+<p align="center">
+  <img src=".github/demo.gif" alt="Demo of Applied: scored LinkedIn jobs in the dashboard, opening a job and generating a tailored resume" width="800">
+</p>
+
 ## Why this exists
 
 Job hunting on LinkedIn usually means running the same search every day, scrolling through every result by hand, rewriting your resume for each role, and tracking what you applied to in a spreadsheet. Applied automates that grind so you can spend your time on the applications that matter.
@@ -20,16 +24,16 @@ Job hunting on LinkedIn usually means running the same search every day, scrolli
 - **Built-in tracker**: move jobs from review → applied → interviewing → rejected, filter and sort by score, status or workplace type, and see your history with each company
 - **AI application filling** (optional): select jobs and an agent fills out and submits each application in a real browser, using that job's tailored documents. It only runs on the jobs you pick, when you click **Apply now**
 
-<p align="center">
-  <img src=".github/screenshot-dashboard.png" alt="Applied dashboard showing application stats, weekly activity, agent status, and search criteria" width="800">
-</p>
-
 ## How it works
 
 1. Fill in your profile: target titles, skills, resume and locations
 2. Click **Search jobs**. Matching postings appear in the dashboard, each with a score
 3. Open a job to generate a tailored resume and cover letter and apply yourself, or select jobs and click **Apply now** to let the agent do it
 4. New searches run automatically every 4 hours from 9am to 5pm. Change this under **Settings → Job search**. Scheduled searches only find and score jobs; they never apply
+
+<p align="center">
+  <img src=".github/screenshot-dashboard.png" alt="Applied dashboard showing application stats, weekly activity, agent status, and search criteria" width="800">
+</p>
 
 ## Getting started
 
