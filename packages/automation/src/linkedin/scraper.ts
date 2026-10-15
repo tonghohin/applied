@@ -404,16 +404,24 @@ export function identityKey(company: string, title: string, location: string): s
   return `${company.toLowerCase().trim()}|${title.toLowerCase().trim()}|${location.toLowerCase().trim()}`;
 }
 
+export function normalizeDescription(text: string): string {
+  return text.toLowerCase().replace(/\s+/g, " ").trim();
+}
+
+// knownIdentities maps an identityKey to the normalized, non-empty descriptions of the jobs
+// stored under it — a job is only a duplicate when both its identity and description match
 export async function scrapeLinkedInJobs(
   page: Page,
   criteria: SearchCriteria,
   knownUrls: Set<string>,
-  knownIdentities: Set<string>,
+  knownIdentities: Map<string, Set<string>>,
   maxPages: number = DEFAULT_MAX_PAGES
 ): Promise<ScrapedJob[]> {
   const results: ScrapedJob[] = [];
   const seen = new Set<string>();
-  const seenIdentities = new Set(knownIdentities);
+  const seenIdentities = new Map(
+    [...knownIdentities].map(([key, descriptions]) => [key, new Set(descriptions)])
+  );
 
   let searchIdx = 0;
   for (const locationEntry of criteria.locations) {
@@ -458,13 +466,6 @@ export async function scrapeLinkedInJobs(
           // criteria location this search was run under
           const resolvedLocation = job.location || locationEntry.location;
           const jobIdentityKey = identityKey(job.company, job.title, resolvedLocation);
-          if (criteria.skipDuplicateIdentity && seenIdentities.has(jobIdentityKey)) {
-            console.log(
-              `[scraper] ${pageLabel}: SKIP (duplicate company+title+location) "${job.title}" — ${job.company} — ${job.url}`
-            );
-            continue;
-          }
-          if (criteria.skipDuplicateIdentity) seenIdentities.add(jobIdentityKey);
 
           if (isExcluded(job.title, criteria.excludeKeywords)) {
             console.log(
@@ -506,6 +507,27 @@ export async function scrapeLinkedInJobs(
 
           if (details.description === "") {
             console.warn(`No job description extracted for ${job.url} — stored empty`);
+          }
+
+          // The description isn't on the card, so the duplicate check runs after the detail
+          // fetch. Empty descriptions never match, so a failed fetch always keeps the job.
+          if (criteria.skipDuplicateIdentity && details.description !== "") {
+            const normalizedDescription = normalizeDescription(details.description);
+            const knownDescriptions = seenIdentities.get(jobIdentityKey);
+            if (knownDescriptions?.has(normalizedDescription)) {
+              console.log(
+                `[scraper] ${pageLabel}: SKIP (duplicate company+title+location+description) "${job.title}" — ${job.company} — ${job.url}`
+              );
+              continue;
+            }
+            if (knownDescriptions) {
+              console.log(
+                `[scraper] ${pageLabel}: "${job.title}" — ${job.company} matches a known company+title+location but the description differs — keeping`
+              );
+              knownDescriptions.add(normalizedDescription);
+            } else {
+              seenIdentities.set(jobIdentityKey, new Set([normalizedDescription]));
+            }
           }
 
           const { scrapedWorkplaceType, ...jobFields } = job;

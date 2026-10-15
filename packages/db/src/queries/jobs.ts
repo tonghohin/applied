@@ -28,7 +28,12 @@ export async function getJobUrlsForUser(db: Db, userId: string) {
 
 export async function getJobIdentitiesForUser(db: Db, userId: string) {
   const result = await db
-    .select({ company: jobs.company, title: jobs.title, location: jobs.location })
+    .select({
+      company: jobs.company,
+      title: jobs.title,
+      location: jobs.location,
+      description: jobs.description,
+    })
     .from(jobs)
     .where(eq(jobs.userId, userId));
   return result;

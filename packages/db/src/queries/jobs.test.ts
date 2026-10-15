@@ -65,15 +65,25 @@ describe("insertJobs", () => {
 describe("getJobIdentitiesForUser", () => {
   it("returns the identities of the user's jobs", async () => {
     selectWhere.mockResolvedValueOnce([
-      { company: "Acme", title: "Software Engineer", location: "Toronto, ON" },
-      { company: "Globex", title: "Backend Developer", location: "Remote" },
+      {
+        company: "Acme",
+        title: "Software Engineer",
+        location: "Toronto, ON",
+        description: "Build things.",
+      },
+      { company: "Globex", title: "Backend Developer", location: "Remote", description: null },
     ]);
 
     const result = await getJobIdentitiesForUser(mockDb, "user-1");
 
     expect(result).toEqual([
-      { company: "Acme", title: "Software Engineer", location: "Toronto, ON" },
-      { company: "Globex", title: "Backend Developer", location: "Remote" },
+      {
+        company: "Acme",
+        title: "Software Engineer",
+        location: "Toronto, ON",
+        description: "Build things.",
+      },
+      { company: "Globex", title: "Backend Developer", location: "Remote", description: null },
     ]);
   });
 

@@ -9,7 +9,7 @@ import {
 import type { Browser, BrowserContext, BrowserContextOptions, Page } from "playwright";
 import { browserManager } from "./browser";
 import { loginToLinkedIn } from "./linkedin/login";
-import { identityKey, scrapeLinkedInJobs } from "./linkedin/scraper";
+import { identityKey, normalizeDescription, scrapeLinkedInJobs } from "./linkedin/scraper";
 import { stealthContextOptions, stealthPatch } from "./stealth";
 import type { ScrapedJob } from "./types";
 
@@ -84,9 +84,15 @@ export async function runSearch(
       getJobIdentitiesForUser(db, userId),
     ]);
     const knownUrls = new Set(knownUrlsList);
-    const knownIdentities = new Set(
-      knownIdentitiesList.map((row) => identityKey(row.company, row.title, row.location))
-    );
+    // Jobs stored without a description get an empty set, so they never cause a skip
+    const knownIdentities = new Map<string, Set<string>>();
+    for (const row of knownIdentitiesList) {
+      const key = identityKey(row.company, row.title, row.location);
+      const descriptions = knownIdentities.get(key) ?? new Set<string>();
+      const normalizedDescription = normalizeDescription(row.description ?? "");
+      if (normalizedDescription !== "") descriptions.add(normalizedDescription);
+      knownIdentities.set(key, descriptions);
+    }
     const scraped = await scrapeLinkedInJobs(
       page,
       {

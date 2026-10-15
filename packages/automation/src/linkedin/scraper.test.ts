@@ -7,7 +7,7 @@ vi.mock("@repo/db", () => ({
 import { isExcluded } from "@repo/shared";
 import type { Page } from "playwright";
 import type { SearchCriteria } from "../types";
-import { scrapeLinkedInJobs } from "./scraper";
+import { normalizeDescription, scrapeLinkedInJobs } from "./scraper";
 
 const details = (description = "") => ({
   description,
@@ -22,7 +22,7 @@ const criteria: SearchCriteria = {
 };
 
 const noKnownUrls = new Set<string>();
-const noKnownIdentities = new Set<string>();
+const noKnownIdentities = new Map<string, Set<string>>();
 
 function makeJob(id: string) {
   return {
@@ -157,40 +157,112 @@ describe("scrapeLinkedInJobs", () => {
     expect(visitedUrls).not.toContain("https://www.linkedin.com/jobs/view/2/");
   });
 
-  it("skips jobs with a matching company+title+location identity without fetching their details", async () => {
-    // job "2" has the same company/title/location as an existing DB entry
-    const knownIdentities = new Set(["acme|job 2|remote"]);
+  it("skips a job whose identity and normalized description match a stored job", async () => {
+    // job "2" has the same company/title/location and description as an existing DB entry
+    const knownIdentities = new Map([["acme|job 2|remote", new Set(["same description"])]]);
     const page = makePage([
       [makeJob("1"), makeJob("2")],
       [],
       [], // page 0: both cards, then 2 stable
-      details("description 1"), // fetchJobDetails for job1 only (job2 identity already known)
+      details("description 1"), // fetchJobDetails for job1
+      details("Same \n\t  Description"), // job2 — differs only in case/whitespace
     ]);
 
     const results = await scrapeLinkedInJobs(page, criteria, noKnownUrls, knownIdentities);
 
     expect(results).toHaveLength(1);
     expect(results[0]?.url).toBe("https://www.linkedin.com/jobs/view/1/");
+    // the description isn't on the card, so the matched job's details are still fetched
     const visitedUrls = vi.mocked(page.goto).mock.calls.map(([url]) => url);
-    expect(visitedUrls).not.toContain("https://www.linkedin.com/jobs/view/2/");
+    expect(visitedUrls).toContain("https://www.linkedin.com/jobs/view/2/");
   });
 
-  it("skips jobs with a matching identity scraped earlier in the same run, even under a different URL", async () => {
+  it("keeps a job whose identity matches a stored job but whose description differs", async () => {
+    const knownIdentities = new Map([["acme|job 2|remote", new Set(["old description"])]]);
+    const page = makePage([
+      [makeJob("1"), makeJob("2")],
+      [],
+      [], // page 0
+      details("description 1"),
+      details("a different role"),
+    ]);
+
+    const results = await scrapeLinkedInJobs(page, criteria, noKnownUrls, knownIdentities);
+
+    expect(results.map((job) => job.url)).toEqual([
+      "https://www.linkedin.com/jobs/view/1/",
+      "https://www.linkedin.com/jobs/view/2/",
+    ]);
+  });
+
+  it("keeps a job whose identity matches a stored job that has no description", async () => {
+    const knownIdentities = new Map([["acme|job 1|remote", new Set<string>()]]);
+    const page = makePage([[makeJob("1")], [], [], details("description 1")]);
+
+    const results = await scrapeLinkedInJobs(page, criteria, noKnownUrls, knownIdentities);
+
+    expect(results).toHaveLength(1);
+  });
+
+  it("keeps an identity-matched job whose description can't be fetched", async () => {
+    const knownIdentities = new Map([["acme|job 1|remote", new Set(["description 1"])]]);
+    const page = makePage([
+      [makeJob("1")],
+      [],
+      [], // page 0
+      new Error("timeout"), // first attempt
+      new Error("timeout"), // retry also fails → empty description never matches
+    ]);
+
+    const results = await scrapeLinkedInJobs(page, criteria, noKnownUrls, knownIdentities);
+
+    expect(results).toHaveLength(1);
+    expect(results[0]?.description).toBe("");
+  });
+
+  it("skips a job matching the identity and description of one scraped earlier in the same run, even under a different URL", async () => {
     // job "1" and job "2" share company/title/location but have distinct URLs —
     // LinkedIn sometimes lists the same posting twice with different tracking params
     const page = makePage([
       [makeJob("1"), { ...makeJob("2"), title: "Job 1" }],
       [],
       [], // page 0: both cards, then 2 stable
-      details("description 1"), // fetchJobDetails for job1 only (job2 is a same-run identity dupe)
+      details("description 1"),
+      details("description 1"), // job2 is a same-run duplicate
     ]);
 
     const results = await scrapeLinkedInJobs(page, criteria, noKnownUrls, noKnownIdentities);
 
     expect(results).toHaveLength(1);
     expect(results[0]?.url).toBe("https://www.linkedin.com/jobs/view/1/");
-    const visitedUrls = vi.mocked(page.goto).mock.calls.map(([url]) => url);
-    expect(visitedUrls).not.toContain("https://www.linkedin.com/jobs/view/2/");
+  });
+
+  it("keeps same-run jobs that share an identity but have different descriptions", async () => {
+    const page = makePage([
+      [makeJob("1"), { ...makeJob("2"), title: "Job 1" }],
+      [],
+      [], // page 0
+      details("description 1"),
+      details("description 2"),
+    ]);
+
+    const results = await scrapeLinkedInJobs(page, criteria, noKnownUrls, noKnownIdentities);
+
+    expect(results).toHaveLength(2);
+  });
+
+  it("keeps identity and description matches when skipDuplicateIdentity is off", async () => {
+    const knownIdentities = new Map([["acme|job 1|remote", new Set(["description 1"])]]);
+    const page = makePage([[makeJob("1")], [], [], details("description 1")]);
+
+    const results = await scrapeLinkedInJobs(
+      page,
+      { ...criteria, skipDuplicateIdentity: false },
+      noKnownUrls,
+      knownIdentities
+    );
+
+    expect(results).toHaveLength(1);
   });
 
   it("retries fetchJobDetails once and uses the second attempt's result", async () => {
@@ -300,6 +372,12 @@ describe("scrapeLinkedInJobs", () => {
 
     expect(results).toHaveLength(1);
     expect(results[0]?.url).toBe("https://www.linkedin.com/jobs/view/1/");
+  });
+});
+
+describe("normalizeDescription", () => {
+  it("lowercases, collapses whitespace runs and trims", () => {
+    expect(normalizeDescription("  Build \n\tGreat   Things\n ")).toBe("build great things");
   });
 });
 

@@ -227,7 +227,8 @@ export function CriteriaForm({
             Skip duplicate postings
           </FieldLabel>
           <FieldDescription>
-            Skip jobs where the same company, title, and location already exist in your list.
+            Skip jobs with the same company, title, location, and description as one already in your
+            list.
           </FieldDescription>
         </div>
       </Field>
